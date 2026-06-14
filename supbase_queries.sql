@@ -110,3 +110,8 @@ alter table public.call_logs replica identity full;
 alter publication supabase_realtime add table public.call_logs;
 alter table public.call_logs enable row level security;
 create policy "Allow all access during development call_logs" on public.call_logs for all using (true);
+
+--------------------------------------------------------------------------------------
+
+-- 6. Add notes column to contacts table if it does not exist (migration helper)
+alter table public.contacts add column if not exists notes text;
