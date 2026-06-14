@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { Phone, PhoneOff, RotateCcw, Search, User, Briefcase, MapPin, CheckCircle, Save } from 'lucide-react'
+import { Phone, PhoneOff, RotateCcw, Search, User, Briefcase, MapPin, Save } from 'lucide-react'
 import ExcelUpload from '../../components/ExcelUpload'
 
 export default function ColdCalling() {
@@ -16,6 +16,15 @@ export default function ColdCalling() {
   const [statusUpdate, setStatusUpdate] = useState('Answered')
   const [followUp, setFollowUp] = useState('No')
 
+  const selectContact = (c) => {
+    setSelectedContact(c)
+    setPocName(c.poc_name || '')
+    setProfession(c.profession || '')
+    setLocationCity(c.location_city || '')
+    setStatusUpdate(c.status_update === 'Not Called' ? 'Answered' : c.status_update || 'Answered')
+    setFollowUp(c.follow_up || 'No')
+  }
+
   const fetchContacts = async () => {
     const { data } = await supabase.from('contacts').select('*').order('id', { ascending: true })
     if (data) {
@@ -26,6 +35,7 @@ export default function ColdCalling() {
     }
   }
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     fetchContacts()
     
@@ -37,16 +47,8 @@ export default function ColdCalling() {
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [])
-
-  const selectContact = (c) => {
-    setSelectedContact(c)
-    setPocName(c.poc_name || '')
-    setProfession(c.profession || '')
-    setLocationCity(c.location_city || '')
-    setStatusUpdate(c.status_update === 'Not Called' ? 'Answered' : c.status_update || 'Answered')
-    setFollowUp(c.follow_up || 'No')
-  }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleDial = async (num) => {
     if (!num) return
@@ -60,7 +62,6 @@ export default function ColdCalling() {
   const handleUpdate = async () => {
     if (!selectedContact) return
     
-    // 1. Update contact record
     const { error } = await supabase.from('contacts').update({
       poc_name: pocName,
       profession: profession,
@@ -74,7 +75,6 @@ export default function ColdCalling() {
       return
     }
 
-    // 2. Log manual call log entry for agent tracking
     await supabase.from('call_logs').insert({
       phone_number: selectedContact.phone_number,
       duration_seconds: 0,
@@ -214,7 +214,7 @@ export default function ColdCalling() {
             </div>
 
             {/* Details and follow-up toggle */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-panel)', border: '1px solid var(--border)', padding: '15px 20px', borderRadius: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifycontent: 'space-between', background: 'var(--bg-panel)', border: '1px solid var(--border)', padding: '15px 20px', borderRadius: '8px' }}>
               <div>
                 <div style={{ fontWeight: '600', color: 'var(--text)', fontSize: '13.5px' }}>Priority Follow Up</div>
                 <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Flag this contact to follow up later</div>
@@ -226,12 +226,12 @@ export default function ColdCalling() {
             </div>
 
             {/* Save details */}
-            <button onClick={handleUpdate} style={{ background: 'var(--accent)', border: 'none', color: '#000', padding: '12px 20px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '14px', alignSelf: 'start', transition: 'opacity 0.2s' }}>
+            <button onClick={handleUpdate} style={{ background: 'var(--accent)', border: 'none', color: '#000', padding: '12px 20px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifycontent: 'center', gap: '8px', fontSize: '14px', alignSelf: 'start', transition: 'opacity 0.2s' }}>
               <Save size={16} /> Save Changes & Log Call
             </button>
           </div>
         ) : (
-          <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>
+          <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifycontent: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>
             Select a contact from the side panel to view information.
           </div>
         )}
