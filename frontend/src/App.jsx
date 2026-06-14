@@ -45,6 +45,16 @@ export default function App() {
     await supabase.from('system_state').update({ command: 'run_sync' }).eq('id', 1)
   }
 
+  const triggerTestCall = async () => {
+    try {
+      await supabase.from('call_queue').insert([{ number: '197', status: 'dialing' }])
+      alert('Test call on 197 queued! Verify dialing on your phone.')
+    } catch (err) {
+      console.error(err)
+      alert(`Error queuing test call: ${err.message}`)
+    }
+  }
+
   const toggleTheme = () => {
     setTheme(prev => prev === 'light' ? 'dark' : 'light')
   }
@@ -87,6 +97,10 @@ export default function App() {
           <button onClick={triggerUsbSync} disabled={isSyncing} style={{ width: '100%', background: 'var(--accent)', color: 'var(--bg-dark)', border: 'none', padding: '10px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: isSyncing ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
             <RefreshCw size={14} className={isSyncing ? 'spin' : ''} />
             {isSyncing ? 'Syncing...' : 'Force Local Sync'}
+          </button>
+          <button onClick={triggerTestCall} style={{ width: '100%', background: 'transparent', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'all 0.15s ease' }}>
+            <Phone size={14} style={{ color: 'var(--accent)' }} />
+            Test Call (197)
           </button>
         </div>
       </aside>
