@@ -1,122 +1,122 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useState, useEffect } from 'react'
+import { supabase } from './lib/supabase'
+import { Phone, PhoneOff, Save, RefreshCw, CheckCircle2, XCircle } from 'lucide-react'
+import './index.css'
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  const [adbStatus, setAdbStatus] = useState('disconnected')
+  const [isSyncing, setIsSyncing] = useState(false)
+  const [manualNumber, setManualNumber] = useState('')
+
+  useEffect(() => {
+    // 1. Fetch initial status
+    const fetchStatus = async () => {
+      const { data } = await supabase.table('system_state').select('adb_status').eq('id', 1).single()
+      if (data) setAdbStatus(data.adb_status)
+    }
+    fetchStatus()
+
+    // 2. Subscribe to Realtime Heartbeat
+    const statusSubscription = supabase
+      .channel('system_state_changes')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'system_state' }, (payload) => {
+        setAdbStatus(payload.new.adb_status)
+        if (payload.new.command === 'idle') setIsSyncing(false)
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(statusSubscription)
+    }
+  }, [])
+
+  const triggerUsbSync = async () => {
+    setIsSyncing(true)
+    await supabase.table('system_state').update({ command: 'run_sync' }).eq('id', 1)
+  }
+
+  const handleManualDial = async () => {
+    if (!manualNumber) return
+    // Pushes the number to Supabase, which triggers your local CachyOS Python daemon
+    await supabase.table('call_queue').insert([
+      { number: manualNumber, status: 'dialing' }
+    ])
+    setManualNumber('')
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <div style={{ display: 'flex', height: '100vh' }}>
+
+      {/* LEFT SIDEBAR: Queues */}
+      <aside style={{ width: '250px', background: 'var(--bg-panel)', borderRight: '1px solid var(--border)', padding: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+        <h3 style={{ color: 'var(--accent)', marginTop: 0, borderBottom: '1px solid var(--border)', paddingBottom: '10px' }}>Queues</h3>
+        {['📋 Current Queue', '⭐ Priority Follow-Ups', '❌ Past Unresponsive', '⚠️ Missed / Blank'].map(name => (
+          <button key={name} style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'white', padding: '12px', textAlign: 'left', borderRadius: '6px', cursor: 'pointer' }}>
+            {name}
+          </button>
+        ))}
+      </aside>
+
+      {/* CENTER: Main Dialer */}
+      <main style={{ flexGrow: 1, padding: '30px', overflowY: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div style={{ width: '100%', maxWidth: '800px' }}>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)', paddingBottom: '15px', marginBottom: '20px' }}>
+            <h1 style={{ margin: 0, color: 'var(--accent)' }}>AeroDial Dashboard</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Local Python Daemon:</span>
+              {adbStatus === 'connected'
+                ? <span style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(40, 167, 69, 0.2)', color: '#28a745', padding: '5px 12px', borderRadius: '6px', fontSize: '14px', fontWeight: 'bold' }}><CheckCircle2 size={16} /> Bridged</span>
+                : <span style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(220, 53, 69, 0.2)', color: '#dc3545', padding: '5px 12px', borderRadius: '6px', fontSize: '14px', fontWeight: 'bold' }}><XCircle size={16} /> Disconnected</span>
+              }
+            </div>
+          </div>
+
+          <div style={{ background: '#252526', padding: '20px', borderRadius: '8px', marginBottom: '20px', border: '1px solid var(--border)' }}>
+            <h2 style={{ marginTop: 0, marginBottom: '15px' }}>Manual Dial Test</h2>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <input
+                type="text"
+                placeholder="Enter phone number..."
+                value={manualNumber}
+                onChange={(e) => setManualNumber(e.target.value)}
+                style={{ flexGrow: 1, background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'white', padding: '12px', borderRadius: '6px', outline: 'none' }}
+              />
+              <button
+                onClick={handleManualDial}
+                style={{ background: '#28a745', border: 'none', color: 'white', padding: '0 20px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}
+              >
+                <Phone size={18} /> Dial via Local ADB
+              </button>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+            {/* Future CRM Form Fields will go here */}
+            <div style={{ gridColumn: 'span 2', background: '#252526', padding: '20px', borderRadius: '8px', border: '1px dashed var(--border)', color: 'var(--text-muted)', textAlign: 'center' }}>
+              CRM Data Fields (POC, Notes, Follow-ups) will unlock after we update the Supabase Schema.
+            </div>
+          </div>
+
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
+      </main>
+
+      {/* RIGHT SIDEBAR: Controls */}
+      <aside style={{ width: '250px', background: 'var(--bg-panel)', borderLeft: '1px solid var(--border)', padding: '20px' }}>
+        <h3 style={{ color: 'var(--accent)', marginTop: 0, borderBottom: '1px solid var(--border)', paddingBottom: '10px' }}>System Controls</h3>
+
         <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
+          onClick={triggerUsbSync}
+          disabled={isSyncing}
+          style={{ width: '100%', background: 'var(--accent)', color: '#000', border: 'none', padding: '12px', borderRadius: '6px', fontWeight: 'bold', cursor: isSyncing ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '15px' }}
         >
-          Count is {count}
+          <RefreshCw size={18} className={isSyncing ? 'spin' : ''} />
+          {isSyncing ? 'Syncing USB...' : 'Run USB Sync'}
         </button>
-      </section>
 
-      <div className="ticks"></div>
+        <style>{`.spin { animation: spin 1s linear infinite; } @keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
+      </aside>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+    </div>
   )
 }
-
-export default App
