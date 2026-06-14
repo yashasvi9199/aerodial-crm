@@ -107,6 +107,9 @@ export default function ColdCalling() {
       const status = String(c.status_update).toLowerCase()
       return status.includes('unresponsive') || status.includes('busy') || status.includes('unanswered')
     }
+    if (activeTab === 'Called') return c.status_update !== 'Not Called'
+    if (activeTab === 'Answered') return c.status_update === 'Answered'
+    if (activeTab === 'Not Called') return c.status_update === 'Not Called'
     return true
   })
 
@@ -124,10 +127,10 @@ export default function ColdCalling() {
         </div>
 
         {/* Workspace pipeline tabs */}
-        <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', background: 'var(--bg-input)' }}>
-          {['All', 'Follow Up', 'Unresponsive'].map(tab => (
-            <button key={tab} onClick={() => setActiveTab(tab)} style={{ flexGrow: 1, border: 'none', background: activeTab === tab ? 'var(--bg-panel)' : 'transparent', color: activeTab === tab ? 'var(--accent)' : 'var(--text-muted)', padding: '10px 0', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', borderBottom: activeTab === tab ? '2px solid var(--accent)' : 'none' }}>
-              {tab === 'Unresponsive' ? 'Missed / Unresponsive' : tab}
+        <div style={{ display: 'flex', flexWrap: 'wrap', borderBottom: '1px solid var(--border)', background: 'var(--bg-input)' }}>
+          {['All', 'Follow Up', 'Unresponsive', 'Called', 'Answered', 'Not Called'].map(tab => (
+            <button key={tab} onClick={() => setActiveTab(tab)} style={{ flexGrow: 1, flexBasis: '30%', border: 'none', background: activeTab === tab ? 'var(--bg-panel)' : 'transparent', color: activeTab === tab ? 'var(--accent)' : 'var(--text-muted)', padding: '8px 0', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', borderBottom: activeTab === tab ? '2px solid var(--accent)' : 'none' }}>
+              {tab === 'Unresponsive' ? 'Missed' : tab}
             </button>
           ))}
         </div>
