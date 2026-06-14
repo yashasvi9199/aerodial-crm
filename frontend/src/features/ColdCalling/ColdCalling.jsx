@@ -15,6 +15,7 @@ export default function ColdCalling() {
   const [locationCity, setLocationCity] = useState('')
   const [statusUpdate, setStatusUpdate] = useState('Answered')
   const [followUp, setFollowUp] = useState('No')
+  const [notes, setNotes] = useState('')
 
   const selectContact = (c) => {
     setSelectedContact(c)
@@ -23,6 +24,7 @@ export default function ColdCalling() {
     setLocationCity(c.location_city || '')
     setStatusUpdate(c.status_update === 'Not Called' ? 'Answered' : c.status_update || 'Answered')
     setFollowUp(c.follow_up || 'No')
+    setNotes(c.notes || '')
   }
 
   const fetchContacts = async () => {
@@ -67,7 +69,8 @@ export default function ColdCalling() {
       profession: profession,
       location_city: locationCity,
       status_update: statusUpdate,
-      follow_up: followUp
+      follow_up: followUp,
+      notes: notes
     }).eq('id', selectedContact.id)
 
     if (error) {
@@ -211,10 +214,32 @@ export default function ColdCalling() {
                   ))}
                 </select>
               </div>
+
+              <div style={{ gridColumn: '1 / span 2' }}>
+                <label style={{ display: 'block', fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: '500' }}>Notes & Remarks</label>
+                <textarea 
+                  value={notes} 
+                  onChange={(e) => setNotes(e.target.value)} 
+                  placeholder="Enter call notes, customer requirements, or remarks..."
+                  style={{ 
+                    width: '100%', 
+                    height: '80px', 
+                    background: 'var(--bg-panel)', 
+                    border: '1px solid var(--border)', 
+                    color: 'var(--text)', 
+                    padding: '10px', 
+                    borderRadius: '6px', 
+                    fontSize: '13.5px', 
+                    resize: 'vertical',
+                    fontFamily: 'inherit',
+                    outline: 'none'
+                  }} 
+                />
+              </div>
             </div>
 
             {/* Details and follow-up toggle */}
-            <div style={{ display: 'flex', alignItems: 'center', justifycontent: 'space-between', background: 'var(--bg-panel)', border: '1px solid var(--border)', padding: '15px 20px', borderRadius: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-panel)', border: '1px solid var(--border)', padding: '15px 20px', borderRadius: '8px' }}>
               <div>
                 <div style={{ fontWeight: '600', color: 'var(--text)', fontSize: '13.5px' }}>Priority Follow Up</div>
                 <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Flag this contact to follow up later</div>
@@ -224,14 +249,14 @@ export default function ColdCalling() {
                 <option value="Yes">Yes</option>
               </select>
             </div>
-
+ 
             {/* Save details */}
-            <button onClick={handleUpdate} style={{ background: 'var(--accent)', border: 'none', color: '#000', padding: '12px 20px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifycontent: 'center', gap: '8px', fontSize: '14px', alignSelf: 'start', transition: 'opacity 0.2s' }}>
+            <button onClick={handleUpdate} style={{ background: 'var(--accent)', border: 'none', color: '#000', padding: '12px 20px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '14px', alignSelf: 'start', transition: 'opacity 0.2s' }}>
               <Save size={16} /> Save Changes & Log Call
             </button>
           </div>
         ) : (
-          <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifycontent: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>
+          <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>
             Select a contact from the side panel to view information.
           </div>
         )}
