@@ -1,0 +1,12 @@
+# AeroDial CRM - Agent Persistence State
+
+## Architecture & Session State
+- Model Context: Gemini pair programming.
+- Database: Supabase (REST via PostgREST and WebSockets via Realtime).
+- Frontend: React 19, Vite, Vanilla CSS styling.
+- Daemon: Python 3, ADB bridge, root-level shell access (`su -c`).
+- Airtel SIM calling routing: Rooted Android 16/AOSP voice account selection.
+
+## Technical Debt & Active Backlog
+- Schema cache refresh required when adding columns (must trigger `NOTIFY pgrst, 'reload schema';`).
+- Ensure no files exceed the 300-line limit to maintain indexing performance.
