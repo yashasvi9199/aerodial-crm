@@ -20,8 +20,12 @@ export default function ExcelUpload({ onUploadSuccess }) {
         const data = evt.target.result
         const workbook = read(data, { type: 'binary' })
         
-        // We will process 'Sheet2' if it exists, otherwise fall back to the first available sheet
-        const targetSheetName = workbook.SheetNames.includes('Sheet2') ? 'Sheet2' : workbook.SheetNames[0]
+        // Enforce that only Sheet2 is read
+        if (!workbook.SheetNames.includes('Sheet2')) {
+          throw new Error('Required worksheet "Sheet2" was not found in the uploaded workbook.')
+        }
+
+        const targetSheetName = 'Sheet2'
         const sheet = workbook.Sheets[targetSheetName]
         const rawJsonData = utils.sheet_to_json(sheet)
 
@@ -71,20 +75,20 @@ export default function ExcelUpload({ onUploadSuccess }) {
   }
 
   return (
-    <div style={{ background: '#252526', padding: '20px', borderRadius: '8px', border: '1px solid var(--border)', textAlign: 'center' }}>
+    <div style={{ background: 'var(--bg-panel)', padding: '20px', borderRadius: '8px', border: '1px solid var(--border)', textAlign: 'center' }}>
       <FileSpreadsheet size={36} color="var(--accent)" style={{ marginBottom: '10px' }} />
-      <h3 style={{ margin: '0 0 8px 0' }}>Import Active Workspace</h3>
+      <h3 style={{ margin: '0 0 8px 0', color: 'var(--text)' }}>Import Workspace</h3>
       <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: '0 0 15px 0' }}>
-        Reads contact blocks directly from <strong>Carpenter Data.xlsx</strong> assets.
+        Reads contact blocks directly from Sheet2 of <strong>Carpenter Data.xlsx</strong>.
       </p>
 
       <label style={{ background: 'var(--bg-input)', border: '1px dashed var(--border)', padding: '12px', display: 'block', borderRadius: '6px', cursor: loading ? 'not-allowed' : 'pointer' }}>
         {loading ? (
-          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '14px' }}>
+          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '14px', color: 'var(--text)' }}>
             <Loader2 size={16} className="spin" /> {status}
           </span>
         ) : (
-          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '14px', fontWeight: '500' }}>
+          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '14px', fontWeight: '500', color: 'var(--text)' }}>
             <Upload size={16} /> Load Data Asset
           </span>
         )}
