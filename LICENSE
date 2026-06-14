@@ -1,0 +1,29 @@
+# PROPRIETARY SOFTWARE LICENSE AGREEMENT
+
+**IMPORTANT: READ CAREFULLY BEFORE USING OR ACCESSING THIS SOFTWARE.**
+
+This Proprietary Software License Agreement (the "Agreement") is a legally binding contract between Yash Haldiya ("Licensor") and any user, developer, client, or entity accessing, compiling, running, or inspecting this software (the "Licensee"). 
+
+BY ACCESSING, VIEWING, COMPILING, RUNNING, OR USING THE SOFTWARE, YOU ACKNOWLEDGE THAT YOU HAVE READ THIS AGREEMENT, UNDERSTAND IT, AND AGREE TO BE BOUND BY ITS TERMS. IF YOU DO NOT AGREE, IMMEDIATELY CEASE ALL ACCESS AND DESTROY ANY COPIES IN YOUR POSSESSION.
+
+---
+
+## 1. OWNERSHIP AND INTELLECTUAL PROPERTY
+The AeroDial CRM application, backend dialer daemon, database configurations, and all associated codebases, scripts, layout configurations, styling systems, and documentation (collectively, the "Software") are the exclusive proprietary property of Yash Haldiya. 
+
+All title, ownership rights, intellectual property rights, copyrights (including but not limited to code blocks, algorithms, user interface layouts, database schemas, and methods of Android SIM call routing), trademarks, and trade secrets in and to the Software remain solely with Yash Haldiya.
+
+## 2. EXCLUSIVE PROPRIETARY RIGHTS AND COPIED FUNCTIONALITY
+- **No License Granted**: Copyright (c) 2026 Yash Haldiya. All Rights Reserved. No license or permission is granted to copy, distribute, modify, merge, publish, sublicense, sell, or transfer the Software or any portion thereof.
+- **Copying of Code / Functions**: Copying, duplicating, paraphrasing, or replicating any function, algorithm, schema, or component from this Software (including but not limited to the Python ADB call monitoring state machine, SIM subscription routing methods, React dashboard SVG mapping, and contact merging structures) for any commercial or non-commercial purpose is strictly prohibited.
+- **Derivative Works**: The creation of derivative works based on this Software is strictly forbidden. Any unauthorized derivative work will constitute immediate copyright infringement.
+
+## 3. INFRINGEMENT AND LITIGATION
+- **Infringement Auditing**: Licensor reserves the right to audit, monitor, and investigate unauthorized usage, distribution, or copying of this Software.
+- **Litigation and Damages**: Any unauthorized reproduction, distribution, or modification of this Software will result in immediate termination of access, followed by aggressive legal prosecution. 
+- **Copyright Claim Lawsuits**: Any copy of functions, methods, code blocks, or UI styles will trigger copyright claim lawsuits. Licensee agrees that Yash Haldiya shall be entitled to recover statutory damages, actual damages, lost profits, punitive damages, and all attorney fees and court costs associated with enforcing this agreement.
+
+---
+
+**Copyright (c) 2026 Yash Haldiya. All Rights Reserved.**
+**No license is granted to copy, distribute, or modify this software.**
