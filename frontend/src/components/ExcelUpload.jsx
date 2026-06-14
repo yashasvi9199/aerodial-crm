@@ -53,11 +53,21 @@ export default function ExcelUpload({ onUploadSuccess }) {
           }
         }).filter(row => row.phone_number); // Exclude items lacking phone numbers
 
-        setStatus(`Bulk importing ${normalizedData.length} records to Supabase...`)
+        // De-duplicate array items based on phone_number to prevent 500 error: 
+        // "ON CONFLICT DO UPDATE command cannot affect row a second time"
+        const seen = new Set();
+        const uniqueData = normalizedData.filter(row => {
+          const phoneNum = row.phone_number;
+          if (seen.has(phoneNum)) return false;
+          seen.add(phoneNum);
+          return true;
+        });
+
+        setStatus(`Bulk importing ${uniqueData.length} records to Supabase...`)
 
         const { error } = await supabase
           .from('contacts')
-          .upsert(normalizedData, { onConflict: 'phone_number' })
+          .upsert(uniqueData, { onConflict: 'phone_number' })
 
         if (error) throw error
 
