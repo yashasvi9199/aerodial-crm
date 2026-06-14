@@ -61,6 +61,11 @@ create table public.contacts (
 alter table public.contacts replica identity full;
 alter publication supabase_realtime add table public.contacts;
 
+-- 3.2. Enable Row Level Security and allow all operations during development
+alter table public.contacts enable row level security;
+create policy "Allow all access during development contacts" on public.contacts for all using (true);
+
+
 --------------------------------------------------------------------------------------
 
 -- 4. Create the justdial_leads table
