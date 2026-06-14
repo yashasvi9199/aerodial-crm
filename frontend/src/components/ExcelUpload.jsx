@@ -33,35 +33,86 @@ export default function ExcelUpload({ onUploadSuccess }) {
           throw new Error(`The sheet "${targetSheetName}" appears to be empty.`)
         }
 
-        setStatus('Formatting raw payload headers...')
+        setStatus('Retrieving existing database records...')
+        
+        // Fetch existing contacts to merge and prevent losing called status
+        const { data: existingContacts } = await supabase
+          .from('contacts')
+          .select('phone_number, status_update, last_call_at, call_duration, follow_up, call_back_date, call_back_time')
 
-        // Normalize variations in Excel headers to match Supabase schema
-        const normalizedData = rawJsonData.map(row => {
-          const rawNum = row['Number'] || row['phone_number'] || '';
-          return {
-            business_name: row['Name of Business'] || row['Name'] || null,
-            phone_number: rawNum ? String(rawNum).trim() : null,
-            poc_name: row['POC Person'] || null,
-            profession: row['Profession'] || null,
-            location_city: row['Location/City'] || null,
-            status_update: row['Update'] || 'Not Called',
-            last_call_at: row['Last Call on'] ? String(row['Last Call on']) : null,
-            call_duration: row['Call Duration'] ? String(row['Call Duration']) : null,
-            follow_up: row['Follow Up'] || 'No',
-            call_back_date: row['Call Back on'] ? String(row['Call Back on']) : null,
-            call_back_time: row['Time'] ? String(row['Time']) : null
+        const existingMap = {}
+        if (existingContacts) {
+          existingContacts.forEach(c => {
+            existingMap[c.phone_number] = c
+          })
+        }
+
+        // Helper to normalize phone numbers to '+91...' format
+        const normalizePhone = (num) => {
+          if (!num) return null
+          let clean = String(num).replace(/\D/g, '')
+          if (clean.length === 10) {
+            return '+91' + clean
           }
-        }).filter(row => row.phone_number); // Exclude items lacking phone numbers
+          if (clean.length === 12 && clean.startsWith('91')) {
+            return '+' + clean
+          }
+          return clean ? '+' + clean : null
+        }
 
-        // De-duplicate array items based on phone_number to prevent 500 error: 
-        // "ON CONFLICT DO UPDATE command cannot affect row a second time"
-        const seen = new Set();
+        setStatus('Merging and normalizing contacts...')
+
+        // Normalize and merge variations in Excel headers to match Supabase schema
+        const normalizedData = rawJsonData.map(row => {
+          const rawNum = row['Number'] || row['phone_number'] || ''
+          const normPhone = normalizePhone(rawNum)
+          if (!normPhone) return null
+
+          const existing = existingMap[normPhone]
+
+          // Determine status_update
+          let statusVal = row['Update'] || 'Not Called'
+          if (existing) {
+            // Preserve the database status if the Excel status is empty or default
+            if (!row['Update'] && existing.status_update) {
+              statusVal = existing.status_update
+            } else if (existing.status_update && existing.status_update !== 'Not Called' && statusVal === 'Not Called') {
+              statusVal = existing.status_update
+            }
+          }
+
+          // Convert Excel date serial numbers (like 46189) to readable strings if necessary
+          let callBackDate = row['Call Back on'] || null
+          if (typeof callBackDate === 'number') {
+            const date = new Date((callBackDate - 25569) * 86400 * 1000)
+            callBackDate = date.toLocaleDateString()
+          } else if (callBackDate) {
+            callBackDate = String(callBackDate)
+          }
+
+          return {
+            business_name: row['Name of Business'] || row['Name'] || (existing ? existing.business_name : null),
+            phone_number: normPhone,
+            poc_name: row['POC Person'] || (existing ? existing.poc_name : null),
+            profession: row['Profession'] || (existing ? existing.profession : null),
+            location_city: row['Location/City'] || (existing ? existing.location_city : null),
+            status_update: statusVal,
+            last_call_at: row['Last Call on'] ? String(row['Last Call on']) : (existing ? existing.last_call_at : null),
+            call_duration: row['Call Duration'] ? String(row['Call Duration']) : (existing ? existing.call_duration : null),
+            follow_up: row['Follow Up'] || (existing ? existing.follow_up : 'No'),
+            call_back_date: callBackDate || (existing ? existing.call_back_date : null),
+            call_back_time: row['Time'] ? String(row['Time']) : (existing ? existing.call_back_time : null)
+          }
+        }).filter(row => row && row.phone_number)
+
+        // De-duplicate array items based on phone_number to prevent 500 upsert error
+        const seen = new Set()
         const uniqueData = normalizedData.filter(row => {
-          const phoneNum = row.phone_number;
-          if (seen.has(phoneNum)) return false;
-          seen.add(phoneNum);
-          return true;
-        });
+          const phoneNum = row.phone_number
+          if (seen.has(phoneNum)) return false
+          seen.add(phoneNum)
+          return true
+        })
 
         setStatus(`Bulk importing ${uniqueData.length} records to Supabase...`)
 
