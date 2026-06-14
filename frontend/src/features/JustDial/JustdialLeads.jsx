@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { Phone, PhoneOff, RotateCcw, Search, User, Briefcase, MapPin, Save, Plus, X } from 'lucide-react'
+import { Phone, PhoneOff, RotateCcw, Search, User, Briefcase, MapPin, Save, Plus } from 'lucide-react'
 
 export default function JustdialLeads() {
   const [leads, setLeads] = useState([])
   const [selectedLead, setSelectedLead] = useState(null)
   const [search, setSearch] = useState('')
   const [activeTab, setActiveTab] = useState('All')
-  const [showAddForm, setShowAddForm] = useState(false)
 
-  // Lead fields
+  // Lead editing/logging fields
+  const [phone, setPhone] = useState('')
   const [name, setName] = useState('')
   const [leadName, setLeadName] = useState('')
   const [profession, setProfession] = useState('Consumer')
@@ -17,16 +17,6 @@ export default function JustdialLeads() {
   const [notes, setNotes] = useState('')
   const [followUp, setFollowUp] = useState('No')
   const [statusUpdate, setStatusUpdate] = useState('Answered')
-
-  // New Lead form inputs
-  const [newLead, setNewLead] = useState({
-    name: '',
-    lead_name: '',
-    phone: '',
-    profession: 'Consumer',
-    location: '',
-    notes: ''
-  })
 
   const selectLead = (l) => {
     setSelectedLead(l)
@@ -37,6 +27,27 @@ export default function JustdialLeads() {
     setNotes(l.notes || '')
     setFollowUp(l.follow_up || 'No')
     setStatusUpdate(l.contacted === 'Yes' ? 'Answered' : 'Unanswered')
+    
+    // Set 10-digit phone number without +91 for easy dialing and editing
+    let cleanPhone = l.phone || ''
+    if (cleanPhone.startsWith('+91')) {
+      cleanPhone = cleanPhone.slice(3)
+    } else if (cleanPhone.startsWith('91') && cleanPhone.length === 12) {
+      cleanPhone = cleanPhone.slice(2)
+    }
+    setPhone(cleanPhone)
+  }
+
+  const handleStartNewLead = () => {
+    setSelectedLead(null)
+    setName('')
+    setLeadName('')
+    setPhone('')
+    setProfession('Consumer')
+    setLocation('')
+    setNotes('')
+    setFollowUp('No')
+    setStatusUpdate('Answered')
   }
 
   const fetchLeads = async () => {
@@ -66,55 +77,112 @@ export default function JustdialLeads() {
     await supabase.from('call_queue').insert([{ number: String(num).trim(), status: 'dialing' }])
   }
 
+  const handleDialCurrent = async () => {
+    if (!phone) {
+      alert('Please enter a phone number first.')
+      return
+    }
+    let formattedPhone = phone.trim()
+    if (!formattedPhone.startsWith('+')) {
+      if (formattedPhone.length === 10) {
+        formattedPhone = '+91' + formattedPhone
+      } else if (formattedPhone.length === 12 && formattedPhone.startsWith('91')) {
+        formattedPhone = '+' + formattedPhone
+      } else {
+        formattedPhone = '+91' + formattedPhone
+      }
+    }
+    await handleDial(formattedPhone)
+  }
+
   const handleHangup = async () => {
     await supabase.from('system_state').update({ command: 'hangup' }).eq('id', 1)
   }
 
-  const handleUpdate = async () => {
-    if (!selectedLead) return
-    const { error } = await supabase.from('justdial_leads').update({
-      name,
+  const handleSave = async () => {
+    if (!phone) {
+      alert('Phone number is required.')
+      return
+    }
+
+    let formattedPhone = phone.trim()
+    if (!formattedPhone.startsWith('+')) {
+      if (formattedPhone.length === 10) {
+        formattedPhone = '+91' + formattedPhone
+      } else if (formattedPhone.length === 12 && formattedPhone.startsWith('91')) {
+        formattedPhone = '+' + formattedPhone
+      } else {
+        formattedPhone = '+91' + formattedPhone
+      }
+    }
+
+    const payload = {
+      name: name || 'Unnamed Lead',
       lead_name: leadName,
+      phone: formattedPhone,
       profession,
       location,
       notes,
       contacted: statusUpdate === 'Answered' ? 'Yes' : 'No',
-      follow_up: followUp
-    }).eq('id', selectedLead.id)
+      follow_up: followUp,
+      updated_at: new Date().toISOString()
+    }
 
-    if (error) {
-      alert(`Update Error: ${error.message}`)
-      return
+    let leadId = selectedLead?.id
+
+    if (selectedLead) {
+      const { error } = await supabase
+        .from('justdial_leads')
+        .update(payload)
+        .eq('id', selectedLead.id)
+      if (error) {
+        alert(`Update Error: ${error.message}`)
+        return
+      }
+    } else {
+      // Check if lead with this phone already exists
+      const { data: existing } = await supabase
+        .from('justdial_leads')
+        .select('id')
+        .eq('phone', formattedPhone)
+        .maybeSingle()
+
+      if (existing) {
+        const { error } = await supabase
+          .from('justdial_leads')
+          .update(payload)
+          .eq('id', existing.id)
+        if (error) {
+          alert(`Update Error: ${error.message}`)
+          return
+        }
+        leadId = existing.id
+      } else {
+        const { data, error } = await supabase
+          .from('justdial_leads')
+          .insert([payload])
+          .select()
+        if (error) {
+          alert(`Create Error: ${error.message}`)
+          return
+        }
+        if (data && data.length > 0) {
+          leadId = data[0].id
+        }
+      }
     }
 
     await supabase.from('call_logs').insert({
-      phone_number: selectedLead.phone,
+      phone_number: formattedPhone,
       duration_seconds: 0,
       status: statusUpdate,
       call_date: new Date().toISOString(),
       call_type: 'outgoing',
       platform: 'justdial',
-      justdial_lead_id: selectedLead.id
+      justdial_lead_id: leadId
     })
 
-    alert('Lead details and call status updated!')
-    fetchLeads()
-  }
-
-  const handleCreateLead = async (e) => {
-    e.preventDefault()
-    if (!newLead.phone || !newLead.name) {
-      alert('Name and Phone number are required.')
-      return
-    }
-    const { error } = await supabase.from('justdial_leads').insert([newLead])
-    if (error) {
-      alert(`Error creating lead: ${error.message}`)
-      return
-    }
-    alert('New lead added successfully!')
-    setNewLead({ name: '', lead_name: '', phone: '', profession: 'Consumer', location: '', notes: '' })
-    setShowAddForm(false)
+    alert(selectedLead ? 'Lead details and call status updated!' : 'New lead created and call logged!')
     fetchLeads()
   }
 
@@ -139,7 +207,7 @@ export default function JustdialLeads() {
             <Search size={16} style={{ position: 'absolute', left: '10px', top: '12px', color: 'var(--text-muted)' }} />
             <input type="text" placeholder="Search leads..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '8px 10px 8px 32px', borderRadius: '6px', fontSize: '13px' }} />
           </div>
-          <button onClick={() => setShowAddForm(true)} style={{ background: 'var(--accent)', border: 'none', color: '#000', padding: '8px 12px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <button onClick={handleStartNewLead} style={{ background: 'var(--accent)', border: 'none', color: '#000', padding: '8px 12px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Add new lead">
             <Plus size={16} />
           </button>
         </div>
@@ -173,39 +241,40 @@ export default function JustdialLeads() {
 
       {/* Main Viewport */}
       <div style={{ flexGrow: 1, padding: '30px', overflowY: 'auto', background: 'var(--bg-dark)' }}>
-        {showAddForm ? (
-          <div style={{ maxWidth: '600px', background: 'var(--bg-panel)', border: '1px solid var(--border)', borderRadius: '12px', padding: '25px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ margin: 0, color: 'var(--text)', fontSize: '16px' }}>Add Justdial Lead</h3>
-              <button onClick={() => setShowAddForm(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X size={18} /></button>
+        <div style={{ maxWidth: '650px', display: 'flex', flexDirection: 'column', gap: '25px' }}>
+          
+          {/* Calling Mechanism Card at the Top */}
+          <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', padding: '20px', borderRadius: '8px' }}>
+            <label style={{ display: 'block', fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: 'bold' }}>Direct Call Dialer (10-Digit Number)</label>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: '6px', flexGrow: 1, paddingLeft: '12px' }}>
+                <span style={{ color: 'var(--text-muted)', fontSize: '14px', marginRight: '4px', fontWeight: '600' }}>+91</span>
+                <input 
+                  type="text" 
+                  maxLength={10}
+                  placeholder="Enter 10-digit number" 
+                  value={phone} 
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))} 
+                  style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text)', padding: '10px 8px', fontSize: '14.5px', outline: 'none', fontWeight: '600' }} 
+                />
+              </div>
+              <button onClick={handleDialCurrent} style={{ background: '#10b981', border: 'none', color: '#fff', padding: '10px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13.5px', height: '40px' }}>
+                <Phone size={16} /> Dial
+              </button>
+              <button onClick={handleDialCurrent} style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: '6px', cursor: 'pointer', height: '40px' }} title="Redial">
+                <RotateCcw size={16} />
+              </button>
+              <button onClick={handleHangup} style={{ background: '#ef4444', border: 'none', color: '#fff', padding: '10px 14px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', height: '40px' }} title="Disconnect Call">
+                <PhoneOff size={16} /> Hang Up
+              </button>
             </div>
-            <form onSubmit={handleCreateLead} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              <input type="text" placeholder="Lead Person Name*" required value={newLead.name} onChange={(e) => setNewLead({ ...newLead, name: e.target.value })} style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px', borderRadius: '6px', fontSize: '13.5px' }} />
-              <input type="text" placeholder="Business / Lead Details" value={newLead.lead_name} onChange={(e) => setNewLead({ ...newLead, lead_name: e.target.value })} style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px', borderRadius: '6px', fontSize: '13.5px' }} />
-              <input type="text" placeholder="Phone Number*" required value={newLead.phone} onChange={(e) => setNewLead({ ...newLead, phone: e.target.value })} style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px', borderRadius: '6px', fontSize: '13.5px' }} />
-              <select value={newLead.profession} onChange={(e) => setNewLead({ ...newLead, profession: e.target.value })} style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px', borderRadius: '6px', fontSize: '13.5px', outline: 'none' }}>
-                {['Carpenter', 'Consumer', 'Retail', 'Unrelated'].map(prof => (
-                  <option key={prof} value={prof}>{prof}</option>
-                ))}
-              </select>
-              <input type="text" placeholder="Location" value={newLead.location} onChange={(e) => setNewLead({ ...newLead, location: e.target.value })} style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px', borderRadius: '6px', fontSize: '13.5px' }} />
-              <textarea placeholder="Notes / Remarks" value={newLead.notes} onChange={(e) => setNewLead({ ...newLead, notes: e.target.value })} style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px', borderRadius: '6px', fontSize: '13.5px', minHeight: '80px', resize: 'vertical' }} />
-              <button type="submit" style={{ background: 'var(--accent)', border: 'none', color: '#000', padding: '12px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '14px', marginTop: '10px' }}>Save New Lead</button>
-            </form>
           </div>
-        ) : selectedLead ? (
-          <div style={{ maxWidth: '650px', display: 'flex', flexDirection: 'column', gap: '25px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', borderBottom: '1px solid var(--border)', paddingBottom: '20px' }}>
-              <div>
-                <h2 style={{ margin: '0 0 6px 0', color: 'var(--text)', fontWeight: '600' }}>{selectedLead.name} <span style={{ fontWeight: '400', color: 'var(--text-muted)', fontSize: '15px' }}>({selectedLead.lead_name || 'N/A'})</span></h2>
-                <p style={{ margin: 0, color: 'var(--accent)', fontWeight: '600', fontSize: '18px' }}>{selectedLead.phone}</p>
-              </div>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button onClick={() => handleDial(selectedLead.phone)} style={{ background: '#10b981', border: 'none', color: '#fff', padding: '10px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13.5px' }}><Phone size={16} /> Dial</button>
-                <button onClick={() => handleDial(selectedLead.phone)} style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: '6px', cursor: 'pointer' }} title="Redial"><RotateCcw size={16} /></button>
-                <button onClick={handleHangup} style={{ background: '#ef4444', border: 'none', color: '#fff', padding: '10px 14px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }} title="Disconnect Call"><PhoneOff size={16} /> Hang Up</button>
-              </div>
-            </div>
+
+          {/* Lead Details Editing Form below Dialer */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <h3 style={{ margin: 0, color: 'var(--text)', fontSize: '15px', borderBottom: '1px solid var(--border)', paddingBottom: '8px' }}>
+              {selectedLead ? 'Edit Lead Details' : 'Create New Lead Details'}
+            </h3>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
               <div>
@@ -257,11 +326,12 @@ export default function JustdialLeads() {
               <label style={{ display: 'block', fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: '500' }}>Notes & Remarks</label>
               <textarea value={notes} onChange={(e) => setNotes(e.target.value)} style={{ width: '100%', background: 'var(--bg-panel)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px', borderRadius: '6px', fontSize: '13.5px', minHeight: '100px', resize: 'vertical' }} />
             </div>
-            <button onClick={handleUpdate} style={{ background: 'var(--accent)', border: 'none', color: '#000', padding: '12px 20px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '14px', alignSelf: 'start', transition: 'opacity 0.2s' }}><Save size={16} /> Save Lead Details & Log Call</button>
+            <button onClick={handleSave} style={{ background: 'var(--accent)', border: 'none', color: '#000', padding: '12px 20px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '14px', alignSelf: 'start', transition: 'opacity 0.2s' }}>
+              <Save size={16} /> Save Lead Details & Log Call
+            </button>
           </div>
-        ) : (
-          <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>Select a Justdial lead from the side panel to view information.</div>
-        )}
+
+        </div>
       </div>
     </div>
   )
