@@ -17,6 +17,7 @@ export default function JustdialLeads() {
   const [notes, setNotes] = useState('')
   const [followUp, setFollowUp] = useState('No')
   const [statusUpdate, setStatusUpdate] = useState('Answered')
+  const [leadQuality, setLeadQuality] = useState('Correct')
 
   const selectLead = (l) => {
     setSelectedLead(l)
@@ -27,6 +28,7 @@ export default function JustdialLeads() {
     setNotes(l.notes || '')
     setFollowUp(l.follow_up || 'No')
     setStatusUpdate(l.contacted === 'Yes' ? 'Answered' : 'Unanswered')
+    setLeadQuality(l.lead_quality || 'Correct')
     
     // Set 10-digit phone number without +91 for easy dialing and editing
     let cleanPhone = l.phone || ''
@@ -48,6 +50,7 @@ export default function JustdialLeads() {
     setNotes('')
     setFollowUp('No')
     setStatusUpdate('Answered')
+    setLeadQuality('Correct')
   }
 
   const fetchLeads = async () => {
@@ -125,6 +128,7 @@ export default function JustdialLeads() {
       notes,
       contacted: statusUpdate === 'Answered' ? 'Yes' : 'No',
       follow_up: followUp,
+      lead_quality: leadQuality,
       updated_at: new Date().toISOString()
     }
 
@@ -194,7 +198,8 @@ export default function JustdialLeads() {
     if (!matchSearch) return false
     if (activeTab === 'All') return true
     if (activeTab === 'Follow Up') return l.follow_up === 'Yes'
-    if (activeTab === 'Unresponsive') return l.contacted === 'No'
+    if (activeTab === 'Invalid Leads') return l.lead_quality === 'Invalid'
+    if (activeTab === 'Correct Leads') return (l.lead_quality || 'Correct') === 'Correct'
     return true
   })
 
@@ -213,9 +218,9 @@ export default function JustdialLeads() {
         </div>
 
         <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', background: 'var(--bg-input)' }}>
-          {['All', 'Follow Up', 'Unresponsive'].map(tab => (
-            <button key={tab} onClick={() => setActiveTab(tab)} style={{ flexGrow: 1, border: 'none', background: activeTab === tab ? 'var(--bg-panel)' : 'transparent', color: activeTab === tab ? 'var(--accent)' : 'var(--text-muted)', padding: '10px 0', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', borderBottom: activeTab === tab ? '2px solid var(--accent)' : 'none' }}>
-              {tab === 'Unresponsive' ? 'Missed Leads' : tab}
+          {['All', 'Follow Up', 'Invalid Leads', 'Correct Leads'].map(tab => (
+            <button key={tab} onClick={() => setActiveTab(tab)} style={{ flexGrow: 1, border: 'none', background: activeTab === tab ? 'var(--bg-panel)' : 'transparent', color: activeTab === tab ? 'var(--accent)' : 'var(--text-muted)', padding: '10px 0', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', borderBottom: activeTab === tab ? '2px solid var(--accent)' : 'none' }}>
+              {tab}
             </button>
           ))}
         </div>
@@ -319,6 +324,13 @@ export default function JustdialLeads() {
                 <select value={followUp} onChange={(e) => setFollowUp(e.target.value)} style={{ width: '100%', background: 'var(--bg-panel)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px', borderRadius: '6px', fontSize: '13.5px', height: '40px', outline: 'none' }}>
                   <option value="No">No</option>
                   <option value="Yes">Yes</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: '500' }}>Lead Quality</label>
+                <select value={leadQuality} onChange={(e) => setLeadQuality(e.target.value)} style={{ width: '100%', background: 'var(--bg-panel)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px', borderRadius: '6px', fontSize: '13.5px', height: '40px', outline: 'none' }}>
+                  <option value="Correct">Correct Lead</option>
+                  <option value="Invalid">Invalid Lead</option>
                 </select>
               </div>
             </div>
