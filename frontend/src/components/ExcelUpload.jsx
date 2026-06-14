@@ -20,12 +20,10 @@ export default function ExcelUpload({ onUploadSuccess }) {
         const data = evt.target.result
         const workbook = read(data, { type: 'binary' })
         
-        // Enforce that only Sheet2 is read
-        if (!workbook.SheetNames.includes('Sheet2')) {
-          throw new Error('Required worksheet "Sheet2" was not found in the uploaded workbook.')
-        }
-
-        const targetSheetName = 'Sheet2'
+        // Target Sheet2 if it exists, otherwise fall back to the first available sheet
+        const targetSheetName = workbook.SheetNames.includes('Sheet2')
+          ? 'Sheet2'
+          : workbook.SheetNames[0]
         const sheet = workbook.Sheets[targetSheetName]
         const rawJsonData = utils.sheet_to_json(sheet)
 
