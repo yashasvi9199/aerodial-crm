@@ -142,8 +142,11 @@ def main():
                     run_cmd(f"adb -s {device} shell \"su -c 'telecom set-user-selected-outgoing-phone-account {comp} {airtel_sub} 0'\"")
                     
                     # Dial
-                    clean_num = str(number).replace(" ", "").replace("-", "")
-                    clean_num = "+" + clean_num if (clean_num.startswith("91") and len(clean_num) > 10) else "+91" + clean_num if not clean_num.startswith("+91") else clean_num
+                    clean_num = str(number).replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
+                    if len(clean_num) == 10:
+                        clean_num = "+91" + clean_num
+                    elif len(clean_num) == 12 and clean_num.startswith("91"):
+                        clean_num = "+" + clean_num
                     
                     start_time_ms = int(time.time() * 1000)
                     start_time_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
