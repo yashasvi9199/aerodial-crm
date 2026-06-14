@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { read, utils } from 'xlsx'
 import { supabase } from '../lib/supabase'
-import { Upload, FileSpreadsheet, Loader2 } from 'lucide-react'
+import { Upload, FileSpreadsheet, Loader2, Trash2 } from 'lucide-react'
 
 export default function ExcelUpload({ onUploadSuccess }) {
   const [loading, setLoading] = useState(false)
@@ -137,6 +137,24 @@ export default function ExcelUpload({ onUploadSuccess }) {
     reader.readAsBinaryString(file)
   }
 
+  const handleClearContacts = async () => {
+    if (!window.confirm("Are you sure you want to delete all contacts? This action cannot be undone.")) return
+
+    setLoading(true)
+    setStatus('Clearing contacts from database...')
+    try {
+      const { error } = await supabase.from('contacts').delete().neq('id', 0)
+      if (error) throw error
+      setStatus('🟢 Contacts cleared successfully!')
+      if (onUploadSuccess) onUploadSuccess()
+    } catch (err) {
+      console.error(err)
+      setStatus(`❌ Error clearing: ${err.message}`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div style={{ background: 'var(--bg-panel)', padding: '20px', borderRadius: '8px', border: '1px solid var(--border)', textAlign: 'center' }}>
       <FileSpreadsheet size={36} color="var(--accent)" style={{ marginBottom: '10px' }} />
@@ -157,6 +175,30 @@ export default function ExcelUpload({ onUploadSuccess }) {
         )}
         <input type="file" accept=".xlsx, .xls" onChange={handleFileUpload} disabled={loading} style={{ display: 'none' }} />
       </label>
+
+      <button 
+        onClick={handleClearContacts}
+        disabled={loading}
+        style={{ 
+          marginTop: '12px',
+          width: '100%',
+          background: 'transparent',
+          border: '1px solid #ef4444',
+          color: '#ef4444',
+          padding: '8px 12px',
+          borderRadius: '6px',
+          fontSize: '12.5px',
+          fontWeight: '500',
+          cursor: loading ? 'not-allowed' : 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '6px',
+          transition: 'all 0.2s'
+        }}
+      >
+        <Trash2 size={14} /> Clear Database Contacts
+      </button>
     </div>
   )
 }
