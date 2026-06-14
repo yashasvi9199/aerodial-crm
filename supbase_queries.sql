@@ -115,3 +115,8 @@ create policy "Allow all access during development call_logs" on public.call_log
 
 -- 6. Add notes column to contacts table if it does not exist (migration helper)
 alter table public.contacts add column if not exists notes text;
+
+--------------------------------------------------------------------------------------
+
+-- 7. Add lead_quality column to justdial_leads table if it does not exist (migration helper)
+alter table public.justdial_leads add column if not exists lead_quality text default 'Correct';
