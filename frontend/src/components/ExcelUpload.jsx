@@ -36,7 +36,7 @@ export default function ExcelUpload({ onUploadSuccess }) {
         // Fetch existing contacts to merge and prevent losing called status
         const { data: existingContacts } = await supabase
           .from('contacts')
-          .select('phone_number, status_update, last_call_at, call_duration, follow_up, call_back_date, call_back_time')
+          .select('phone_number, status_update, last_call_at, call_duration, follow_up, call_back_date, call_back_time, notes')
 
         const existingMap = {}
         if (existingContacts) {
@@ -68,15 +68,18 @@ export default function ExcelUpload({ onUploadSuccess }) {
 
           const existing = existingMap[normPhone]
 
-          // Determine status_update
-          let statusVal = row['Update'] || 'Not Called'
-          if (existing) {
-            // Preserve the database status if the Excel status is empty or default
-            if (!row['Update'] && existing.status_update) {
-              statusVal = existing.status_update
-            } else if (existing.status_update && existing.status_update !== 'Not Called' && statusVal === 'Not Called') {
-              statusVal = existing.status_update
-            }
+          // Determine status_update and notes
+          const rawUpdate = row['Update'] ? String(row['Update']).trim() : ''
+          let statusVal = 'Not Called'
+          
+          if (rawUpdate.toLowerCase() === 'unresponsive') {
+            statusVal = 'Unresponsive'
+          } else if (rawUpdate.toLowerCase() === 'busy') {
+            statusVal = 'Busy'
+          } else if (rawUpdate) {
+            statusVal = 'Answered'
+          } else if (existing && existing.status_update) {
+            statusVal = existing.status_update
           }
 
           // Convert Excel date serial numbers (like 46189) to readable strings if necessary
@@ -99,7 +102,8 @@ export default function ExcelUpload({ onUploadSuccess }) {
             call_duration: row['Call Duration'] ? String(row['Call Duration']) : (existing ? existing.call_duration : null),
             follow_up: row['Follow Up'] || (existing ? existing.follow_up : 'No'),
             call_back_date: callBackDate || (existing ? existing.call_back_date : null),
-            call_back_time: row['Time'] ? String(row['Time']) : (existing ? existing.call_back_time : null)
+            call_back_time: row['Time'] ? String(row['Time']) : (existing ? existing.call_back_time : null),
+            notes: rawUpdate || (existing ? existing.notes : null)
           }
         }).filter(row => row && row.phone_number)
 
