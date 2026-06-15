@@ -13,61 +13,61 @@ export default function Dashboard() {
   const [logs, setLogs] = useState([])
   const [dailyData, setDailyData] = useState([])
   const [loading, setLoading] = useState(true)
+  const [logsTab, setLogsTab] = useState('All')
+
+  const fetchDashboardData = async () => {
+    try {
+      const { data: contactsData } = await supabase.from('contacts').select('id')
+      const { data: leadsData } = await supabase.from('justdial_leads').select('id')
+      const { data: callLogs } = await supabase
+        .from('call_logs')
+        .select('*, contacts(business_name, poc_name), justdial_leads(name, lead_name)')
+        .order('call_date', { ascending: false })
+
+      if (callLogs) {
+        const filteredLogs = callLogs.filter(log => log.phone_number !== '197' && !log.phone_number.endsWith('197'))
+        setLogs(filteredLogs)
+        
+        const total = filteredLogs.length
+        const connected = filteredLogs.filter(l => l.duration_seconds > 0).length
+        const totalDur = filteredLogs.reduce((acc, curr) => acc + curr.duration_seconds, 0)
+        const avg = total > 0 ? Math.round(totalDur / total) : 0
+
+        setStats({
+          totalCalls: total,
+          avgDuration: avg,
+          connectedCount: connected,
+          contactsCount: contactsData ? contactsData.length : 0,
+          leadsCount: leadsData ? leadsData.length : 0
+        })
+
+        // Process daily aggregates for the chart (last 7 days)
+        const daysMap = {}
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date()
+          d.setDate(d.getDate() - i)
+          const dateStr = d.toISOString().split('T')[0]
+          daysMap[dateStr] = { count: 0, duration: 0, date: d.toLocaleDateString(undefined, { weekday: 'short' }) }
+        }
+
+        filteredLogs.forEach(log => {
+          const dateStr = log.call_date.split('T')[0]
+          if (daysMap[dateStr]) {
+            daysMap[dateStr].count += 1
+            daysMap[dateStr].duration += log.duration_seconds
+          }
+        })
+
+        setDailyData(Object.values(daysMap))
+      }
+    } catch (err) {
+      console.error('Error fetching dashboard stats:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      setLoading(true)
-      try {
-        const { data: contactsData } = await supabase.from('contacts').select('id')
-        const { data: leadsData } = await supabase.from('justdial_leads').select('id')
-        const { data: callLogs } = await supabase
-          .from('call_logs')
-          .select('*, contacts(business_name, poc_name), justdial_leads(name, lead_name)')
-          .order('call_date', { ascending: false })
-
-        if (callLogs) {
-          const filteredLogs = callLogs.filter(log => log.phone_number !== '197' && !log.phone_number.endsWith('197'))
-          setLogs(filteredLogs)
-          
-          const total = filteredLogs.length
-          const connected = filteredLogs.filter(l => l.duration_seconds > 0).length
-          const totalDur = filteredLogs.reduce((acc, curr) => acc + curr.duration_seconds, 0)
-          const avg = total > 0 ? Math.round(totalDur / total) : 0
-
-          setStats({
-            totalCalls: total,
-            avgDuration: avg,
-            connectedCount: connected,
-            contactsCount: contactsData ? contactsData.length : 0,
-            leadsCount: leadsData ? leadsData.length : 0
-          })
-
-          // Process daily aggregates for the chart (last 7 days)
-          const daysMap = {}
-          for (let i = 6; i >= 0; i--) {
-            const d = new Date()
-            d.setDate(d.getDate() - i)
-            const dateStr = d.toISOString().split('T')[0]
-            daysMap[dateStr] = { count: 0, duration: 0, date: d.toLocaleDateString(undefined, { weekday: 'short' }) }
-          }
-
-          filteredLogs.forEach(log => {
-            const dateStr = log.call_date.split('T')[0]
-            if (daysMap[dateStr]) {
-              daysMap[dateStr].count += 1
-              daysMap[dateStr].duration += log.duration_seconds
-            }
-          })
-
-          setDailyData(Object.values(daysMap))
-        }
-      } catch (err) {
-        console.error('Error fetching dashboard stats:', err)
-      } finally {
-        setLoading(false)
-      }
-    }
-
     fetchDashboardData()
 
     // Realtime subscription for metrics sync
@@ -78,7 +78,7 @@ export default function Dashboard() {
       .subscribe()
 
     return () => { supabase.removeChannel(logSub) }
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) {
     return (
@@ -90,6 +90,14 @@ export default function Dashboard() {
 
   // Calculate chart parameters
   const maxCallCount = Math.max(...dailyData.map(d => d.count), 5)
+
+  // Filter logs based on tab selection
+  const visibleLogs = logs.filter(log => {
+    if (logsTab === 'All') return true
+    if (logsTab === 'Cold Calling') return log.platform === 'cold_call'
+    if (logsTab === 'Justdial Leads') return log.platform === 'justdial'
+    return true
+  })
 
   return (
     <div style={{ padding: '30px', overflowY: 'auto', height: '100%', display: 'flex', flexDirection: 'column', gap: '30px' }}>
@@ -106,7 +114,7 @@ export default function Dashboard() {
           { title: 'Total Outbound Calls', val: stats.totalCalls, icon: <Phone size={20} color="var(--accent)" />, desc: 'Dial attempts recorded' },
           { title: 'Connection Rate', val: `${stats.totalCalls > 0 ? Math.round((stats.connectedCount / stats.totalCalls) * 100) : 0}%`, icon: <CheckCircle2 size={20} color="#10b981" />, desc: `${stats.connectedCount} answered calls` },
           { title: 'Avg Call Duration', val: `${stats.avgDuration}s`, icon: <Clock size={20} color="#f59e0b" />, desc: 'Seconds per attempt' },
-          { title: 'Database Records', val: stats.contactsCount + stats.leadsCount, icon: <Database size={20} color="var(--accent)" />, desc: `${stats.contactsCount} Excel | ${stats.leadsCount} Justdial` }
+          { title: 'Database Records', val: stats.contactsCount + stats.leadsCount, icon: <Database size={20} color="var(--accent)" />, desc: `${stats.contactsCount} Cold | ${stats.leadsCount} Justdial` }
         ].map((c, i) => (
           <div key={i} style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -128,7 +136,8 @@ export default function Dashboard() {
             {dailyData.map((d, i) => {
               const pct = (d.count / maxCallCount) * 100
               return (
-                <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', flexGrow: 1 }}>
+                <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flexGrow: 1 }}>
+                  <span style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text)' }}>{d.count}</span>
                   <div style={{ position: 'relative', width: '28px', height: '100px', background: 'var(--bg-input)', borderRadius: '4px', overflow: 'hidden' }}>
                     <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: `${pct}%`, background: 'var(--accent)', transition: 'height 0.4s ease' }} />
                   </div>
@@ -141,13 +150,14 @@ export default function Dashboard() {
 
         {/* Avg Duration Trend SVG Chart */}
         <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
-          <h3 style={{ margin: '0 0 20px 0', fontSize: '15px', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '8px' }}><TrendingUp size={18} color="#f59e0b" /> Daily Duration Load (seconds)</h3>
+          <h3 style={{ margin: '0 0 20px 0', fontSize: '15px', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '8px' }}><TrendingUp size={18} color="#f59e0b" /> Daily Duration Load</h3>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'end', height: '140px', padding: '0 10px' }}>
             {dailyData.map((d, i) => {
               const maxDuration = Math.max(...dailyData.map(dd => dd.duration), 60)
               const pct = (d.duration / maxDuration) * 100
               return (
-                <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', flexGrow: 1 }}>
+                <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flexGrow: 1 }}>
+                  <span style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text)' }}>{d.duration}s</span>
                   <div style={{ position: 'relative', width: '28px', height: '100px', background: 'var(--bg-input)', borderRadius: '4px', overflow: 'hidden' }}>
                     <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: `${pct}%`, background: '#f59e0b', transition: 'height 0.4s ease' }} />
                   </div>
@@ -161,24 +171,50 @@ export default function Dashboard() {
 
       {/* Call History Logs Table */}
       <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px', flexGrow: 1, display: 'flex', flexDirection: 'column', minHeight: '300px' }}>
-        <h3 style={{ margin: '0 0 15px 0', fontSize: '15px', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '8px' }}><List size={18} color="var(--accent)" /> Detailed Outbound Logs</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '0 0 15px 0', flexWrap: 'wrap', gap: '10px' }}>
+          <h3 style={{ margin: 0, fontSize: '15px', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '8px' }}><List size={18} color="var(--accent)" /> Detailed Outbound Logs</h3>
+          
+          {/* Tabs to bifurcate logs */}
+          <div style={{ display: 'flex', gap: '4px', background: 'var(--bg-input)', padding: '2px', borderRadius: '8px' }}>
+            {['All', 'Cold Calling', 'Justdial Leads'].map(tab => (
+              <button 
+                key={tab} 
+                onClick={() => setLogsTab(tab)} 
+                style={{ 
+                  border: 'none', 
+                  background: logsTab === tab ? 'var(--bg-panel)' : 'transparent', 
+                  color: logsTab === tab ? 'var(--accent)' : 'var(--text-muted)', 
+                  padding: '6px 12px', 
+                  borderRadius: '6px', 
+                  fontSize: '11.5px', 
+                  fontWeight: 'bold', 
+                  cursor: 'pointer',
+                  transition: 'all 0.15s'
+                }}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div style={{ overflowX: 'auto', flexGrow: 1 }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-muted)' }}>
                 <th style={{ padding: '10px' }}>Contact / Business</th>
                 <th style={{ padding: '10px' }}>Phone Number</th>
-                <th style={{ padding: '10px' }}>Platform</th>
+                <th style={{ padding: '10px' }}>Lead</th>
                 <th style={{ padding: '10px' }}>Call Timestamp</th>
                 <th style={{ padding: '10px' }}>Duration</th>
                 <th style={{ padding: '10px' }}>Status</th>
               </tr>
             </thead>
             <tbody>
-              {logs.length > 0 ? (
-                logs.slice(0, 10).map((log, index) => {
-                  const targetName = log.platform === 'excel' 
-                    ? (log.contacts?.business_name || log.contacts?.poc_name || 'Excel Contact')
+              {visibleLogs.length > 0 ? (
+                visibleLogs.slice(0, 15).map((log, index) => {
+                  const targetName = log.platform === 'cold_call' 
+                    ? (log.contacts?.business_name || log.contacts?.poc_name || 'Cold Call Contact')
                     : (log.justdial_leads?.lead_name || log.justdial_leads?.name || 'Justdial Lead')
                   
                   return (
@@ -186,8 +222,8 @@ export default function Dashboard() {
                       <td style={{ padding: '12px 10px', fontWeight: '500' }}>{targetName}</td>
                       <td style={{ padding: '12px 10px' }}>{log.phone_number}</td>
                       <td style={{ padding: '12px 10px' }}>
-                        <span style={{ padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold', background: log.platform === 'excel' ? 'rgba(0, 255, 204, 0.15)' : 'rgba(245, 158, 11, 0.15)', color: log.platform === 'excel' ? 'var(--accent)' : '#f59e0b' }}>
-                          {log.platform.toUpperCase()}
+                        <span style={{ padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold', background: log.platform === 'cold_call' ? 'rgba(0, 255, 204, 0.15)' : 'rgba(245, 158, 11, 0.15)', color: log.platform === 'cold_call' ? 'var(--accent)' : '#f59e0b' }}>
+                          {log.platform === 'cold_call' ? 'Cold Call' : 'Justdial'}
                         </span>
                       </td>
                       <td style={{ padding: '12px 10px', color: 'var(--text-muted)' }}>{new Date(log.call_date).toLocaleString()}</td>
