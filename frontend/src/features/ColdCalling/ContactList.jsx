@@ -11,19 +11,20 @@ export default function ContactList({
   setActiveTab,
   handleStartNewContact
 }) {
-  // Filter contacts based on search and active tab
-  const filteredContacts = contacts.filter(c => {
+  // Filter contacts based on search
+  const searchFilteredContacts = contacts.filter(c => {
     const biz = c.business_name || ''
     const num = c.phone_number || ''
     const poc = c.poc_name || ''
     
     // Fuzzy match on business name, phone number, or POC name
-    const matchSearch = fuzzyMatch(biz, search) || 
-                        num.includes(search) || 
-                        fuzzyMatch(poc, search)
-    
-    if (!matchSearch) return false
-    
+    return fuzzyMatch(biz, search) || 
+           num.includes(search) || 
+           fuzzyMatch(poc, search)
+  })
+
+  // Filter contacts based on active tab
+  const filteredContacts = searchFilteredContacts.filter(c => {
     if (activeTab === 'All') return true
     if (activeTab === 'Follow Up') return c.follow_up === 'Yes'
     if (activeTab === 'Unresponsive') {
@@ -35,6 +36,19 @@ export default function ContactList({
     if (activeTab === 'Not Called') return c.status_update === 'Not Called'
     return true
   })
+
+  // Compute count for each subcategory tab dynamically
+  const tabCounts = {
+    'All': searchFilteredContacts.length,
+    'Follow Up': searchFilteredContacts.filter(c => c.follow_up === 'Yes').length,
+    'Unresponsive': searchFilteredContacts.filter(c => {
+      const status = String(c.status_update).toLowerCase()
+      return status.includes('unresponsive') || status.includes('busy') || status.includes('unanswered')
+    }).length,
+    'Called': searchFilteredContacts.filter(c => c.status_update !== 'Not Called').length,
+    'Answered': searchFilteredContacts.filter(c => c.status_update === 'Answered').length,
+    'Not Called': searchFilteredContacts.filter(c => c.status_update === 'Not Called').length
+  }
 
   // Sort contacts: Alphabetical for "All" tab, descending by last_call_at for other tabs
   const sortedContacts = [...filteredContacts].sort((a, b) => {
@@ -80,7 +94,7 @@ export default function ContactList({
             onClick={() => setActiveTab(tab)} 
             style={{ flexGrow: 1, flexBasis: '30%', border: 'none', background: activeTab === tab ? 'var(--bg-panel)' : 'transparent', color: activeTab === tab ? 'var(--accent)' : 'var(--text-muted)', padding: '8px 0', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', borderBottom: activeTab === tab ? '2px solid var(--accent)' : 'none' }}
           >
-            {tab === 'Unresponsive' ? 'Missed' : tab}
+            {tab === 'Unresponsive' ? 'Missed' : tab} ({tabCounts[tab]})
           </button>
         ))}
       </div>
