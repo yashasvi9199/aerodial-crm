@@ -116,127 +116,173 @@ def main():
                         'adb_status': 'connected' if success else 'disconnected'
                     }).eq('id', 1).execute()
                 
-                if state['command'] == 'hangup':
+                if state['command'] == 'hangup' and is_connected:
                     print("[*] Remote Command Received: HANGUP ALL ACTIVE CALLS...")
                     for d in devices:
                         run_cmd(f"adb -s {d} shell \"su -c 'input keyevent 6'\"")
                     supabase.table('system_state').update({'command': 'idle'}).eq('id', 1).execute()
 
-            # 3. CHECK FOR CALLS
-            call_res = supabase.table('call_queue').select('*').eq('status', 'dialing').limit(1).execute()
-            if call_res.data:
-                call_task = call_res.data[0]
-                
-                if is_connected:
-                    device = devices[0]
+            # 3. CHECK PHONE CALL STATE (MONITOR OUTGOING & INCOMING CALLS)
+            if is_connected:
+                device = devices[0]
+                state = get_call_state(device)
+                if state != 0:
+                    print(f"\n[*] Active call state detected: {state}. Measuring duration...")
+                    start_time_ms = int(time.time() * 1000)
+                    start_time_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+                    call_start_time = time.time()
+                    
+                    # Wait for call to terminate
+                    while get_call_state(device) != 0:
+                        time.sleep(1)
+                        
+                    call_end_time = time.time()
+                    duration = int(call_end_time - call_start_time)
+                    print(f"[*] Call ended. Local duration: {duration}s. Waiting for log database...")
+                    time.sleep(2) # let the device write log
+                    
+                    # Revert voice call SIM setting in case it was modified
+                    run_cmd(f"adb -s {device} shell \"su -c 'telecom set-user-selected-outgoing-phone-account'\"")
+                    
+                    # Fetch last log entry from phone
+                    latest_log = None
+                    try:
+                        cmd = f"adb -s {device} shell \"su -c 'content query --uri content://call_log/calls --projection date:duration:number:type --sort \\'date DESC\\' LIMIT 1'\""
+                        out = run_cmd(cmd)
+                        if out and "number=" in out:
+                            date_match = re.search(r'date=(\d+)', out)
+                            dur_match = re.search(r'duration=(\d+)', out)
+                            num_match = re.search(r'number=([+\d#*]+)', out)
+                            type_match = re.search(r'type=(\d+)', out)
+                            if date_match and num_match and type_match:
+                                latest_log = {
+                                    'date': int(date_match.group(1)),
+                                    'duration': int(dur_match.group(1)) if dur_match else 0,
+                                    'number': num_match.group(1),
+                                    'type': int(type_match.group(1))
+                                }
+                    except Exception as ex:
+                        print(f"⚠️ Error reading Android call logs: {ex}")
+                        
+                    # Process call log
+                    raw_number = None
+                    call_type = 'outgoing'
+                    
+                    # Verify if call log belongs to the call that just ended (last 45s window)
+                    if latest_log and latest_log['date'] >= (start_time_ms - 45000):
+                        raw_number = latest_log['number']
+                        call_type = 'incoming' if latest_log['type'] == 1 else 'outgoing'
+                    else:
+                        print("⚠️ Could not match Android call log within timeframe. Checking active queue...")
+                        
+                    # Fallback to current queue entry if outbound call log matching failed
+                    if not raw_number:
+                        queue_res = supabase.table('call_queue').select('*').in_('status', ['dialing', 'call_active']).limit(1).execute()
+                        if queue_res.data:
+                            raw_number = queue_res.data[0]['number']
+                            
+                    if raw_number:
+                        clean_num = str(raw_number).replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
+                        if len(clean_num) == 10:
+                            clean_num = "+91" + clean_num
+                        elif len(clean_num) == 12 and clean_num.startswith("91"):
+                            clean_num = "+" + clean_num
+                            
+                        last_10 = clean_num[-10:]
+                        contact_id = None
+                        jd_lead_id = None
+                        platform = "justdial"
+                        
+                        # Match contact/lead by number
+                        contact_res = supabase.table('contacts').select('*').like('phone_number', f'%{last_10}').execute()
+                        if contact_res.data:
+                            contact = contact_res.data[0]
+                            contact_id = contact['id']
+                            platform = "cold_call"
+                            curr_count = contact.get('call_count', 0) or 0
+                            
+                            status_update = "Answered" if duration > 0 else "Unanswered"
+                            supabase.table('contacts').update({
+                                'last_call_at': start_time_iso,
+                                'call_duration': f"{duration}s",
+                                'status_update': status_update,
+                                'call_count': curr_count + 1
+                            }).eq('id', contact_id).execute()
+                        else:
+                            jd_res = supabase.table('justdial_leads').select('*').like('phone', f'%{last_10}').execute()
+                            if jd_res.data:
+                                lead = jd_res.data[0]
+                                jd_lead_id = lead['id']
+                                platform = "justdial"
+                                curr_count = lead.get('call_count', 0) or 0
+                                
+                                contacted_status = "Yes" if duration > 0 else "No"
+                                contact_state_val = "Answered" if duration > 0 else "Unanswered"
+                                supabase.table('justdial_leads').update({
+                                    'contacted': contacted_status,
+                                    'contact_state': contact_state_val,
+                                    'updated_at': start_time_iso,
+                                    'call_count': curr_count + 1
+                                }).eq('id', jd_lead_id).execute()
+                                
+                        # Log call in database
+                        status_log = "Answered" if duration > 0 else "Unanswered"
+                        supabase.table('call_logs').insert({
+                            'phone_number': clean_num,
+                            'duration_seconds': duration,
+                            'status': status_log,
+                            'call_date': start_time_iso,
+                            'call_type': call_type,
+                            'platform': platform,
+                            'contact_id': contact_id,
+                            'justdial_lead_id': jd_lead_id
+                        }).execute()
+                        
+                        # Set active queue items to completed
+                        supabase.table('call_queue').update({'status': 'completed'}).in_('status', ['dialing', 'call_active']).execute()
+                        print(f"✅ Call logged: {clean_num} ({call_type}, {duration}s)")
+                    else:
+                        print("⚠️ Call ended but no matched phone number could be determined.")
+                        # Force close active dialing tasks if any
+                        supabase.table('call_queue').update({'status': 'failed_unknown'}).in_('status', ['dialing', 'call_active']).execute()
+
+            # 4. PROCESS DIALING IN QUEUE (IF DEVICE IS CONNECTED & NOT ACTIVE)
+            if is_connected and get_call_state(device) == 0:
+                call_res = supabase.table('call_queue').select('*').eq('status', 'dialing').limit(1).execute()
+                if call_res.data:
+                    call_task = call_res.data[0]
                     number = call_task['number']
-                    print(f"[*] Placed Call Command Received: {number}")
+                    print(f"[*] Placing outgoing call from queue: {number}")
                     
                     # Update status to active
                     supabase.table('call_queue').update({'status': 'call_active'}).eq('id', call_task['id']).execute()
                     
-                    # Resolve Airtel sub_id
+                    # Set default SIM 2 (Airtel) outgoing
                     airtel_sub = get_airtel_sub_id(device)
                     print(f"[*] Setting Airtel Default (Sub ID: {airtel_sub})...")
                     comp = "com.android.phone/com.android.services.telephony.TelephonyConnectionService"
                     run_cmd(f"adb -s {device} shell \"su -c 'telecom set-user-selected-outgoing-phone-account {comp} {airtel_sub} 0'\"")
                     
-                    # Dial
+                    # Clean/normalize number for dialing
                     clean_num = str(number).replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
                     if len(clean_num) == 10:
                         clean_num = "+91" + clean_num
                     elif len(clean_num) == 12 and clean_num.startswith("91"):
                         clean_num = "+" + clean_num
-                    
-                    start_time_ms = int(time.time() * 1000)
-                    start_time_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
-                    
-                    print(f"[*] Dialing: {clean_num}...")
-                    run_cmd(f"adb -s {device} shell \"su -c 'am start -a android.intent.action.CALL -d tel:{clean_num}'\"")
-                    
-                    # Wait for call to start, then monitor state transitions
-                    time.sleep(2)
-                    
-                    call_active = True
-                    elapsed = 0
-                    while call_active and elapsed < 600:
-                        state = get_call_state(device)
-                        if state == 0:
-                            call_active = False
-                        else:
-                            time.sleep(2)
-                            elapsed += 2
-                            
-                    print("[*] Call ended. Restoring SIM settings and fetching logs...")
-                    time.sleep(2) # Allow call logs database write
-                    
-                    # Revert voice call SIM to 'Ask every time'
-                    run_cmd(f"adb -s {device} shell \"su -c 'telecom set-user-selected-outgoing-phone-account'\"")
-                    
-                    # Fetch call logs duration
-                    duration = get_last_outgoing_call_duration(device, clean_num, start_time_ms)
-                    if duration is None:
-                        duration = 0 # Default if query fails
-                    
-                    print(f"[+] Call completed. Actual duration: {duration}s")
-                    
-                    # Match contact/lead by last 10 digits
-                    last_10 = clean_num[-10:]
-                    contact_id = None
-                    jd_lead_id = None
-                    platform = "justdial"
-                    
-                    contact_res = supabase.table('contacts').select('*').like('phone_number', f'%{last_10}').execute()
-                    if contact_res.data:
-                        contact = contact_res.data[0]
-                        contact_id = contact['id']
-                        platform = "excel"
                         
-                        status_update = "Answered" if duration > 0 else "Unanswered"
-                        supabase.table('contacts').update({
-                            'last_call_at': start_time_iso,
-                            'call_duration': f"{duration}s",
-                            'status_update': status_update
-                        }).eq('id', contact_id).execute()
-                    else:
-                        jd_res = supabase.table('justdial_leads').select('*').like('phone', f'%{last_10}').execute()
-                        if jd_res.data:
-                            lead = jd_res.data[0]
-                            jd_lead_id = lead['id']
-                            
-                            contacted_status = "Yes" if duration > 0 else "No"
-                            contact_state_val = "Answered" if duration > 0 else "Unanswered"
-                            supabase.table('justdial_leads').update({
-                                'contacted': contacted_status,
-                                'contact_state': contact_state_val,
-                                'updated_at': start_time_iso
-                            }).eq('id', jd_lead_id).execute()
+                    # Trigger dial intent
+                    run_cmd(f"adb -s {device} shell \"su -c 'am start -a android.intent.action.CALL -d tel:{clean_num}'\"")
+                    time.sleep(3) # allow dialer to load and state to transition
                     
-                    # Log the call attempt
-                    status_log = "Answered" if duration > 0 else "Unanswered"
-                    supabase.table('call_logs').insert({
-                        'phone_number': clean_num,
-                        'duration_seconds': duration,
-                        'status': status_log,
-                        'call_date': start_time_iso,
-                        'call_type': 'outgoing',
-                        'platform': platform,
-                        'contact_id': contact_id,
-                        'justdial_lead_id': jd_lead_id
-                    }).execute()
-                    
-                    # Transition call task status in queue to completed
-                    supabase.table('call_queue').update({'status': 'completed'}).eq('id', call_task['id']).execute()
-                    
-                else:
-                    print("⚠️ Missed Call Trigger: Phone is disconnected!")
-                    supabase.table('call_queue').update({'status': 'failed_no_connection'}).eq('id', call_task['id']).execute()
+            elif not is_connected:
+                # If dialing is pending but no connection
+                supabase.table('call_queue').update({'status': 'failed_no_connection'}).eq('status', 'dialing').execute()
 
-            time.sleep(2)
+            time.sleep(1)
 
         except Exception as e:
-            print(f"⚠️ Network/DB Error: {e}")
-            time.sleep(5)
+            print(f"⚠️ Network/DB Error in main loop: {e}")
+            time.sleep(4)
 
 if __name__ == "__main__":
     main()
