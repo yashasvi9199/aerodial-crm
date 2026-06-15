@@ -46,22 +46,28 @@ export default function ColdCalling() {
     setIsAdding(true)
   }
 
-  const fetchContacts = async () => {
+  const fetchContacts = async (contactIdToKeep = null) => {
     const { data } = await supabase.from('contacts').select('*').order('id', { ascending: true })
     if (data) {
       setContacts(data)
-      if (data.length > 0) {
-        selectContact(data[0])
-      } else {
-        setSelectedContact(null)
-        setIsAdding(true)
+      const targetId = contactIdToKeep || selectedContact?.id
+      if (targetId) {
+        const found = data.find(c => c.id === targetId)
+        if (found) selectContact(found)
       }
     }
   }
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    fetchContacts()
+    // Initial load, do not auto select
+    const loadInitial = async () => {
+      const { data } = await supabase.from('contacts').select('*').order('id', { ascending: true })
+      if (data) {
+        setContacts(data)
+      }
+    }
+    loadInitial()
     
     // Realtime listener
     const channel = supabase.channel('contacts_sync')
@@ -140,7 +146,16 @@ export default function ColdCalling() {
 
       alert('New contact created and call logged!')
       setIsAdding(false)
-      fetchContacts()
+      setSelectedContact(null)
+      setBusinessName('')
+      setPhoneNumber('')
+      setPocName('')
+      setProfession('')
+      setLocationCity('')
+      setStatusUpdate('Answered')
+      setFollowUp('No')
+      setNotes('')
+      fetchContacts(null)
     } else {
       if (!selectedContact) return
       
