@@ -212,6 +212,22 @@ export default function JustdialLeads() {
     }
   }
 
+  const handleReset = () => {
+    if (isAdding) {
+      setName('')
+      setLeadName('')
+      setPhone('')
+      setProfession('Consumer')
+      setLocation('')
+      setNotes('')
+      setFollowUp('No')
+      setStatusUpdate('Answered')
+      setLeadQuality('Correct Lead')
+    } else if (selectedLead) {
+      selectLead(selectedLead)
+    }
+  }
+
   const filteredLeads = leads.filter(l => {
     const query = search.toLowerCase()
     const matchSearch = (l.name || '').toLowerCase().includes(query) || 
@@ -325,6 +341,7 @@ export default function JustdialLeads() {
               notes={notes}
               setNotes={setNotes}
               handleSave={handleSave}
+              handleReset={handleReset}
             />
 
           </div>
