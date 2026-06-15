@@ -184,7 +184,7 @@ def main():
                     last_10 = clean_num[-10:]
                     contact_id = None
                     jd_lead_id = None
-                    platform = "excel"
+                    platform = "justdial"
                     
                     contact_res = supabase.table('contacts').select('*').like('phone_number', f'%{last_10}').execute()
                     if contact_res.data:
@@ -203,11 +203,12 @@ def main():
                         if jd_res.data:
                             lead = jd_res.data[0]
                             jd_lead_id = lead['id']
-                            platform = "justdial"
                             
                             contacted_status = "Yes" if duration > 0 else "No"
+                            contact_state_val = "Answered" if duration > 0 else "Unanswered"
                             supabase.table('justdial_leads').update({
                                 'contacted': contacted_status,
+                                'contact_state': contact_state_val,
                                 'updated_at': start_time_iso
                             }).eq('id', jd_lead_id).execute()
                     
