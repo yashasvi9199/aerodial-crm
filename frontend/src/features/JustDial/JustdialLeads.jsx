@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { Phone, PhoneOff, RotateCcw, Search, Plus } from 'lucide-react'
+import { Phone, PhoneOff, RotateCcw } from 'lucide-react'
+import LeadList from './LeadList'
 import LeadForm from './LeadForm'
 
 export default function JustdialLeads() {
@@ -58,7 +59,7 @@ export default function JustdialLeads() {
   }
 
   const fetchLeads = async (leadIdToKeep = null) => {
-    const { data } = await supabase.from('justdial_leads').select('*').order('id', { ascending: true })
+    const { data } = await supabase.from('justdial_leads').select('*')
     if (data) {
       setLeads(data)
       const targetId = leadIdToKeep || selectedLead?.id
@@ -69,11 +70,10 @@ export default function JustdialLeads() {
     }
   }
 
-  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    // Initial load, do not auto select
+    // Initial load, do not auto select any lead
     const loadInitial = async () => {
-      const { data } = await supabase.from('justdial_leads').select('*').order('id', { ascending: true })
+      const { data } = await supabase.from('justdial_leads').select('*')
       if (data) {
         setLeads(data)
       }
@@ -87,7 +87,6 @@ export default function JustdialLeads() {
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleDial = async (num) => {
     if (!num) return
@@ -147,8 +146,6 @@ export default function JustdialLeads() {
       updated_at: new Date().toISOString()
     }
 
-    let leadId = selectedLead?.id
-
     if (selectedLead) {
       const { error } = await supabase
         .from('justdial_leads')
@@ -158,6 +155,8 @@ export default function JustdialLeads() {
         alert(`Update Error: ${error.message}`)
         return
       }
+      alert('Lead details updated successfully!')
+      fetchLeads(selectedLead.id)
     } else {
       // Check if lead with this phone already exists
       const { data: existing } = await supabase
@@ -175,40 +174,31 @@ export default function JustdialLeads() {
           alert(`Update Error: ${error.message}`)
           return
         }
-        leadId = existing.id
+        alert('Lead details updated for existing number!')
       } else {
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from('justdial_leads')
           .insert([payload])
-          .select()
         if (error) {
           alert(`Create Error: ${error.message}`)
           return
         }
-        if (data && data.length > 0) {
-          leadId = data[0].id
-        }
+        alert('New lead created successfully!')
       }
-    }
 
-    await supabase.from('call_logs').insert({
-      phone_number: formattedPhone,
-      duration_seconds: 0,
-      status: statusUpdate,
-      call_date: new Date().toISOString(),
-      call_type: 'outgoing',
-      platform: 'justdial',
-      justdial_lead_id: leadId
-    })
-
-    alert(selectedLead ? 'Lead details and call status updated!' : 'New lead created and call logged!')
-    
-    if (!selectedLead) {
-      handleStartNewLead()
+      // Clear fields and deselect
+      setName('')
+      setLeadName('')
+      setPhone('')
+      setProfession('Consumer')
+      setLocation('')
+      setNotes('')
+      setFollowUp('No')
+      setStatusUpdate('Answered')
+      setLeadQuality('Correct Lead')
       setIsAdding(false)
+      setSelectedLead(null)
       fetchLeads(null)
-    } else {
-      fetchLeads(selectedLead.id)
     }
   }
 
@@ -228,66 +218,19 @@ export default function JustdialLeads() {
     }
   }
 
-  const filteredLeads = leads.filter(l => {
-    const query = search.toLowerCase()
-    const matchSearch = (l.name || '').toLowerCase().includes(query) || 
-                        (l.lead_name || '').toLowerCase().includes(query) || 
-                        (l.phone || '').includes(query)
-    if (!matchSearch) return false
-    if (activeTab === 'All') return true
-    if (activeTab === 'Follow Up') return l.follow_up === 'Yes'
-    if (activeTab === 'Invalid Leads') return l.lead_quality === 'Incorrect Lead'
-    if (activeTab === 'Correct Leads') return l.lead_quality === 'Correct Lead' || !l.lead_quality || l.lead_quality === 'Correct'
-    return true
-  })
-
   return (
     <div style={{ display: 'flex', flexGrow: 1, overflow: 'hidden', height: '100%' }}>
       {/* Side Leads list */}
-      <div style={{ width: '340px', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', background: 'var(--bg-panel)' }}>
-        <div style={{ padding: '15px', display: 'flex', gap: '8px', borderBottom: '1px solid var(--border)' }}>
-          <div style={{ position: 'relative', flexGrow: 1 }}>
-            <Search size={16} style={{ position: 'absolute', left: '10px', top: '12px', color: 'var(--text-muted)' }} />
-            <input type="text" placeholder="Search leads..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '8px 10px 8px 32px', borderRadius: '6px', fontSize: '13px' }} />
-          </div>
-          <button onClick={handleStartNewLead} style={{ background: 'var(--accent)', border: 'none', color: '#000', padding: '8px 12px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Add new lead">
-            <Plus size={16} />
-          </button>
-        </div>
-
-        <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', background: 'var(--bg-input)' }}>
-          {['All', 'Follow Up', 'Invalid Leads', 'Correct Leads'].map(tab => (
-            <button key={tab} onClick={() => setActiveTab(tab)} style={{ flexGrow: 1, border: 'none', background: activeTab === tab ? 'var(--bg-panel)' : 'transparent', color: activeTab === tab ? 'var(--accent)' : 'var(--text-muted)', padding: '10px 0', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', borderBottom: activeTab === tab ? '2px solid var(--accent)' : 'none' }}>
-              {tab}
-            </button>
-          ))}
-        </div>
-
-        <div style={{ flexGrow: 1, overflowY: 'auto', padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {filteredLeads.length > 0 ? (
-            filteredLeads.map(l => {
-              const stateVal = l.contact_state || (l.contacted === 'Yes' ? 'Answered' : 'Unanswered')
-              let badgeColor = '#f59e0b' // Busy
-              if (stateVal === 'Answered') badgeColor = '#10b981'
-              if (stateVal === 'Unanswered') badgeColor = '#ef4444'
-
-              return (
-                <div key={l.id} onClick={() => selectLead(l)} style={{ padding: '12px', background: selectedLead?.id === l.id ? 'var(--bg-selected)' : 'transparent', border: `1px solid ${selectedLead?.id === l.id ? 'var(--accent)' : 'var(--border)'}`, borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s ease' }}>
-                  <div style={{ fontWeight: '600', fontSize: '13.5px', color: 'var(--text)', marginBottom: '4px' }}>{l.name} <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>({l.lead_name || 'No Brand'})</span></div>
-                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span>{l.phone}</span>
-                    <span style={{ fontSize: '10.5px', padding: '1px 6px', borderRadius: '4px', background: 'var(--bg-input)', color: badgeColor, fontWeight: 'bold' }}>
-                      {stateVal}
-                    </span>
-                  </div>
-                </div>
-              )
-            })
-          ) : (
-            <div style={{ padding: '20px', color: 'var(--text-muted)', textAlign: 'center', fontSize: '13px' }}>No Justdial leads found.</div>
-          )}
-        </div>
-      </div>
+      <LeadList
+        leads={leads}
+        selectedLead={selectedLead}
+        selectLead={selectLead}
+        search={search}
+        setSearch={setSearch}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        handleStartNewLead={handleStartNewLead}
+      />
 
       {/* Main Viewport */}
       <div style={{ flexGrow: 1, padding: '30px', overflowY: 'auto', background: 'var(--bg-dark)' }}>
