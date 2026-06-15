@@ -26,11 +26,12 @@ export default function Dashboard() {
           .order('call_date', { ascending: false })
 
         if (callLogs) {
-          setLogs(callLogs)
+          const filteredLogs = callLogs.filter(log => log.phone_number !== '197' && !log.phone_number.endsWith('197'))
+          setLogs(filteredLogs)
           
-          const total = callLogs.length
-          const connected = callLogs.filter(l => l.duration_seconds > 0).length
-          const totalDur = callLogs.reduce((acc, curr) => acc + curr.duration_seconds, 0)
+          const total = filteredLogs.length
+          const connected = filteredLogs.filter(l => l.duration_seconds > 0).length
+          const totalDur = filteredLogs.reduce((acc, curr) => acc + curr.duration_seconds, 0)
           const avg = total > 0 ? Math.round(totalDur / total) : 0
 
           setStats({
@@ -50,7 +51,7 @@ export default function Dashboard() {
             daysMap[dateStr] = { count: 0, duration: 0, date: d.toLocaleDateString(undefined, { weekday: 'short' }) }
           }
 
-          callLogs.forEach(log => {
+          filteredLogs.forEach(log => {
             const dateStr = log.call_date.split('T')[0]
             if (daysMap[dateStr]) {
               daysMap[dateStr].count += 1
