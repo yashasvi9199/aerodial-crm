@@ -11,25 +11,34 @@ export default function LeadList({
   setActiveTab,
   handleStartNewLead
 }) {
-  // Filter leads based on search and active tab
-  const filteredLeads = leads.filter(l => {
+  // Filter leads based on search
+  const searchFilteredLeads = leads.filter(l => {
     const query = search.toLowerCase()
     const name = l.name || ''
     const leadName = l.lead_name || ''
     const phone = l.phone || ''
     
-    const matchSearch = fuzzyMatch(name, query) || 
-                        fuzzyMatch(leadName, query) || 
-                        phone.includes(query)
-                        
-    if (!matchSearch) return false
-    
+    return fuzzyMatch(name, query) || 
+           fuzzyMatch(leadName, query) || 
+           phone.includes(query)
+  })
+
+  // Filter leads based on active tab
+  const filteredLeads = searchFilteredLeads.filter(l => {
     if (activeTab === 'All') return true
     if (activeTab === 'Follow Up') return l.follow_up === 'Yes'
     if (activeTab === 'Invalid Leads') return l.lead_quality === 'Incorrect Lead'
     if (activeTab === 'Correct Leads') return l.lead_quality === 'Correct Lead' || !l.lead_quality || l.lead_quality === 'Correct'
     return true
   })
+
+  // Compute count for each subcategory tab dynamically
+  const tabCounts = {
+    'All': searchFilteredLeads.length,
+    'Follow Up': searchFilteredLeads.filter(l => l.follow_up === 'Yes').length,
+    'Invalid Leads': searchFilteredLeads.filter(l => l.lead_quality === 'Incorrect Lead').length,
+    'Correct Leads': searchFilteredLeads.filter(l => l.lead_quality === 'Correct Lead' || !l.lead_quality || l.lead_quality === 'Correct').length
+  }
 
   // Sort leads: descending order of time and date (updated_at) in all tabs
   const sortedLeads = [...filteredLeads].sort((a, b) => {
@@ -67,7 +76,7 @@ export default function LeadList({
             onClick={() => setActiveTab(tab)} 
             style={{ flexGrow: 1, border: 'none', background: activeTab === tab ? 'var(--bg-panel)' : 'transparent', color: activeTab === tab ? 'var(--accent)' : 'var(--text-muted)', padding: '10px 0', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', borderBottom: activeTab === tab ? '2px solid var(--accent)' : 'none' }}
           >
-            {tab}
+            {tab} ({tabCounts[tab]})
           </button>
         ))}
       </div>
