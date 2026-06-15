@@ -22,13 +22,9 @@ def run_cmd(command):
     return result.stdout.strip()
 
 def get_connected_devices():
-    devices = []
-    out = run_cmd("adb devices")
-    for line in out.splitlines()[1:]:
-        if line.strip() and ("device" in line) and not ("list of" in line.lower()):
-            parts = line.split()
-            if len(parts) >= 2 and parts[1] == 'device':
-                devices.append(parts[0])
+    lines = run_cmd("adb devices").splitlines()[1:]
+    devices = [l.split()[0] for l in lines if l.strip() and "device" in l and l.split()[1] == "device"]
+    devices.sort(key=lambda d: 0 if ":" in d else 1)
     return devices
 
 def check_adb_status():
@@ -38,15 +34,12 @@ def check_adb_status():
 
 def get_airtel_sub_id(device):
     try:
-        out = run_cmd(f"adb -s {device} shell \"su -c 'content query --uri content://telephony/siminfo --projection _id:display_name:carrier_name'\"")
-        for line in out.splitlines():
-            if "Airtel" in line:
-                match = re.search(r'_id=(\d+)', line)
-                if match:
-                    return int(match.group(1))
+        out = run_cmd(f"adb -s {device} shell \"su -c 'content query --uri content://telephony/siminfo --projection _id:display_name'\"")
+        m = re.search(r'_id=(\d+).*Airtel', out, re.IGNORECASE)
+        if m: return int(m.group(1))
     except Exception as e:
         print(f"⚠️ Error querying Airtel SIM: {e}")
-    return 1 # Fallback to 1 if anything fails
+    return 1
 
 def get_call_state(device):
     out = run_cmd(f"adb -s {device} shell \"dumpsys telephony.registry | grep mCallState\"")
@@ -75,17 +68,18 @@ def get_last_outgoing_call_duration(device, clean_num, start_time_ms):
 
 def perform_usb_sync(device):
     print(f"\n[*] Remote Command Received: EXECUTING USB SYNC on {device}...")
-    ip_out = run_cmd(f"adb -s {device} shell ip addr")
-    matches = re.findall(r'inet\s+(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+)', ip_out)
-    
-    if matches:
-        ip = matches[0]
+    if ":" in device: return True
+    ip_match = re.search(r'inet\s+(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+)', run_cmd(f"adb -s {device} shell ip addr"))
+    if ip_match:
+        ip = ip_match.group(1)
         run_cmd(f"adb -s {device} tcpip 5555")
-        time.sleep(2)
-        connect_out = run_cmd(f"adb connect {ip}:5555")
-        if "connected" in connect_out.lower():
-            print(f"✅ Sync Successful: {ip}")
-            return True
+        time.sleep(3)
+        run_cmd(f"adb disconnect {ip}:5555")
+        for _ in range(2):
+            if "connected" in run_cmd(f"adb connect {ip}:5555").lower():
+                print(f"✅ Sync Successful: {ip}")
+                return True
+            time.sleep(1.5)
     print("❌ Sync Failed. Is USB plugged in?")
     return False
 
