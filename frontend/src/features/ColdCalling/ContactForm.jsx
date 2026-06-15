@@ -63,7 +63,12 @@ export default function ContactForm({
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', borderBottom: '1px solid var(--border)', paddingBottom: '20px' }}>
             <div>
               <h2 style={{ margin: '0 0 6px 0', color: 'var(--text)', fontWeight: '600' }}>{selectedContact.business_name || 'No Identified Title'}</h2>
-              <p style={{ margin: 0, color: 'var(--accent)', fontWeight: '600', fontSize: '18px' }}>{selectedContact.phone_number}</p>
+              <p style={{ margin: 0, color: 'var(--accent)', fontWeight: '600', fontSize: '18px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                {selectedContact.phone_number}
+                <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 'normal', background: 'var(--bg-input)', padding: '2px 8px', borderRadius: '4px', border: '1px solid var(--border)' }}>
+                  Call Attempts: {selectedContact.call_count || 0}
+                </span>
+              </p>
             </div>
             
             {/* Dial Controls */}
@@ -192,7 +197,7 @@ export default function ContactForm({
           onClick={handleUpdate} 
           style={{ background: 'var(--accent)', border: 'none', color: '#000', padding: '12px 20px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '14px', transition: 'opacity 0.2s' }}
         >
-          <Save size={16} /> {isAdding ? 'Save Contact & Log Call' : 'Save Changes & Log Call'}
+          <Save size={16} /> {isAdding ? 'Save Contact' : 'Save Changes'}
         </button>
         <button 
           onClick={handleReset} 
