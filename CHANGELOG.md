@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.0] - 2026-06-15
+### Added
+- Added a **Unified Search** tab ("All Contacts") featuring debounced subsequence fuzzy search and inline-editable cards (Green for Cold Calling, Blue for Justdial Leads).
+- Implemented **History Sync Script** (`scratch/sync_recent_calls.py`) to manually pull the last 15 call logs from Android call logs via ADB and sync call counts, statuses, and durations.
+- Added **Numeric Labels** above SVG bars on both Daily Call Frequency and Daily Duration Load charts on the Dashboard.
+- Bifurcated Outbound Logs on Dashboard into three tabs: **All**, **Cold Calling**, and **Justdial Leads**, mapping `'cold_call'` as platform instead of `'excel'`.
+- Added **Call Attempt Counters** to contacts/leads, incremented strictly during outgoing/incoming call events.
+- Added fields **Reset** button to form panels.
+
+### Fixed
+- Replaced frontend manual call logging with dually-functional ADB state-based daemon tracking (incoming/outgoing) in `listener.py`.
+- Refactored sidebar listings for Cold Calling and Justdial Leads into split files to maintain the < 300 lines codebase limit.
+
 ## [1.3.0] - 2026-06-15
 ### Added
 - Created **Lead Quality** selection dropdown (`Correct Lead` vs. `Invalid Lead`) in Justdial Leads details form.
