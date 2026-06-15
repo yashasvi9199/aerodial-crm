@@ -188,6 +188,21 @@ export default function ColdCalling() {
     }
   }
 
+  const handleReset = () => {
+    if (isAdding) {
+      setBusinessName('')
+      setPhoneNumber('')
+      setPocName('')
+      setProfession('')
+      setLocationCity('')
+      setStatusUpdate('Answered')
+      setFollowUp('No')
+      setNotes('')
+    } else if (selectedContact) {
+      selectContact(selectedContact)
+    }
+  }
+
   // Filter contacts
   const filteredContacts = contacts.filter(c => {
     const query = search.toLowerCase()
@@ -284,6 +299,7 @@ export default function ColdCalling() {
             handleUpdate={handleUpdate}
             handleDial={handleDial}
             handleHangup={handleHangup}
+            handleReset={handleReset}
           />
         ) : (
           <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>
