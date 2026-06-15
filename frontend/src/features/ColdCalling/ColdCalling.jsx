@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { Search, Plus } from 'lucide-react'
+import ContactList from './ContactList'
 import ContactForm from './ContactForm'
 
 export default function ColdCalling() {
@@ -47,7 +47,7 @@ export default function ColdCalling() {
   }
 
   const fetchContacts = async (contactIdToKeep = null) => {
-    const { data } = await supabase.from('contacts').select('*').order('id', { ascending: true })
+    const { data } = await supabase.from('contacts').select('*')
     if (data) {
       setContacts(data)
       const targetId = contactIdToKeep || selectedContact?.id
@@ -58,18 +58,17 @@ export default function ColdCalling() {
     }
   }
 
-  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    // Initial load, do not auto select
+    // Initial load, do not auto select any contact
     const loadInitial = async () => {
-      const { data } = await supabase.from('contacts').select('*').order('id', { ascending: true })
+      const { data } = await supabase.from('contacts').select('*')
       if (data) {
         setContacts(data)
       }
     }
     loadInitial()
     
-    // Realtime listener
+    // Realtime sync listener
     const channel = supabase.channel('contacts_sync')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts' }, () => {
         fetchContacts()
@@ -78,7 +77,6 @@ export default function ColdCalling() {
 
     return () => { supabase.removeChannel(channel) }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleDial = async (num) => {
     if (!num) return
@@ -114,7 +112,7 @@ export default function ColdCalling() {
         return
       }
 
-      const { data, error } = await supabase.from('contacts').insert([
+      const { error } = await supabase.from('contacts').insert([
         {
           business_name: businessName.trim(),
           phone_number: formattedPhone,
@@ -125,26 +123,14 @@ export default function ColdCalling() {
           follow_up: followUp,
           notes: notes
         }
-      ]).select()
+      ])
 
       if (error) {
         alert(`Create Error: ${error.message}`)
         return
       }
 
-      if (data && data.length > 0) {
-        await supabase.from('call_logs').insert({
-          phone_number: formattedPhone,
-          duration_seconds: 0,
-          status: statusUpdate,
-          call_date: new Date().toISOString(),
-          call_type: 'outgoing',
-          platform: 'excel',
-          contact_id: data[0].id
-        })
-      }
-
-      alert('New contact created and call logged!')
+      alert('New contact created!')
       setIsAdding(false)
       setSelectedContact(null)
       setBusinessName('')
@@ -173,17 +159,7 @@ export default function ColdCalling() {
         return
       }
 
-      await supabase.from('call_logs').insert({
-        phone_number: selectedContact.phone_number,
-        duration_seconds: 0,
-        status: statusUpdate,
-        call_date: new Date().toISOString(),
-        call_type: 'outgoing',
-        platform: 'excel',
-        contact_id: selectedContact.id
-      })
-
-      alert('Contact details and status logged successfully!')
+      alert('Contact details updated successfully!')
       fetchContacts()
     }
   }
@@ -203,76 +179,19 @@ export default function ColdCalling() {
     }
   }
 
-  // Filter contacts
-  const filteredContacts = contacts.filter(c => {
-    const query = search.toLowerCase()
-    const matchSearch = (c.business_name || '').toLowerCase().includes(query) || 
-                        (c.phone_number || '').includes(query) || 
-                        (c.poc_name || '').toLowerCase().includes(query)
-    
-    if (!matchSearch) return false
-    
-    if (activeTab === 'All') return true
-    if (activeTab === 'Follow Up') return c.follow_up === 'Yes'
-    if (activeTab === 'Unresponsive') {
-      const status = String(c.status_update).toLowerCase()
-      return status.includes('unresponsive') || status.includes('busy') || status.includes('unanswered')
-    }
-    if (activeTab === 'Called') return c.status_update !== 'Not Called'
-    if (activeTab === 'Answered') return c.status_update === 'Answered'
-    if (activeTab === 'Not Called') return c.status_update === 'Not Called'
-    return true
-  })
-
   return (
     <div style={{ display: 'flex', flexGrow: 1, overflow: 'hidden', height: '100%' }}>
       {/* Side list */}
-      <div style={{ width: '340px', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', background: 'var(--bg-panel)' }}>
-        
-        {/* Search */}
-        <div style={{ padding: '15px', display: 'flex', gap: '8px', borderBottom: '1px solid var(--border)' }}>
-          <div style={{ position: 'relative', flexGrow: 1 }}>
-            <Search size={16} style={{ position: 'absolute', left: '10px', top: '12px', color: 'var(--text-muted)' }} />
-            <input type="text" placeholder="Search contacts..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '8px 10px 8px 32px', borderRadius: '6px', fontSize: '13px' }} />
-          </div>
-          <button onClick={handleStartNewContact} style={{ background: 'var(--accent)', border: 'none', color: '#000', padding: '8px 12px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Add new contact">
-            <Plus size={16} />
-          </button>
-        </div>
-
-        {/* Workspace pipeline tabs */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', borderBottom: '1px solid var(--border)', background: 'var(--bg-input)' }}>
-          {['All', 'Follow Up', 'Unresponsive', 'Called', 'Answered', 'Not Called'].map(tab => (
-            <button key={tab} onClick={() => setActiveTab(tab)} style={{ flexGrow: 1, flexBasis: '30%', border: 'none', background: activeTab === tab ? 'var(--bg-panel)' : 'transparent', color: activeTab === tab ? 'var(--accent)' : 'var(--text-muted)', padding: '8px 0', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', borderBottom: activeTab === tab ? '2px solid var(--accent)' : 'none' }}>
-              {tab === 'Unresponsive' ? 'Missed' : tab}
-            </button>
-          ))}
-        </div>
-
-        {/* Contacts listing */}
-        <div style={{ flexGrow: 1, overflowY: 'auto', padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {filteredContacts.length > 0 ? (
-            filteredContacts.map(c => (
-              <div key={c.id} onClick={() => selectContact(c)} style={{ padding: '12px', background: selectedContact?.id === c.id ? 'var(--bg-selected)' : 'transparent', border: `1px solid ${selectedContact?.id === c.id ? 'var(--accent)' : 'var(--border)'}`, borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s ease' }}>
-                <div style={{ fontWeight: '600', fontSize: '13.5px', color: 'var(--text)', marginBottom: '4px' }}>{c.business_name || 'Unnamed Record'}</div>
-                <div style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between' }}>
-                  <span>{c.phone_number}</span>
-                  <span style={{ fontSize: '10.5px', padding: '1px 6px', borderRadius: '4px', background: 'var(--bg-input)', color: 'var(--accent)', fontWeight: 'bold' }}>{c.status_update}</span>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div style={{ padding: '20px', color: 'var(--text-muted)', textAlign: 'center', fontSize: '13px' }}>No contacts found in list.</div>
-          )}
-        </div>
-
-        {/* Excel upload commented out as requested */}
-        {/*
-        <div style={{ padding: '15px', borderTop: '1px solid var(--border)' }}>
-          <ExcelUpload onUploadSuccess={fetchContacts} />
-        </div>
-        */}
-      </div>
+      <ContactList
+        contacts={contacts}
+        selectedContact={selectedContact}
+        selectContact={selectContact}
+        search={search}
+        setSearch={setSearch}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        handleStartNewContact={handleStartNewContact}
+      />
 
       {/* Details editor view */}
       <div style={{ flexGrow: 1, padding: '30px', overflowY: 'auto', background: 'var(--bg-dark)' }}>
