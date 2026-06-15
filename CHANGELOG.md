@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.4] - 2026-06-15
+### Added
+- Added live contact and lead counts to the main navigation sidebar items (Cold Calling and Justdial Leads).
+- Added dynamic category counts to subcategory pipeline tabs in both Cold Calling ("All", "Follow Up", "Missed", "Called", "Answered", "Not Called") and Justdial Leads ("All", "Follow Up", "Invalid Leads", "Correct Leads") views, which automatically update with search queries.
+
 ## [1.4.3] - 2026-06-15
 ### Fixed
 - Re-architected device listener bridge (`daemon/listener.py`):
