@@ -1,15 +1,18 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { Phone, PhoneOff, RotateCcw, Search, User, Briefcase, MapPin, Save } from 'lucide-react'
-import ExcelUpload from '../../components/ExcelUpload'
+import { Search, Plus } from 'lucide-react'
+import ContactForm from './ContactForm'
 
 export default function ColdCalling() {
   const [contacts, setContacts] = useState([])
   const [selectedContact, setSelectedContact] = useState(null)
   const [search, setSearch] = useState('')
   const [activeTab, setActiveTab] = useState('All')
+  const [isAdding, setIsAdding] = useState(false)
   
   // Selected contact form editing fields
+  const [businessName, setBusinessName] = useState('')
+  const [phoneNumber, setPhoneNumber] = useState('')
   const [pocName, setPocName] = useState('')
   const [profession, setProfession] = useState('')
   const [locationCity, setLocationCity] = useState('')
@@ -19,20 +22,39 @@ export default function ColdCalling() {
 
   const selectContact = (c) => {
     setSelectedContact(c)
+    setBusinessName(c.business_name || '')
+    setPhoneNumber(c.phone_number || '')
     setPocName(c.poc_name || '')
     setProfession(c.profession || '')
     setLocationCity(c.location_city || '')
     setStatusUpdate(c.status_update === 'Not Called' ? 'Answered' : c.status_update || 'Answered')
     setFollowUp(c.follow_up || 'No')
     setNotes(c.notes || '')
+    setIsAdding(false)
+  }
+
+  const handleStartNewContact = () => {
+    setSelectedContact(null)
+    setBusinessName('')
+    setPhoneNumber('')
+    setPocName('')
+    setProfession('')
+    setLocationCity('')
+    setStatusUpdate('Answered')
+    setFollowUp('No')
+    setNotes('')
+    setIsAdding(true)
   }
 
   const fetchContacts = async () => {
     const { data } = await supabase.from('contacts').select('*').order('id', { ascending: true })
     if (data) {
       setContacts(data)
-      if (data.length > 0 && !selectedContact) {
+      if (data.length > 0) {
         selectContact(data[0])
+      } else {
+        setSelectedContact(null)
+        setIsAdding(true)
       }
     }
   }
@@ -62,34 +84,93 @@ export default function ColdCalling() {
   }
 
   const handleUpdate = async () => {
-    if (!selectedContact) return
-    
-    const { error } = await supabase.from('contacts').update({
-      poc_name: pocName,
-      profession: profession,
-      location_city: locationCity,
-      status_update: statusUpdate,
-      follow_up: followUp,
-      notes: notes
-    }).eq('id', selectedContact.id)
+    if (isAdding) {
+      if (!businessName.trim()) {
+        alert('Business Name is required.')
+        return
+      }
+      if (!phoneNumber.trim() || phoneNumber.replace(/\D/g, '').length !== 10) {
+        alert('Valid 10-digit Phone Number is required.')
+        return
+      }
 
-    if (error) {
-      alert(`Update Error: ${error.message}`)
-      return
+      let formattedPhone = '+91' + phoneNumber.replace(/\D/g, '')
+
+      // Check if contact already exists
+      const { data: existing } = await supabase
+        .from('contacts')
+        .select('id')
+        .eq('phone_number', formattedPhone)
+        .maybeSingle()
+
+      if (existing) {
+        alert('A contact with this phone number already exists.')
+        return
+      }
+
+      const { data, error } = await supabase.from('contacts').insert([
+        {
+          business_name: businessName.trim(),
+          phone_number: formattedPhone,
+          poc_name: pocName,
+          profession: profession,
+          location_city: locationCity,
+          status_update: statusUpdate,
+          follow_up: followUp,
+          notes: notes
+        }
+      ]).select()
+
+      if (error) {
+        alert(`Create Error: ${error.message}`)
+        return
+      }
+
+      if (data && data.length > 0) {
+        await supabase.from('call_logs').insert({
+          phone_number: formattedPhone,
+          duration_seconds: 0,
+          status: statusUpdate,
+          call_date: new Date().toISOString(),
+          call_type: 'outgoing',
+          platform: 'excel',
+          contact_id: data[0].id
+        })
+      }
+
+      alert('New contact created and call logged!')
+      setIsAdding(false)
+      fetchContacts()
+    } else {
+      if (!selectedContact) return
+      
+      const { error } = await supabase.from('contacts').update({
+        poc_name: pocName,
+        profession: profession,
+        location_city: locationCity,
+        status_update: statusUpdate,
+        follow_up: followUp,
+        notes: notes
+      }).eq('id', selectedContact.id)
+
+      if (error) {
+        alert(`Update Error: ${error.message}`)
+        return
+      }
+
+      await supabase.from('call_logs').insert({
+        phone_number: selectedContact.phone_number,
+        duration_seconds: 0,
+        status: statusUpdate,
+        call_date: new Date().toISOString(),
+        call_type: 'outgoing',
+        platform: 'excel',
+        contact_id: selectedContact.id
+      })
+
+      alert('Contact details and status logged successfully!')
+      fetchContacts()
     }
-
-    await supabase.from('call_logs').insert({
-      phone_number: selectedContact.phone_number,
-      duration_seconds: 0,
-      status: statusUpdate,
-      call_date: new Date().toISOString(),
-      call_type: 'outgoing',
-      platform: 'excel',
-      contact_id: selectedContact.id
-    })
-
-    alert('Contact details and status logged successfully!')
-    fetchContacts()
   }
 
   // Filter contacts
@@ -124,6 +205,9 @@ export default function ColdCalling() {
             <Search size={16} style={{ position: 'absolute', left: '10px', top: '12px', color: 'var(--text-muted)' }} />
             <input type="text" placeholder="Search contacts..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '8px 10px 8px 32px', borderRadius: '6px', fontSize: '13px' }} />
           </div>
+          <button onClick={handleStartNewContact} style={{ background: 'var(--accent)', border: 'none', color: '#000', padding: '8px 12px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Add new contact">
+            <Plus size={16} />
+          </button>
         </div>
 
         {/* Workspace pipeline tabs */}
@@ -152,115 +236,43 @@ export default function ColdCalling() {
           )}
         </div>
 
+        {/* Excel upload commented out as requested */}
+        {/*
         <div style={{ padding: '15px', borderTop: '1px solid var(--border)' }}>
           <ExcelUpload onUploadSuccess={fetchContacts} />
         </div>
+        */}
       </div>
 
       {/* Details editor view */}
       <div style={{ flexGrow: 1, padding: '30px', overflowY: 'auto', background: 'var(--bg-dark)' }}>
-        {selectedContact ? (
-          <div style={{ maxWidth: '650px', display: 'flex', flexDirection: 'column', gap: '25px' }}>
-            
-            {/* Header info */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', borderBottom: '1px solid var(--border)', paddingBottom: '20px' }}>
-              <div>
-                <h2 style={{ margin: '0 0 6px 0', color: 'var(--text)', fontWeight: '600' }}>{selectedContact.business_name || 'No Identified Title'}</h2>
-                <p style={{ margin: 0, color: 'var(--accent)', fontWeight: '600', fontSize: '18px' }}>{selectedContact.phone_number}</p>
-              </div>
-              
-              {/* Dial Controls */}
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button onClick={() => handleDial(selectedContact.phone_number)} style={{ background: '#10b981', border: 'none', color: '#fff', padding: '10px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13.5px' }}>
-                  <Phone size={16} /> Dial
-                </button>
-                <button onClick={() => handleDial(selectedContact.phone_number)} style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: '6px', cursor: 'pointer' }} title="Redial">
-                  <RotateCcw size={16} />
-                </button>
-                <button onClick={handleHangup} style={{ background: '#ef4444', border: 'none', color: '#fff', padding: '10px 14px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }} title="Disconnect Call">
-                  <PhoneOff size={16} /> Hang Up
-                </button>
-              </div>
-            </div>
-
-            {/* Editing grid fields */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: '500' }}>POC Identity</label>
-                <div style={{ position: 'relative' }}>
-                  <User size={16} style={{ position: 'absolute', left: '10px', top: '12px', color: 'var(--text-muted)' }} />
-                  <input type="text" value={pocName} onChange={(e) => setPocName(e.target.value)} style={{ width: '100%', background: 'var(--bg-panel)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 10px 10px 32px', borderRadius: '6px', fontSize: '13.5px' }} />
-                </div>
-              </div>
-              
-              <div>
-                <label style={{ display: 'block', fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: '500' }}>Profession</label>
-                <div style={{ position: 'relative' }}>
-                  <Briefcase size={16} style={{ position: 'absolute', left: '10px', top: '12px', color: 'var(--text-muted)' }} />
-                  <input type="text" value={profession} onChange={(e) => setProfession(e.target.value)} style={{ width: '100%', background: 'var(--bg-panel)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 10px 10px 32px', borderRadius: '6px', fontSize: '13.5px' }} />
-                </div>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: '500' }}>Territory Hub (Location)</label>
-                <div style={{ position: 'relative' }}>
-                  <MapPin size={16} style={{ position: 'absolute', left: '10px', top: '12px', color: 'var(--text-muted)' }} />
-                  <input type="text" value={locationCity} onChange={(e) => setLocationCity(e.target.value)} style={{ width: '100%', background: 'var(--bg-panel)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 10px 10px 32px', borderRadius: '6px', fontSize: '13.5px' }} />
-                </div>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: '500' }}>Contact State</label>
-                <select value={statusUpdate} onChange={(e) => setStatusUpdate(e.target.value)} style={{ width: '100%', background: 'var(--bg-panel)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px', borderRadius: '6px', fontSize: '13.5px', height: '40px', outline: 'none' }}>
-                  {['Answered', 'Busy', 'Unanswered', 'Incorrect', 'Not Called', 'Unresponsive'].map(s => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div style={{ gridColumn: '1 / span 2' }}>
-                <label style={{ display: 'block', fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: '500' }}>Notes & Remarks</label>
-                <textarea 
-                  value={notes} 
-                  onChange={(e) => setNotes(e.target.value)} 
-                  placeholder="Enter call notes, customer requirements, or remarks..."
-                  style={{ 
-                    width: '100%', 
-                    height: '80px', 
-                    background: 'var(--bg-panel)', 
-                    border: '1px solid var(--border)', 
-                    color: 'var(--text)', 
-                    padding: '10px', 
-                    borderRadius: '6px', 
-                    fontSize: '13.5px', 
-                    resize: 'vertical',
-                    fontFamily: 'inherit',
-                    outline: 'none'
-                  }} 
-                />
-              </div>
-            </div>
-
-            {/* Details and follow-up toggle */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-panel)', border: '1px solid var(--border)', padding: '15px 20px', borderRadius: '8px' }}>
-              <div>
-                <div style={{ fontWeight: '600', color: 'var(--text)', fontSize: '13.5px' }}>Priority Follow Up</div>
-                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Flag this contact to follow up later</div>
-              </div>
-              <select value={followUp} onChange={(e) => setFollowUp(e.target.value)} style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '6px 12px', borderRadius: '6px', fontSize: '13px', outline: 'none' }}>
-                <option value="No">No</option>
-                <option value="Yes">Yes</option>
-              </select>
-            </div>
- 
-            {/* Save details */}
-            <button onClick={handleUpdate} style={{ background: 'var(--accent)', border: 'none', color: '#000', padding: '12px 20px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '14px', alignSelf: 'start', transition: 'opacity 0.2s' }}>
-              <Save size={16} /> Save Changes & Log Call
-            </button>
-          </div>
+        {(isAdding || selectedContact) ? (
+          <ContactForm
+            isAdding={isAdding}
+            selectedContact={selectedContact}
+            businessName={businessName}
+            setBusinessName={setBusinessName}
+            phoneNumber={phoneNumber}
+            setPhoneNumber={setPhoneNumber}
+            pocName={pocName}
+            setPocName={setPocName}
+            profession={profession}
+            setProfession={setProfession}
+            locationCity={locationCity}
+            setLocationCity={setLocationCity}
+            statusUpdate={statusUpdate}
+            setStatusUpdate={setStatusUpdate}
+            notes={notes}
+            setNotes={setNotes}
+            followUp={followUp}
+            setFollowUp={setFollowUp}
+            handleUpdate={handleUpdate}
+            handleDial={handleDial}
+            handleHangup={handleHangup}
+          />
         ) : (
           <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>
-            Select a contact from the side panel to view information.
+            Select a contact from the side panel or click + to add a new contact.
           </div>
         )}
       </div>
