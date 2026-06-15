@@ -10,6 +10,7 @@
 - **ADB Telemetry Logging**: Queries the device call log database after each call to retrieve talk duration, which is mapped back to contacts or leads. Fully supports multi-SIM devices by aggregating states across all slots.
 - **Active Call Controls**: Remotely hang up active calls using `input keyevent 6` triggered from the web interface.
 - **Environment Security Isolation**: Strict isolation of credentials with zero hardcoded API endpoints or tokens in code files, relying solely on runtime environment configurations.
+- **Wireless Connection Prioritization**: Automatically prioritizes wireless TCP/IP interfaces over USB to prevent connection lockups during dial dispatches.
 
 ## 3. High-Fidelity Dashboard
 - **Performance Metrics**: Direct insights into Total Calls, Connection Rate, Average Talk Time, and Total Records.
