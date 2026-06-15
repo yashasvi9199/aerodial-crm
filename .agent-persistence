@@ -8,5 +8,6 @@
 - Airtel SIM calling routing: Rooted Android 16/AOSP voice account selection.
 
 ## Technical Debt & Active Backlog
-- Schema cache refresh required when adding columns (must trigger `NOTIFY pgrst, 'reload schema';`).
-- Ensure no files exceed the 300-line limit to maintain indexing performance.
+- Verified all newly created and updated files are strictly under 300 lines limit (split listings into separate subcomponents).
+- ADB daemon state tracker (task-865) and Vite development server (task-744) are actively running.
+- Sync script `scratch/sync_recent_calls.py` verified for manual ad-hoc log querying.
