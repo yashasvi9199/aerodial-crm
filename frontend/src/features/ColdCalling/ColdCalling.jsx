@@ -160,7 +160,17 @@ export default function ColdCalling() {
       }
 
       alert('Contact details updated successfully!')
-      fetchContacts()
+      setBusinessName('')
+      setPhoneNumber('')
+      setPocName('')
+      setProfession('')
+      setLocationCity('')
+      setStatusUpdate('Answered')
+      setFollowUp('No')
+      setNotes('')
+      setIsAdding(false)
+      setSelectedContact(null)
+      fetchContacts(null)
     }
   }
 
