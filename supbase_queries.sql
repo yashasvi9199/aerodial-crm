@@ -120,3 +120,13 @@ alter table public.contacts add column if not exists notes text;
 
 -- 7. Add lead_quality column to justdial_leads table if it does not exist (migration helper)
 alter table public.justdial_leads add column if not exists lead_quality text default 'Correct';
+
+--------------------------------------------------------------------------------------
+
+-- 8. Add contact_state column to justdial_leads table if it does not exist (migration helper)
+alter table public.justdial_leads add column if not exists contact_state text default 'Answered';
+
+-- 9. Update lead_quality column default in justdial_leads table and migrate existing data
+alter table public.justdial_leads alter column lead_quality set default 'Correct Lead';
+update public.justdial_leads set lead_quality = 'Correct Lead' where lead_quality = 'Correct';
+update public.justdial_leads set lead_quality = 'Incorrect Lead' where lead_quality = 'Invalid';
