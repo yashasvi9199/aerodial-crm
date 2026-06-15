@@ -13,3 +13,4 @@
 - Stopped duplicate daemon instances and started a single clean background listener daemon (task-1273).
 - Cleaned up database logs, migrating old `'excel'` platforms to `'cold_call'` to restore correct categorizations in outbound log displays.
 - Updated UI behavior to automatically deselect contacts and leads on successful updates, rendering the right details panel empty.
+- Removed all hardcoded credentials and endpoints from the repository to establish complete environment variables security.
