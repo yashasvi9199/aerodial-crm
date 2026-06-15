@@ -18,7 +18,8 @@ export default function LeadForm({
   setLeadQuality,
   notes,
   setNotes,
-  handleSave
+  handleSave,
+  handleReset
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -126,12 +127,20 @@ export default function LeadForm({
         />
       </div>
 
-      <button 
-        onClick={handleSave} 
-        style={{ background: 'var(--accent)', border: 'none', color: '#000', padding: '12px 20px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '14px', alignSelf: 'start', transition: 'opacity 0.2s' }}
-      >
-        <Save size={16} /> Save Lead Details & Log Call
-      </button>
+      <div style={{ display: 'flex', gap: '12px' }}>
+        <button 
+          onClick={handleSave} 
+          style={{ background: 'var(--accent)', border: 'none', color: '#000', padding: '12px 20px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '14px', transition: 'opacity 0.2s' }}
+        >
+          <Save size={16} /> Save Lead Details & Log Call
+        </button>
+        <button 
+          onClick={handleReset} 
+          style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text)', padding: '12px 20px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', transition: 'all 0.2s ease' }}
+        >
+          Reset Fields
+        </button>
+      </div>
     </div>
   )
 }
