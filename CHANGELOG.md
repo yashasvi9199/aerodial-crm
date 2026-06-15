@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.3] - 2026-06-15
+### Fixed
+- Fixed security fallbacks: removed all hardcoded Supabase project URLs and anon key credentials from utility scripts (`scratch/cleanup_and_load.js` and `scratch/sync_recent_calls.py`), forcing strict environment-based loads.
+- Cleaned compiled cache files and output assets to prevent accidental residual credential leaks.
+
 ## [1.4.2] - 2026-06-15
 ### Fixed
 - Fixed form pane behavior: automatically deselects and clears the right details panel upon successful contact/lead updates in both Cold Calling and Justdial Leads workspaces.
