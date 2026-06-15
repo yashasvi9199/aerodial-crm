@@ -64,6 +64,12 @@ AeroDial CRM connects directly to a rooted Android device over ADB to automate d
 ## 📅 Changelog
 *For the standalone document, see [CHANGELOG.md](file:///home/drone/Programming/aerodial-crm/CHANGELOG.md).*
 
+### [1.4.2] - 2026-06-15
+- Fixed multi-SIM call state detection bug in daemon `listener.py` by checking all SIM slots and returning the maximum active state.
+- Fixed database platform categorizations for call logs, mapping old `'excel'` values to `'cold_call'` to correct UI logging displays.
+- Terminated duplicate background processes causing log conflicts and started a single clean listener instance.
+- Corrected redial and dial queue processing behavior, ensuring logs and call counters update correctly.
+
 ### [1.4.1] - 2026-06-15
 - Added custom hover tooltips on Dashboard charts showing numbers, call counts, and formatted time (seconds, minutes, and hours).
 - Segmented the Detailed Outbound Logs table using inline date dividers (Today, Yesterday, This Week, This Month).
