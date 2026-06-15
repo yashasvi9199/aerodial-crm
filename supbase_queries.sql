@@ -130,3 +130,12 @@ alter table public.justdial_leads add column if not exists contact_state text de
 alter table public.justdial_leads alter column lead_quality set default 'Correct Lead';
 update public.justdial_leads set lead_quality = 'Correct Lead' where lead_quality = 'Correct';
 update public.justdial_leads set lead_quality = 'Incorrect Lead' where lead_quality = 'Invalid';
+
+--------------------------------------------------------------------------------------
+
+-- 10. Add call_count column to contacts and justdial_leads tables if they do not exist
+alter table public.contacts add column if not exists call_count integer default 0;
+alter table public.justdial_leads add column if not exists call_count integer default 0;
+
+-- 11. Rename platform values from 'excel' to 'cold_call' in call_logs table
+update public.call_logs set platform = 'cold_call' where platform = 'excel';
