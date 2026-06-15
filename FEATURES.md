@@ -19,12 +19,13 @@
 - **Real-Time Bridge Indicator**: Visual indicator showing whether the local Android device is successfully connected.
 
 ## 4. Cold Calling Workspace
-- **Pipeline Filters**: Double-row sidebar filters supporting `All`, `Follow Up`, `Missed`, `Called`, `Answered`, and `Not Called`.
+- **Pipeline Filters with Live Counts**: Double-row sidebar filters supporting `All`, `Follow Up`, `Missed`, `Called`, `Answered`, and `Not Called`, each displaying real-time contact counts matching that filter.
 - **Excel Bulk Import**: Merges and normalizes contact sheets, formats dates, and safely upserts records.
 - **Purge Contacts**: Integrated UI button to clean the active contact table for fresh workspace imports.
 - **Form Dismissal**: Automatically deselects records and empties the details panel upon successful updates.
 
 ## 5. JustDial Leads Management
+- **Pipeline Filters with Live Counts**: Sidebar filters supporting `All`, `Follow Up`, `Invalid Leads`, and `Correct Leads`, each displaying real-time lead counts matching that filter.
 - **Unified details panel**: Integrated Direct Dialer card on top (10-digit text input) with lead form below.
 - **Lead Quality Classification**: Classifies leads into `Correct Leads` and `Invalid Leads` with corresponding sidebar tabs.
 - **Form Dismissal**: Automatically deselects records and empties the details panel upon successful updates.
