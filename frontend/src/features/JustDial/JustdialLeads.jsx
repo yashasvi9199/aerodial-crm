@@ -44,8 +44,7 @@ export default function JustdialLeads() {
     setPhone(cleanPhone)
   }
 
-  const handleStartNewLead = () => {
-    setSelectedLead(null)
+  const clearForm = () => {
     setName('')
     setLeadName('')
     setPhone('')
@@ -55,6 +54,11 @@ export default function JustdialLeads() {
     setFollowUp('No')
     setStatusUpdate('Answered')
     setLeadQuality('Correct Lead')
+  }
+
+  const handleStartNewLead = () => {
+    setSelectedLead(null)
+    clearForm()
     setIsAdding(true)
   }
 
@@ -156,7 +160,10 @@ export default function JustdialLeads() {
         return
       }
       alert('Lead details updated successfully!')
-      fetchLeads(selectedLead.id)
+      clearForm()
+      setIsAdding(false)
+      setSelectedLead(null)
+      fetchLeads(null)
     } else {
       // Check if lead with this phone already exists
       const { data: existing } = await supabase
@@ -187,15 +194,7 @@ export default function JustdialLeads() {
       }
 
       // Clear fields and deselect
-      setName('')
-      setLeadName('')
-      setPhone('')
-      setProfession('Consumer')
-      setLocation('')
-      setNotes('')
-      setFollowUp('No')
-      setStatusUpdate('Answered')
-      setLeadQuality('Correct Lead')
+      clearForm()
       setIsAdding(false)
       setSelectedLead(null)
       fetchLeads(null)
@@ -204,15 +203,7 @@ export default function JustdialLeads() {
 
   const handleReset = () => {
     if (isAdding) {
-      setName('')
-      setLeadName('')
-      setPhone('')
-      setProfession('Consumer')
-      setLocation('')
-      setNotes('')
-      setFollowUp('No')
-      setStatusUpdate('Answered')
-      setLeadQuality('Correct Lead')
+      clearForm()
     } else if (selectedLead) {
       selectLead(selectedLead)
     }
