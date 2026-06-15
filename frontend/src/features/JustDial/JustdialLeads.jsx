@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { Phone, PhoneOff, RotateCcw, Search, User, Briefcase, MapPin, Save, Plus } from 'lucide-react'
+import { Phone, PhoneOff, RotateCcw, Search, Plus } from 'lucide-react'
+import LeadForm from './LeadForm'
 
 export default function JustdialLeads() {
   const [leads, setLeads] = useState([])
@@ -17,7 +18,7 @@ export default function JustdialLeads() {
   const [notes, setNotes] = useState('')
   const [followUp, setFollowUp] = useState('No')
   const [statusUpdate, setStatusUpdate] = useState('Answered')
-  const [leadQuality, setLeadQuality] = useState('Correct')
+  const [leadQuality, setLeadQuality] = useState('Correct Lead')
 
   const selectLead = (l) => {
     setSelectedLead(l)
@@ -27,8 +28,8 @@ export default function JustdialLeads() {
     setLocation(l.location || '')
     setNotes(l.notes || '')
     setFollowUp(l.follow_up || 'No')
-    setStatusUpdate(l.contacted === 'Yes' ? 'Answered' : 'Unanswered')
-    setLeadQuality(l.lead_quality || 'Correct')
+    setStatusUpdate(l.contact_state || (l.contacted === 'Yes' ? 'Answered' : 'Unanswered'))
+    setLeadQuality(l.lead_quality || 'Correct Lead')
     
     // Set 10-digit phone number without +91 for easy dialing and editing
     let cleanPhone = l.phone || ''
@@ -50,7 +51,7 @@ export default function JustdialLeads() {
     setNotes('')
     setFollowUp('No')
     setStatusUpdate('Answered')
-    setLeadQuality('Correct')
+    setLeadQuality('Correct Lead')
   }
 
   const fetchLeads = async () => {
@@ -127,6 +128,7 @@ export default function JustdialLeads() {
       location,
       notes,
       contacted: statusUpdate === 'Answered' ? 'Yes' : 'No',
+      contact_state: statusUpdate,
       follow_up: followUp,
       lead_quality: leadQuality,
       updated_at: new Date().toISOString()
@@ -198,8 +200,8 @@ export default function JustdialLeads() {
     if (!matchSearch) return false
     if (activeTab === 'All') return true
     if (activeTab === 'Follow Up') return l.follow_up === 'Yes'
-    if (activeTab === 'Invalid Leads') return l.lead_quality === 'Invalid'
-    if (activeTab === 'Correct Leads') return (l.lead_quality || 'Correct') === 'Correct'
+    if (activeTab === 'Invalid Leads') return l.lead_quality === 'Incorrect Lead'
+    if (activeTab === 'Correct Leads') return l.lead_quality === 'Correct Lead' || !l.lead_quality || l.lead_quality === 'Correct'
     return true
   })
 
@@ -227,17 +229,24 @@ export default function JustdialLeads() {
 
         <div style={{ flexGrow: 1, overflowY: 'auto', padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {filteredLeads.length > 0 ? (
-            filteredLeads.map(l => (
-              <div key={l.id} onClick={() => selectLead(l)} style={{ padding: '12px', background: selectedLead?.id === l.id ? 'var(--bg-selected)' : 'transparent', border: `1px solid ${selectedLead?.id === l.id ? 'var(--accent)' : 'var(--border)'}`, borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s ease' }}>
-                <div style={{ fontWeight: '600', fontSize: '13.5px', color: 'var(--text)', marginBottom: '4px' }}>{l.name} <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>({l.lead_name || 'No Brand'})</span></div>
-                <div style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between' }}>
-                  <span>{l.phone}</span>
-                  <span style={{ fontSize: '10.5px', padding: '1px 6px', borderRadius: '4px', background: 'var(--bg-input)', color: l.contacted === 'Yes' ? '#10b981' : '#f59e0b', fontWeight: 'bold' }}>
-                    {l.contacted === 'Yes' ? 'Contacted' : 'Not Contacted'}
-                  </span>
+            filteredLeads.map(l => {
+              const stateVal = l.contact_state || (l.contacted === 'Yes' ? 'Answered' : 'Unanswered')
+              let badgeColor = '#f59e0b' // Busy
+              if (stateVal === 'Answered') badgeColor = '#10b981'
+              if (stateVal === 'Unanswered') badgeColor = '#ef4444'
+
+              return (
+                <div key={l.id} onClick={() => selectLead(l)} style={{ padding: '12px', background: selectedLead?.id === l.id ? 'var(--bg-selected)' : 'transparent', border: `1px solid ${selectedLead?.id === l.id ? 'var(--accent)' : 'var(--border)'}`, borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s ease' }}>
+                  <div style={{ fontWeight: '600', fontSize: '13.5px', color: 'var(--text)', marginBottom: '4px' }}>{l.name} <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>({l.lead_name || 'No Brand'})</span></div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>{l.phone}</span>
+                    <span style={{ fontSize: '10.5px', padding: '1px 6px', borderRadius: '4px', background: 'var(--bg-input)', color: badgeColor, fontWeight: 'bold' }}>
+                      {stateVal}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))
+              )
+            })
           ) : (
             <div style={{ padding: '20px', color: 'var(--text-muted)', textAlign: 'center', fontSize: '13px' }}>No Justdial leads found.</div>
           )}
@@ -276,72 +285,26 @@ export default function JustdialLeads() {
           </div>
 
           {/* Lead Details Editing Form below Dialer */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <h3 style={{ margin: 0, color: 'var(--text)', fontSize: '15px', borderBottom: '1px solid var(--border)', paddingBottom: '8px' }}>
-              {selectedLead ? 'Edit Lead Details' : 'Create New Lead Details'}
-            </h3>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: '500' }}>Lead Person Name</label>
-                <div style={{ position: 'relative' }}>
-                  <User size={16} style={{ position: 'absolute', left: '10px', top: '12px', color: 'var(--text-muted)' }} />
-                  <input type="text" value={name} onChange={(e) => setName(e.target.value)} style={{ width: '100%', background: 'var(--bg-panel)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 10px 10px 32px', borderRadius: '6px', fontSize: '13.5px' }} />
-                </div>
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: '500' }}>Business Details</label>
-                <div style={{ position: 'relative' }}>
-                  <Briefcase size={16} style={{ position: 'absolute', left: '10px', top: '12px', color: 'var(--text-muted)' }} />
-                  <input type="text" value={leadName} onChange={(e) => setLeadName(e.target.value)} style={{ width: '100%', background: 'var(--bg-panel)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 10px 10px 32px', borderRadius: '6px', fontSize: '13.5px' }} />
-                </div>
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: '500' }}>Location</label>
-                <div style={{ position: 'relative' }}>
-                  <MapPin size={16} style={{ position: 'absolute', left: '10px', top: '12px', color: 'var(--text-muted)' }} />
-                  <input type="text" value={location} onChange={(e) => setLocation(e.target.value)} style={{ width: '100%', background: 'var(--bg-panel)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 10px 10px 32px', borderRadius: '6px', fontSize: '13.5px' }} />
-                </div>
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: '500' }}>Profession</label>
-                <select value={profession} onChange={(e) => setProfession(e.target.value)} style={{ width: '100%', background: 'var(--bg-panel)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px', borderRadius: '6px', fontSize: '13.5px', height: '40px', outline: 'none' }}>
-                  {['Carpenter', 'Consumer', 'Retail', 'Unrelated'].map(prof => (
-                    <option key={prof} value={prof}>{prof}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: '500' }}>Contact State</label>
-                <select value={statusUpdate} onChange={(e) => setStatusUpdate(e.target.value)} style={{ width: '100%', background: 'var(--bg-panel)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px', borderRadius: '6px', fontSize: '13.5px', height: '40px', outline: 'none' }}>
-                  {['Answered', 'Busy', 'Unanswered', 'Incorrect'].map(s => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: '500' }}>Priority Follow Up</label>
-                <select value={followUp} onChange={(e) => setFollowUp(e.target.value)} style={{ width: '100%', background: 'var(--bg-panel)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px', borderRadius: '6px', fontSize: '13.5px', height: '40px', outline: 'none' }}>
-                  <option value="No">No</option>
-                  <option value="Yes">Yes</option>
-                </select>
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: '500' }}>Lead Quality</label>
-                <select value={leadQuality} onChange={(e) => setLeadQuality(e.target.value)} style={{ width: '100%', background: 'var(--bg-panel)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px', borderRadius: '6px', fontSize: '13.5px', height: '40px', outline: 'none' }}>
-                  <option value="Correct">Correct Lead</option>
-                  <option value="Invalid">Invalid Lead</option>
-                </select>
-              </div>
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: '500' }}>Notes & Remarks</label>
-              <textarea value={notes} onChange={(e) => setNotes(e.target.value)} style={{ width: '100%', background: 'var(--bg-panel)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px', borderRadius: '6px', fontSize: '13.5px', minHeight: '100px', resize: 'vertical' }} />
-            </div>
-            <button onClick={handleSave} style={{ background: 'var(--accent)', border: 'none', color: '#000', padding: '12px 20px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '14px', alignSelf: 'start', transition: 'opacity 0.2s' }}>
-              <Save size={16} /> Save Lead Details & Log Call
-            </button>
-          </div>
+          <LeadForm
+            selectedLead={selectedLead}
+            name={name}
+            setName={setName}
+            leadName={leadName}
+            setLeadName={setLeadName}
+            location={location}
+            setLocation={setLocation}
+            profession={profession}
+            setProfession={setProfession}
+            statusUpdate={statusUpdate}
+            setStatusUpdate={setStatusUpdate}
+            followUp={followUp}
+            setFollowUp={setFollowUp}
+            leadQuality={leadQuality}
+            setLeadQuality={setLeadQuality}
+            notes={notes}
+            setNotes={setNotes}
+            handleSave={handleSave}
+          />
 
         </div>
       </div>
