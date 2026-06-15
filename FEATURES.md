@@ -7,7 +7,7 @@
 
 ## 2. Local Bridge Daemon
 - **Real-Time Call Queueing**: Monitors Supabase `call_queue` changes via real-time hooks to trigger outgoing calls automatically.
-- **ADB Telemetry Logging**: Queries the device call log database after each call to retrieve talk duration, which is mapped back to contacts or leads.
+- **ADB Telemetry Logging**: Queries the device call log database after each call to retrieve talk duration, which is mapped back to contacts or leads. Fully supports multi-SIM devices by aggregating states across all slots.
 - **Active Call Controls**: Remotely hang up active calls using `input keyevent 6` triggered from the web interface.
 
 ## 3. High-Fidelity Dashboard
