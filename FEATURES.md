@@ -23,3 +23,14 @@
 ## 5. JustDial Leads Management
 - **Unified details panel**: Integrated Direct Dialer card on top (10-digit text input) with lead form below.
 - **Lead Quality Classification**: Classifies leads into `Correct Leads` and `Invalid Leads` with corresponding sidebar tabs.
+
+## 6. Unified Search Engine (All Contacts)
+- **Fuzzy Subsequence Matching**: Real-time fuzzy query over all records including names, business names, phone numbers, location, and profession.
+- **Debounced Inputs**: Leverages React input debouncing to prevent search lags and heavy database queries.
+- **Card-Based Visual Layout**: Display cards styled dynamically based on origin (Green borders and tags for Cold Calling, Blue borders and tags for Justdial Leads).
+- **Inline Card Editing**: Click the Edit icon on a card to render inputs directly within the card, removing sidebars and popups.
+
+## 7. Telemetry & Activity Counters
+- **Call Attempts Tracking**: Automatically increments `call_count` for contacts and leads.
+- **Dually-Functional Logging**: Automatically registers incoming and outgoing calls and links them to database CRM records.
+- **History Sync Tool**: ADB-based python sync tool to pull past calls and batch update records.
