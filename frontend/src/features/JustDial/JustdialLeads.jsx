@@ -8,6 +8,7 @@ export default function JustdialLeads() {
   const [selectedLead, setSelectedLead] = useState(null)
   const [search, setSearch] = useState('')
   const [activeTab, setActiveTab] = useState('All')
+  const [isAdding, setIsAdding] = useState(false)
 
   // Lead editing/logging fields
   const [phone, setPhone] = useState('')
@@ -30,6 +31,7 @@ export default function JustdialLeads() {
     setFollowUp(l.follow_up || 'No')
     setStatusUpdate(l.contact_state || (l.contacted === 'Yes' ? 'Answered' : 'Unanswered'))
     setLeadQuality(l.lead_quality || 'Correct Lead')
+    setIsAdding(false)
     
     // Set 10-digit phone number without +91 for easy dialing and editing
     let cleanPhone = l.phone || ''
@@ -52,21 +54,32 @@ export default function JustdialLeads() {
     setFollowUp('No')
     setStatusUpdate('Answered')
     setLeadQuality('Correct Lead')
+    setIsAdding(true)
   }
 
-  const fetchLeads = async () => {
+  const fetchLeads = async (leadIdToKeep = null) => {
     const { data } = await supabase.from('justdial_leads').select('*').order('id', { ascending: true })
     if (data) {
       setLeads(data)
-      if (data.length > 0 && !selectedLead) {
-        selectLead(data[0])
+      const targetId = leadIdToKeep || selectedLead?.id
+      if (targetId) {
+        const found = data.find(l => l.id === targetId)
+        if (found) selectLead(found)
       }
     }
   }
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    fetchLeads()
+    // Initial load, do not auto select
+    const loadInitial = async () => {
+      const { data } = await supabase.from('justdial_leads').select('*').order('id', { ascending: true })
+      if (data) {
+        setLeads(data)
+      }
+    }
+    loadInitial()
+
     const channel = supabase.channel('leads_sync')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'justdial_leads' }, () => {
         fetchLeads()
@@ -189,7 +202,14 @@ export default function JustdialLeads() {
     })
 
     alert(selectedLead ? 'Lead details and call status updated!' : 'New lead created and call logged!')
-    fetchLeads()
+    
+    if (!selectedLead) {
+      handleStartNewLead()
+      setIsAdding(false)
+      fetchLeads(null)
+    } else {
+      fetchLeads(selectedLead.id)
+    }
   }
 
   const filteredLeads = leads.filter(l => {
@@ -255,58 +275,64 @@ export default function JustdialLeads() {
 
       {/* Main Viewport */}
       <div style={{ flexGrow: 1, padding: '30px', overflowY: 'auto', background: 'var(--bg-dark)' }}>
-        <div style={{ maxWidth: '650px', display: 'flex', flexDirection: 'column', gap: '25px' }}>
-          
-          {/* Calling Mechanism Card at the Top */}
-          <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', padding: '20px', borderRadius: '8px' }}>
-            <label style={{ display: 'block', fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: 'bold' }}>Direct Call Dialer (10-Digit Number)</label>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: '6px', flexGrow: 1, paddingLeft: '12px' }}>
-                <span style={{ color: 'var(--text-muted)', fontSize: '14px', marginRight: '4px', fontWeight: '600' }}>+91</span>
-                <input 
-                  type="text" 
-                  maxLength={10}
-                  placeholder="Enter 10-digit number" 
-                  value={phone} 
-                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))} 
-                  style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text)', padding: '10px 8px', fontSize: '14.5px', outline: 'none', fontWeight: '600' }} 
-                />
+        {(isAdding || selectedLead) ? (
+          <div style={{ maxWidth: '650px', display: 'flex', flexDirection: 'column', gap: '25px' }}>
+            
+            {/* Calling Mechanism Card at the Top */}
+            <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', padding: '20px', borderRadius: '8px' }}>
+              <label style={{ display: 'block', fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: 'bold' }}>Direct Call Dialer (10-Digit Number)</label>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: '6px', flexGrow: 1, paddingLeft: '12px' }}>
+                  <span style={{ color: 'var(--text-muted)', fontSize: '14px', marginRight: '4px', fontWeight: '600' }}>+91</span>
+                  <input 
+                    type="text" 
+                    maxLength={10}
+                    placeholder="Enter 10-digit number" 
+                    value={phone} 
+                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))} 
+                    style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text)', padding: '10px 8px', fontSize: '14.5px', outline: 'none', fontWeight: '600' }} 
+                  />
+                </div>
+                <button onClick={handleDialCurrent} style={{ background: '#10b981', border: 'none', color: '#fff', padding: '10px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13.5px', height: '40px' }}>
+                  <Phone size={16} /> Dial
+                </button>
+                <button onClick={handleDialCurrent} style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: '6px', cursor: 'pointer', height: '40px' }} title="Redial">
+                  <RotateCcw size={16} />
+                </button>
+                <button onClick={handleHangup} style={{ background: '#ef4444', border: 'none', color: '#fff', padding: '10px 14px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', height: '40px' }} title="Disconnect Call">
+                  <PhoneOff size={16} /> Hang Up
+                </button>
               </div>
-              <button onClick={handleDialCurrent} style={{ background: '#10b981', border: 'none', color: '#fff', padding: '10px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13.5px', height: '40px' }}>
-                <Phone size={16} /> Dial
-              </button>
-              <button onClick={handleDialCurrent} style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: '6px', cursor: 'pointer', height: '40px' }} title="Redial">
-                <RotateCcw size={16} />
-              </button>
-              <button onClick={handleHangup} style={{ background: '#ef4444', border: 'none', color: '#fff', padding: '10px 14px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', height: '40px' }} title="Disconnect Call">
-                <PhoneOff size={16} /> Hang Up
-              </button>
             </div>
+
+            {/* Lead Details Editing Form below Dialer */}
+            <LeadForm
+              selectedLead={selectedLead}
+              name={name}
+              setName={setName}
+              leadName={leadName}
+              setLeadName={setLeadName}
+              location={location}
+              setLocation={setLocation}
+              profession={profession}
+              setProfession={setProfession}
+              statusUpdate={statusUpdate}
+              setStatusUpdate={setStatusUpdate}
+              followUp={followUp}
+              setFollowUp={setFollowUp}
+              leadQuality={leadQuality}
+              setLeadQuality={setLeadQuality}
+              notes={notes}
+              setNotes={setNotes}
+              handleSave={handleSave}
+            />
+
           </div>
-
-          {/* Lead Details Editing Form below Dialer */}
-          <LeadForm
-            selectedLead={selectedLead}
-            name={name}
-            setName={setName}
-            leadName={leadName}
-            setLeadName={setLeadName}
-            location={location}
-            setLocation={setLocation}
-            profession={profession}
-            setProfession={setProfession}
-            statusUpdate={statusUpdate}
-            setStatusUpdate={setStatusUpdate}
-            followUp={followUp}
-            setFollowUp={setFollowUp}
-            leadQuality={leadQuality}
-            setLeadQuality={setLeadQuality}
-            notes={notes}
-            setNotes={setNotes}
-            handleSave={handleSave}
-          />
-
-        </div>
+        ) : (
+          <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>
+            Select a lead from the side panel or click + to add a new lead.
+          </div>
+        )}
       </div>
     </div>
   )
