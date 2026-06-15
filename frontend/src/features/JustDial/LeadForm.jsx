@@ -23,8 +23,13 @@ export default function LeadForm({
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <h3 style={{ margin: 0, color: 'var(--text)', fontSize: '15px', borderBottom: '1px solid var(--border)', paddingBottom: '8px' }}>
-        {selectedLead ? 'Edit Lead Details' : 'Create New Lead Details'}
+      <h3 style={{ margin: 0, color: 'var(--text)', fontSize: '15px', borderBottom: '1px solid var(--border)', paddingBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span>{selectedLead ? 'Edit Lead Details' : 'Create New Lead Details'}</span>
+        {selectedLead && (
+          <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 'normal', background: 'var(--bg-input)', padding: '2px 8px', borderRadius: '4px', border: '1px solid var(--border)' }}>
+            Call Attempts: {selectedLead.call_count || 0}
+          </span>
+        )}
       </h3>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
@@ -132,7 +137,7 @@ export default function LeadForm({
           onClick={handleSave} 
           style={{ background: 'var(--accent)', border: 'none', color: '#000', padding: '12px 20px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '14px', transition: 'opacity 0.2s' }}
         >
-          <Save size={16} /> Save Lead Details & Log Call
+          <Save size={16} /> {selectedLead ? 'Save Changes' : 'Save Lead Details'}
         </button>
         <button 
           onClick={handleReset} 
