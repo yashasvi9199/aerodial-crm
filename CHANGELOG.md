@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [1.4.2] - 2026-06-15
 ### Fixed
+- Fixed form pane behavior: automatically deselects and clears the right details panel upon successful contact/lead updates in both Cold Calling and Justdial Leads workspaces.
 - Fixed multi-SIM call state detection bug in daemon `listener.py` by checking all SIM slots and returning the maximum active state.
 - Fixed database platform categorizations for call logs, mapping old `'excel'` values to `'cold_call'` to correct UI logging displays.
 - Terminated duplicate background processes causing log conflicts and started a single clean listener instance.
