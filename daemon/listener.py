@@ -52,7 +52,7 @@ def get_call_state(device):
     out = run_cmd(f"adb -s {device} shell \"dumpsys telephony.registry | grep mCallState\"")
     states = re.findall(r'mCallState=(\d+)', out)
     if states:
-        return int(states[0])
+        return max(int(s) for s in states)
     return 0
 
 def get_last_outgoing_call_duration(device, clean_num, start_time_ms):
