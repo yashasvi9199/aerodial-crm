@@ -65,6 +65,7 @@ AeroDial CRM connects directly to a rooted Android device over ADB to automate d
 *For the standalone document, see [CHANGELOG.md](file:///home/drone/Programming/aerodial-crm/CHANGELOG.md).*
 
 ### [1.4.2] - 2026-06-15
+- Fixed form pane behavior: automatically deselects and clears the right details panel upon successful contact/lead updates in both Cold Calling and Justdial Leads workspaces.
 - Fixed multi-SIM call state detection bug in daemon `listener.py` by checking all SIM slots and returning the maximum active state.
 - Fixed database platform categorizations for call logs, mapping old `'excel'` values to `'cold_call'` to correct UI logging displays.
 - Terminated duplicate background processes causing log conflicts and started a single clean listener instance.
