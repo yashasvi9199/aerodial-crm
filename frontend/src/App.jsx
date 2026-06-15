@@ -12,6 +12,8 @@ export default function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light')
   const [adbStatus, setAdbStatus] = useState('disconnected')
   const [isSyncing, setIsSyncing] = useState(false)
+  const [coldCallingCount, setColdCallingCount] = useState(0)
+  const [justdialCount, setJustdialCount] = useState(0)
 
   useEffect(() => {
     // Apply theme
@@ -20,15 +22,29 @@ export default function App() {
   }, [theme])
 
   useEffect(() => {
-    // Initial fetch for state
-    const fetchState = async () => {
-      const { data } = await supabase.from('system_state').select('*').eq('id', 1).single()
-      if (data) {
-        setAdbStatus(data.adb_status)
-        if (data.command === 'idle') setIsSyncing(false)
+    // Initial fetch for state and counts
+    const fetchStateAndCounts = async () => {
+      try {
+        const { data } = await supabase.from('system_state').select('*').eq('id', 1).single()
+        if (data) {
+          setAdbStatus(data.adb_status)
+          if (data.command === 'idle') setIsSyncing(false)
+        }
+
+        const { count: cCount } = await supabase
+          .from('contacts')
+          .select('*', { count: 'exact', head: true })
+        const { count: jCount } = await supabase
+          .from('justdial_leads')
+          .select('*', { count: 'exact', head: true })
+        
+        setColdCallingCount(cCount || 0)
+        setJustdialCount(jCount || 0)
+      } catch (err) {
+        console.error('Error fetching initial counts:', err)
       }
     }
-    fetchState()
+    fetchStateAndCounts()
 
     // Realtime listeners
     const stateSub = supabase.channel('app_state')
@@ -38,7 +54,33 @@ export default function App() {
       })
       .subscribe()
 
-    return () => { supabase.removeChannel(stateSub) }
+    const contactsSub = supabase.channel('contacts_count')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts' }, async () => {
+        try {
+          const { count } = await supabase.from('contacts').select('*', { count: 'exact', head: true })
+          setColdCallingCount(count || 0)
+        } catch (err) {
+          console.error(err)
+        }
+      })
+      .subscribe()
+
+    const leadsSub = supabase.channel('leads_count')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'justdial_leads' }, async () => {
+        try {
+          const { count } = await supabase.from('justdial_leads').select('*', { count: 'exact', head: true })
+          setJustdialCount(count || 0)
+        } catch (err) {
+          console.error(err)
+        }
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(stateSub)
+      supabase.removeChannel(contactsSub)
+      supabase.removeChannel(leadsSub)
+    }
   }, [])
 
   const triggerUsbSync = async () => {
@@ -80,9 +122,54 @@ export default function App() {
             { id: 'coldcalling', label: 'Cold Calling', icon: <Phone size={18} /> },
             { id: 'justdial', label: 'Justdial Leads', icon: <Users size={18} /> }
           ].map(btn => (
-            <button key={btn.id} onClick={() => setActiveTab(btn.id)} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: activeTab === btn.id ? 'var(--bg-selected)' : 'transparent', color: activeTab === btn.id ? 'var(--accent)' : 'var(--text-muted)', border: 'none', padding: '12px 16px', borderRadius: '8px', textAlign: 'left', cursor: 'pointer', fontSize: '14px', fontWeight: '600', transition: 'all 0.15s ease' }}>
-              {btn.icon}
-              {btn.label}
+            <button 
+              key={btn.id} 
+              onClick={() => setActiveTab(btn.id)} 
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between', 
+                background: activeTab === btn.id ? 'var(--bg-selected)' : 'transparent', 
+                color: activeTab === btn.id ? 'var(--accent)' : 'var(--text-muted)', 
+                border: 'none', 
+                padding: '12px 16px', 
+                borderRadius: '8px', 
+                textAlign: 'left', 
+                cursor: 'pointer', 
+                fontSize: '14px', 
+                fontWeight: '600', 
+                transition: 'all 0.15s ease',
+                width: '100%'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                {btn.icon}
+                <span>{btn.label}</span>
+              </div>
+              {btn.id === 'coldcalling' && (
+                <span style={{ 
+                  fontSize: '11px', 
+                  background: activeTab === btn.id ? 'var(--accent)' : 'var(--bg-input)', 
+                  color: activeTab === btn.id ? 'var(--bg-panel)' : 'var(--text-muted)', 
+                  padding: '2px 8px', 
+                  borderRadius: '10px', 
+                  fontWeight: 'bold' 
+                }}>
+                  {coldCallingCount}
+                </span>
+              )}
+              {btn.id === 'justdial' && (
+                <span style={{ 
+                  fontSize: '11px', 
+                  background: activeTab === btn.id ? 'var(--accent)' : 'var(--bg-input)', 
+                  color: activeTab === btn.id ? 'var(--bg-panel)' : 'var(--text-muted)', 
+                  padding: '2px 8px', 
+                  borderRadius: '10px', 
+                  fontWeight: 'bold' 
+                }}>
+                  {justdialCount}
+                </span>
+              )}
             </button>
           ))}
         </nav>
