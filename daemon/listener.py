@@ -147,13 +147,19 @@ def main():
                     # Fetch last log entry from phone
                     latest_log = None
                     try:
-                        cmd = f"adb -s {device} shell \"su -c 'content query --uri content://call_log/calls --projection date:duration:number:type --sort \\'date DESC\\' LIMIT 1'\""
+                        cmd = f"adb -s {device} shell \"su -c 'content query --uri content://call_log/calls --projection date:duration:number:type --sort \\\"date DESC\\\"'\""
                         out = run_cmd(cmd)
-                        if out and "number=" in out:
-                            date_match = re.search(r'date=(\d+)', out)
-                            dur_match = re.search(r'duration=(\d+)', out)
-                            num_match = re.search(r'number=([+\d#*]+)', out)
-                            type_match = re.search(r'type=(\d+)', out)
+                        # Take only the first row from output
+                        first_row_line = None
+                        for line in out.splitlines():
+                            if "number=" in line:
+                                first_row_line = line
+                                break
+                        if first_row_line:
+                            date_match = re.search(r'date=(\d+)', first_row_line)
+                            dur_match = re.search(r'duration=(\d+)', first_row_line)
+                            num_match = re.search(r'number=([+\d#*]+)', first_row_line)
+                            type_match = re.search(r'type=(\d+)', first_row_line)
                             if date_match and num_match and type_match:
                                 latest_log = {
                                     'date': int(date_match.group(1)),
