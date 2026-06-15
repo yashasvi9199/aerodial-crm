@@ -112,6 +112,7 @@ export default function Dashboard() {
     }
   }
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     fetchDashboardData()
     const logSub = supabase.channel('dashboard_sync')
@@ -120,7 +121,8 @@ export default function Dashboard() {
       })
       .subscribe()
     return () => { supabase.removeChannel(logSub) }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   if (loading) {
     return (

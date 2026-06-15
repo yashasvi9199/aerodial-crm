@@ -29,6 +29,7 @@ export default function AllContacts() {
     }
   }
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     fetchData()
 
@@ -40,6 +41,7 @@ export default function AllContacts() {
 
     return () => { supabase.removeChannel(sub) }
   }, [])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Normalize and merge data
   const normalizedContacts = contacts.map(c => ({
