@@ -21,7 +21,8 @@ export default function ContactForm({
   setFollowUp,
   handleUpdate,
   handleDial,
-  handleHangup
+  handleHangup,
+  handleReset
 }) {
   return (
     <div style={{ maxWidth: '650px', display: 'flex', flexDirection: 'column', gap: '25px' }}>
@@ -185,13 +186,21 @@ export default function ContactForm({
         </select>
       </div>
  
-      {/* Save Button */}
-      <button 
-        onClick={handleUpdate} 
-        style={{ background: 'var(--accent)', border: 'none', color: '#000', padding: '12px 20px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '14px', alignSelf: 'start', transition: 'opacity 0.2s' }}
-      >
-        <Save size={16} /> {isAdding ? 'Save Contact & Log Call' : 'Save Changes & Log Call'}
-      </button>
+      {/* Action Buttons */}
+      <div style={{ display: 'flex', gap: '12px' }}>
+        <button 
+          onClick={handleUpdate} 
+          style={{ background: 'var(--accent)', border: 'none', color: '#000', padding: '12px 20px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '14px', transition: 'opacity 0.2s' }}
+        >
+          <Save size={16} /> {isAdding ? 'Save Contact & Log Call' : 'Save Changes & Log Call'}
+        </button>
+        <button 
+          onClick={handleReset} 
+          style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text)', padding: '12px 20px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', transition: 'all 0.2s ease' }}
+        >
+          Reset Fields
+        </button>
+      </div>
     </div>
   )
 }
