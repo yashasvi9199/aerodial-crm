@@ -9,5 +9,6 @@
 
 ## Technical Debt & Active Backlog
 - Verified all newly created and updated files are strictly under 300 lines limit (split listings into separate subcomponents).
-- ADB daemon state tracker (task-865) and Vite development server (task-744) are actively running.
-- Sync script `scratch/sync_recent_calls.py` verified for manual ad-hoc log querying.
+- Resolved multi-SIM call state parsing bug in `daemon/listener.py` by checking maximum state across all slots.
+- Stopped duplicate daemon instances and started a single clean background listener daemon (task-1273).
+- Cleaned up database logs, migrating old `'excel'` platforms to `'cold_call'` to restore correct categorizations in outbound log displays.
