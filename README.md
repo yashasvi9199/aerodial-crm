@@ -64,6 +64,13 @@ AeroDial CRM connects directly to a rooted Android device over ADB to automate d
 ## 📅 Changelog
 *For the standalone document, see [CHANGELOG.md](file:///home/drone/Programming/aerodial-crm/CHANGELOG.md).*
 
+### [1.4.1] - 2026-06-15
+- Added custom hover tooltips on Dashboard charts showing numbers, call counts, and formatted time (seconds, minutes, and hours).
+- Segmented the Detailed Outbound Logs table using inline date dividers (Today, Yesterday, This Week, This Month).
+- Enhanced Outbound Logs to display both business/lead names and POC/individual names in a single field.
+- Re-engineered the Python history sync script to use an optimized grouped query aggregation, reducing database network calls from 2000+ to under 40 requests.
+- Resolved ADB content query shell quotation errors for device call log lookups.
+
 ### [1.4.0] - 2026-06-15
 - Added a **Unified Search** tab ("All Contacts") featuring debounced subsequence fuzzy search and inline-editable cards (Green for Cold Calling, Blue for Justdial Leads).
 - Implemented **History Sync Script** (`scratch/sync_recent_calls.py`) to manually pull the last 15 call logs from Android call logs via ADB and sync call counts, statuses, and durations.
