@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './lib/supabase'
-import { RefreshCw, CheckCircle2, XCircle, BarChart3, Phone, Users, Sun, Moon } from 'lucide-react'
+import { RefreshCw, CheckCircle2, XCircle, BarChart3, Phone, Users, Sun, Moon, Search } from 'lucide-react'
 import Dashboard from './features/Dashboard/Dashboard'
 import ColdCalling from './features/ColdCalling/ColdCalling'
 import JustdialLeads from './features/JustDial/JustdialLeads'
+import AllContacts from './features/AllContacts/AllContacts'
 import './index.css'
 
 export default function App() {
@@ -75,6 +76,7 @@ export default function App() {
         <nav style={{ padding: '20px 10px', display: 'flex', flexDirection: 'column', gap: '6px', flexGrow: 1 }}>
           {[
             { id: 'dashboard', label: 'Dashboard', icon: <BarChart3 size={18} /> },
+            { id: 'allcontacts', label: 'All Contacts', icon: <Search size={18} /> },
             { id: 'coldcalling', label: 'Cold Calling', icon: <Phone size={18} /> },
             { id: 'justdial', label: 'Justdial Leads', icon: <Users size={18} /> }
           ].map(btn => (
@@ -125,6 +127,7 @@ export default function App() {
         {/* Viewport Content */}
         <main style={{ flexGrow: 1, overflow: 'hidden', background: 'var(--bg-dark)' }}>
           {activeTab === 'dashboard' && <Dashboard />}
+          {activeTab === 'allcontacts' && <AllContacts />}
           {activeTab === 'coldcalling' && <ColdCalling />}
           {activeTab === 'justdial' && <JustdialLeads />}
         </main>
