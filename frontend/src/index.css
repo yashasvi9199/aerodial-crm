@@ -1,14 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root, html[data-theme="light"] {
-  --bg-dark: #f4f5f7;
+  --bg-dark: #f1f5f9;
   --bg-panel: #ffffff;
-  --bg-input: #edf0f2;
-  --bg-selected: #e2f1fd;
-  --accent: #0284c7;
-  --text: #1e293b;
-  --text-muted: #64748b;
-  --border: #e2e8f0;
+  --bg-input: #f8fafc;
+  --bg-selected: #f0f9ff;
+  --accent: #0f766e;
+  --text: #0f172a;
+  --text-muted: #475569;
+  --border: #cbd5e1;
   --bg-badge-success: rgba(16, 185, 129, 0.12);
   --bg-badge-danger: rgba(239, 68, 68, 0.12);
   color-scheme: light;
