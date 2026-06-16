@@ -1,37 +1,36 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { X, Send, Paperclip, AlertCircle } from 'lucide-react'
+import { X, Send, AlertCircle } from 'lucide-react'
 import TemplateSelector from './TemplateSelector'
 
 export default function WhatsappModal({ isOpen, onClose, phone, contactName }) {
-  const [editablePhone, setEditablePhone] = useState(phone || '')
-  const [editableName, setEditableName] = useState(contactName || '')
+  const [editablePhone, setEditablePhone] = useState('')
+  const [editableName, setEditableName] = useState('')
   const [message, setMessage] = useState('')
-  const [file, setFile] = useState(null)
-  const [cachedFile, setCachedFile] = useState('')
   const [activeTemplateId, setActiveTemplateId] = useState(null)
   const [isSending, setIsSending] = useState(false)
 
-  if (!isOpen) return null
-
-  const handleFileChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0])
-      setCachedFile('') // override template cached file
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (isOpen) {
+      setEditablePhone(phone || '')
+      setEditableName(contactName || '')
+      setMessage('')
+      setActiveTemplateId(null)
     }
-  }
+  }, [phone, contactName, isOpen])
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  if (!isOpen) return null
 
   const handleSelectTemplate = (tpl) => {
     if (!tpl) {
       setActiveTemplateId(null)
       setMessage('')
-      setCachedFile('')
       return
     }
     setActiveTemplateId(tpl.id)
     setMessage(tpl.message)
-    setCachedFile(tpl.file_name || '')
-    setFile(null) // override manual upload
   }
 
   const handleSend = async () => {
@@ -41,40 +40,13 @@ export default function WhatsappModal({ isOpen, onClose, phone, contactName }) {
     }
     setIsSending(true)
     try {
-      let publicUrl = ''
-      let finalFileName = ''
-
-      if (file) {
-        // Attempt to upload file to Supabase storage bucket
-        const fileExt = file.name.split('.').pop()
-        finalFileName = `${Date.now()}.${fileExt}`
-
-        const { error: uploadError } = await supabase.storage
-          .from('whatsapp_media')
-          .upload(finalFileName, file)
-
-        if (uploadError) {
-          throw new Error(`Storage upload failed: ${uploadError.message}. Make sure the 'whatsapp_media' bucket exists and is public in Supabase.`)
-        }
-
-        const { data } = supabase.storage
-          .from('whatsapp_media')
-          .getPublicUrl(finalFileName)
-
-        publicUrl = data?.publicUrl || ''
-        finalFileName = file.name
-      } else if (cachedFile) {
-        publicUrl = 'local_file'
-        finalFileName = cachedFile
-      }
-
-      // 1. Dispatch ADB Command
+      // 1. Dispatch ADB Command (JSON format, text-only)
       const command = JSON.stringify({
         action: 'whatsapp',
         phone: editablePhone.trim(),
         message: message.trim(),
-        file_url: publicUrl,
-        file_name: finalFileName
+        file_url: '',
+        file_name: ''
       })
 
       const { error: cmdError } = await supabase.from('system_state').update({ command }).eq('id', 1)
@@ -87,15 +59,13 @@ export default function WhatsappModal({ isOpen, onClose, phone, contactName }) {
           phone_number: editablePhone.trim(),
           contact_name: editableName.trim() || null,
           message_text: message.trim() || null,
-          file_name: finalFileName || null
+          file_name: null
         }])
       
       if (logError) throw logError
 
-      alert('WhatsApp action triggered successfully! Check your phone.')
+      alert('WhatsApp message dispatch command triggered successfully!')
       setMessage('')
-      setFile(null)
-      setCachedFile('')
       setActiveTemplateId(null)
       onClose()
     } catch (err) {
@@ -156,43 +126,13 @@ export default function WhatsappModal({ isOpen, onClose, phone, contactName }) {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Type your WhatsApp message here..."
-              style={{ width: '100%', height: '80px', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px', borderRadius: '6px', fontSize: '13px', outline: 'none', resize: 'vertical', fontFamily: 'inherit' }}
+              style={{ width: '100%', height: '100px', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px', borderRadius: '6px', fontSize: '13px', outline: 'none', resize: 'vertical', fontFamily: 'inherit' }}
             />
-          </div>
-
-          <div>
-            <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: 'bold' }}>ATTACH MEDIA OR FILE</label>
-            {cachedFile ? (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(56, 189, 248, 0.05)', border: '1px solid rgba(56, 189, 248, 0.15)', padding: '8px 12px', borderRadius: '6px' }}>
-                <span style={{ fontSize: '12.5px', color: 'var(--text)', fontWeight: '500' }}>📎 {cachedFile} (Cached on Phone)</span>
-                <button
-                  onClick={() => setCachedFile('')}
-                  style={{ background: 'transparent', border: 'none', color: '#ef4444', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
-                >
-                  Remove
-                </button>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <label style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '8px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600' }}>
-                  <Paperclip size={14} /> Choose File
-                  <input type="file" onChange={handleFileChange} style={{ display: 'none' }} />
-                </label>
-                <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '300px' }}>
-                  {file ? file.name : 'No file selected'}
-                </span>
-                {file && (
-                  <button onClick={() => setFile(null)} style={{ background: 'transparent', border: 'none', color: '#ef4444', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>
-                    Clear
-                  </button>
-                )}
-              </div>
-            )}
           </div>
 
           <div style={{ display: 'flex', gap: '8px', background: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.2)', padding: '8px 12px', borderRadius: '6px', fontSize: '11.5px', color: 'var(--text-muted)', lineHeight: '1.4' }}>
             <AlertCircle size={15} style={{ color: 'var(--accent)', flexShrink: 0 }} />
-            <span>Note: Messages open immediately. For files/media, the file will be pushed to the device and the WhatsApp share interface will launch.</span>
+            <span>Note: Prefilled chat screen launches immediately on your mobile. Keep your device unlocked.</span>
           </div>
 
         </div>
@@ -204,8 +144,8 @@ export default function WhatsappModal({ isOpen, onClose, phone, contactName }) {
           </button>
           <button
             onClick={handleSend}
-            disabled={isSending || (!message.trim() && !file && !cachedFile)}
-            style={{ background: '#25d366', border: 'none', color: '#fff', padding: '8px 16px', borderRadius: '6px', fontSize: '12.5px', fontWeight: 'bold', cursor: (isSending || (!message.trim() && !file && !cachedFile)) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', opacity: (isSending || (!message.trim() && !file && !cachedFile)) ? 0.6 : 1 }}
+            disabled={isSending || !message.trim()}
+            style={{ background: '#25d366', border: 'none', color: '#fff', padding: '8px 16px', borderRadius: '6px', fontSize: '12.5px', fontWeight: 'bold', cursor: (isSending || !message.trim()) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', opacity: (isSending || !message.trim()) ? 0.6 : 1 }}
           >
             <Send size={13} />
             {isSending ? 'Sending...' : 'Send via WhatsApp'}
