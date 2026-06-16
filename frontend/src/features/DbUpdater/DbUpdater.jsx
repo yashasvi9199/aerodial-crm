@@ -88,7 +88,7 @@ export default function DbUpdater() {
           dbQuery = dbQuery.like(q.filterField, `%${q.filterValue}%`)
         }
 
-        const { error, count, data } = await dbQuery.select('*')
+        const { error } = await dbQuery.select('*')
         if (error) {
           failMessages.push(`Query #${q.id}: ${error.message}`)
         } else {
