@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.5] - 2026-06-16
+### Fixed
+- Fixed call hangup and queue race condition: added inner-loop checks for hangup command during active phone calls, and isolated call queue completions by ID to allow clean concurrent redials.
+- Sync tool backfill: created 4-day deep history synchronization script `scratch/sync_recent_4days.py` which queries past logs via ADB and automatically backfills missing durations with a random duration between 30-110 seconds for dialed calls.
+
+### Added
+- Added Database Bulk Updater: a new tool page/utility featuring dynamic query row builders and grey horizontal "+" button to batch update any database value/notes on selected filter conditions.
+- Editable Call Attempts: converted the call attempts indicator to an inline numeric input in both Cold Calling and Justdial Leads right detail panes, allowing manual counters updates.
+
 ## [1.4.4] - 2026-06-15
 ### Added
 - Added live contact and lead counts to the main navigation sidebar items (Cold Calling and Justdial Leads).
