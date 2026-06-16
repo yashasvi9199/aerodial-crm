@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './lib/supabase'
-import { RefreshCw, CheckCircle2, XCircle, BarChart3, Phone, Users, Sun, Moon, Search, Database } from 'lucide-react'
+import { RefreshCw, CheckCircle2, XCircle, BarChart3, Phone, Users, Sun, Moon, Search, Database, MessageSquare } from 'lucide-react'
 import Dashboard from './features/Dashboard/Dashboard'
 import ColdCalling from './features/ColdCalling/ColdCalling'
 import JustdialLeads from './features/JustDial/JustdialLeads'
 import AllContacts from './features/AllContacts/AllContacts'
 import DbUpdater from './features/DbUpdater/DbUpdater'
+import WhatsAppManager from './features/WhatsApp/WhatsAppManager'
 import './index.css'
 
 export default function App() {
@@ -122,6 +123,7 @@ export default function App() {
             { id: 'allcontacts', label: 'All Contacts', icon: <Search size={18} /> },
             { id: 'coldcalling', label: 'Cold Calling', icon: <Phone size={18} /> },
             { id: 'justdial', label: 'Justdial Leads', icon: <Users size={18} /> },
+            { id: 'whatsapp', label: 'WhatsApp', icon: <MessageSquare size={18} /> },
             { id: 'dbupdater', label: 'DB Updater', icon: <Database size={18} /> }
           ].map(btn => (
             <button 
@@ -219,6 +221,7 @@ export default function App() {
           {activeTab === 'allcontacts' && <AllContacts />}
           {activeTab === 'coldcalling' && <ColdCalling />}
           {activeTab === 'justdial' && <JustdialLeads />}
+          {activeTab === 'whatsapp' && <WhatsAppManager />}
           {activeTab === 'dbupdater' && <DbUpdater />}
         </main>
       </div>
