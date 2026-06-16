@@ -21,6 +21,7 @@ export default function JustdialLeads() {
   const [followUp, setFollowUp] = useState('No')
   const [statusUpdate, setStatusUpdate] = useState('Answered')
   const [leadQuality, setLeadQuality] = useState('Correct Lead')
+  const [callCount, setCallCount] = useState(0)
 
   const selectLead = (l) => {
     setSelectedLead(l)
@@ -32,6 +33,7 @@ export default function JustdialLeads() {
     setFollowUp(l.follow_up || 'No')
     setStatusUpdate(l.contact_state || (l.contacted === 'Yes' ? 'Answered' : 'Unanswered'))
     setLeadQuality(l.lead_quality || 'Correct Lead')
+    setCallCount(l.call_count || 0)
     setIsAdding(false)
     
     // Set 10-digit phone number without +91 for easy dialing and editing
@@ -54,6 +56,7 @@ export default function JustdialLeads() {
     setFollowUp('No')
     setStatusUpdate('Answered')
     setLeadQuality('Correct Lead')
+    setCallCount(0)
   }
 
   const handleStartNewLead = () => {
@@ -147,6 +150,7 @@ export default function JustdialLeads() {
       contact_state: statusUpdate,
       follow_up: followUp,
       lead_quality: leadQuality,
+      call_count: parseInt(callCount, 10) || 0,
       updated_at: new Date().toISOString()
     }
 
@@ -274,6 +278,8 @@ export default function JustdialLeads() {
               setLeadQuality={setLeadQuality}
               notes={notes}
               setNotes={setNotes}
+              callCount={callCount}
+              setCallCount={setCallCount}
               handleSave={handleSave}
               handleReset={handleReset}
             />
