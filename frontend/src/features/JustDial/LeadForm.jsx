@@ -18,6 +18,8 @@ export default function LeadForm({
   setLeadQuality,
   notes,
   setNotes,
+  callCount,
+  setCallCount,
   handleSave,
   handleReset
 }) {
@@ -26,8 +28,14 @@ export default function LeadForm({
       <h3 style={{ margin: 0, color: 'var(--text)', fontSize: '15px', borderBottom: '1px solid var(--border)', paddingBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span>{selectedLead ? 'Edit Lead Details' : 'Create New Lead Details'}</span>
         {selectedLead && (
-          <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 'normal', background: 'var(--bg-input)', padding: '2px 8px', borderRadius: '4px', border: '1px solid var(--border)' }}>
-            Call Attempts: {selectedLead.call_count || 0}
+          <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 'normal', display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--bg-input)', padding: '2px 8px', borderRadius: '4px', border: '1px solid var(--border)' }}>
+            Call Attempts:
+            <input
+              type="number"
+              value={callCount}
+              onChange={(e) => setCallCount(e.target.value)}
+              style={{ width: '50px', background: 'transparent', border: 'none', color: 'var(--text)', padding: '0', fontSize: '12px', outline: 'none', fontWeight: 'bold', textAlign: 'center' }}
+            />
           </span>
         )}
       </h3>
