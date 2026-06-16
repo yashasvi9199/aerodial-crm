@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import ContactList from './ContactList'
 import ContactForm from './ContactForm'
+import WhatsappModal from '../../components/WhatsappModal'
 
 export default function ColdCalling() {
   const [contacts, setContacts] = useState([])
@@ -9,6 +10,7 @@ export default function ColdCalling() {
   const [search, setSearch] = useState('')
   const [activeTab, setActiveTab] = useState('All')
   const [isAdding, setIsAdding] = useState(false)
+  const [isWhatsappOpen, setIsWhatsappOpen] = useState(false)
   
   // Selected contact form editing fields
   const [businessName, setBusinessName] = useState('')
@@ -237,6 +239,7 @@ export default function ColdCalling() {
             handleDial={handleDial}
             handleHangup={handleHangup}
             handleReset={handleReset}
+            handleWhatsappOpen={() => setIsWhatsappOpen(true)}
           />
         ) : (
           <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>
@@ -244,6 +247,11 @@ export default function ColdCalling() {
           </div>
         )}
       </div>
+      <WhatsappModal
+        isOpen={isWhatsappOpen}
+        onClose={() => setIsWhatsappOpen(false)}
+        phone={selectedContact?.phone_number}
+      />
     </div>
   )
 }
