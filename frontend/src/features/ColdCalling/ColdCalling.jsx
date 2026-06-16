@@ -19,6 +19,7 @@ export default function ColdCalling() {
   const [statusUpdate, setStatusUpdate] = useState('Answered')
   const [followUp, setFollowUp] = useState('No')
   const [notes, setNotes] = useState('')
+  const [callCount, setCallCount] = useState(0)
 
   const selectContact = (c) => {
     setSelectedContact(c)
@@ -30,6 +31,7 @@ export default function ColdCalling() {
     setStatusUpdate(c.status_update === 'Not Called' ? 'Answered' : c.status_update || 'Answered')
     setFollowUp(c.follow_up || 'No')
     setNotes(c.notes || '')
+    setCallCount(c.call_count || 0)
     setIsAdding(false)
   }
 
@@ -43,6 +45,7 @@ export default function ColdCalling() {
     setStatusUpdate('Answered')
     setFollowUp('No')
     setNotes('')
+    setCallCount(0)
     setIsAdding(true)
   }
 
@@ -121,7 +124,8 @@ export default function ColdCalling() {
           location_city: locationCity,
           status_update: statusUpdate,
           follow_up: followUp,
-          notes: notes
+          notes: notes,
+          call_count: parseInt(callCount, 10) || 0
         }
       ])
 
@@ -151,7 +155,8 @@ export default function ColdCalling() {
         location_city: locationCity,
         status_update: statusUpdate,
         follow_up: followUp,
-        notes: notes
+        notes: notes,
+        call_count: parseInt(callCount, 10) || 0
       }).eq('id', selectedContact.id)
 
       if (error) {
@@ -168,6 +173,7 @@ export default function ColdCalling() {
       setStatusUpdate('Answered')
       setFollowUp('No')
       setNotes('')
+      setCallCount(0)
       setIsAdding(false)
       setSelectedContact(null)
       fetchContacts(null)
@@ -225,6 +231,8 @@ export default function ColdCalling() {
             setNotes={setNotes}
             followUp={followUp}
             setFollowUp={setFollowUp}
+            callCount={callCount}
+            setCallCount={setCallCount}
             handleUpdate={handleUpdate}
             handleDial={handleDial}
             handleHangup={handleHangup}
