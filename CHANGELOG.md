@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.6] - 2026-06-16
+### Added
+- Outbound Dashboard Logs: added `whatsapp_logs` integration in Dashboard stats, unified log feed, and a dedicated logs tab for WhatsApp dispatches.
+- Low-Eye-Strain Theme: revamped light-mode CSS variables with high-contrast, low-eye-strain slate-gray background `#f1f5f9` and optimized teal accents.
+
+### Fixed
+- Pure Text WhatsApp Dispatch: removed all media file attachments and templates caching code from the frontend and daemon to achieve bulletproof text-only dispatches.
+- Keyboard Occlusion Fix: implemented wireless soft keyboard checks (`dumpsys input_method`) and automatic dismiss (`BACK` keyevent) during WhatsApp automations, preventing send button tapping failures.
+
 ## [1.4.5] - 2026-06-16
 ### Fixed
 - Fixed call hangup and queue race condition: added inner-loop checks for hangup command during active phone calls, and isolated call queue completions by ID to allow clean concurrent redials.
