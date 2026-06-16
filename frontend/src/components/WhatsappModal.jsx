@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { X, Send, Paperclip, AlertCircle } from 'lucide-react'
+import TemplateSelector from './TemplateSelector'
 
-export default function WhatsappModal({ isOpen, onClose, phone }) {
+export default function WhatsappModal({ isOpen, onClose, phone, contactName }) {
   const [message, setMessage] = useState('')
   const [file, setFile] = useState(null)
+  const [cachedFile, setCachedFile] = useState('')
+  const [activeTemplateId, setActiveTemplateId] = useState(null)
   const [isSending, setIsSending] = useState(false)
 
   if (!isOpen) return null
@@ -12,7 +15,21 @@ export default function WhatsappModal({ isOpen, onClose, phone }) {
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0])
+      setCachedFile('') // override template cached file
     }
+  }
+
+  const handleSelectTemplate = (tpl) => {
+    if (!tpl) {
+      setActiveTemplateId(null)
+      setMessage('')
+      setCachedFile('')
+      return
+    }
+    setActiveTemplateId(tpl.id)
+    setMessage(tpl.message)
+    setCachedFile(tpl.file_name || '')
+    setFile(null) // override manual upload
   }
 
   const handleSend = async () => {
@@ -44,9 +61,19 @@ export default function WhatsappModal({ isOpen, onClose, phone }) {
 
         publicUrl = data?.publicUrl || ''
         fileName = file.name
+      } else if (cachedFile) {
+        publicUrl = 'local_file'
+        fileName = cachedFile
       }
 
-      const command = `whatsapp|${phone}|${message}|${publicUrl}|${fileName}`
+      const command = JSON.stringify({
+        action: 'whatsapp',
+        phone,
+        message,
+        file_url: publicUrl,
+        file_name: fileName
+      })
+
       const { error } = await supabase.from('system_state').update({ command }).eq('id', 1)
       
       if (error) throw error
@@ -54,6 +81,8 @@ export default function WhatsappModal({ isOpen, onClose, phone }) {
       alert('WhatsApp action triggered successfully! Check your phone.')
       setMessage('')
       setFile(null)
+      setCachedFile('')
+      setActiveTemplateId(null)
       onClose()
     } catch (err) {
       console.error(err)
@@ -78,43 +107,72 @@ export default function WhatsappModal({ isOpen, onClose, phone }) {
         {/* Content */}
         <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
           
-          <div>
-            <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: 'bold' }}>RECIPIENT PHONE</label>
-            <div style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px', borderRadius: '6px', fontSize: '14px', fontWeight: '600' }}>
-              {phone}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '15px' }}>
+            <div style={{ flexGrow: 1 }}>
+              <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: 'bold' }}>RECIPIENT PHONE</label>
+              <div style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '8px 12px', borderRadius: '6px', fontSize: '13px', fontWeight: '600' }}>
+                {phone}
+              </div>
             </div>
+            {contactName && (
+              <div style={{ flexGrow: 1 }}>
+                <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: 'bold' }}>RECIPIENT NAME</label>
+                <div style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '8px 12px', borderRadius: '6px', fontSize: '13px', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {contactName}
+                </div>
+              </div>
+            )}
           </div>
 
+          {/* Template Selector Section */}
+          <TemplateSelector
+            onSelect={handleSelectTemplate}
+            contactName={contactName}
+            activeTemplateId={activeTemplateId}
+          />
+
           <div>
-            <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: 'bold' }}>MESSAGE TEXT</label>
+            <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: 'bold' }}>MESSAGE TEXT</label>
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Type your WhatsApp message here..."
-              style={{ width: '100%', height: '100px', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px', borderRadius: '6px', fontSize: '13.5px', outline: 'none', resize: 'vertical', fontFamily: 'inherit' }}
+              style={{ width: '100%', height: '80px', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px', borderRadius: '6px', fontSize: '13px', outline: 'none', resize: 'vertical', fontFamily: 'inherit' }}
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: 'bold' }}>ATTACH MEDIA OR FILE</label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <label style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '8px 12px', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600' }}>
-                <Paperclip size={15} /> Choose File
-                <input type="file" onChange={handleFileChange} style={{ display: 'none' }} />
-              </label>
-              <span style={{ fontSize: '12px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '300px' }}>
-                {file ? file.name : 'No file selected'}
-              </span>
-              {file && (
-                <button onClick={() => setFile(null)} style={{ background: 'transparent', border: 'none', color: '#ef4444', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>
-                  Clear
+            <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: 'bold' }}>ATTACH MEDIA OR FILE</label>
+            {cachedFile ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(56, 189, 248, 0.05)', border: '1px solid rgba(56, 189, 248, 0.15)', padding: '8px 12px', borderRadius: '6px' }}>
+                <span style={{ fontSize: '12.5px', color: 'var(--text)', fontWeight: '500' }}>📎 {cachedFile} (Cached on Phone)</span>
+                <button
+                  onClick={() => setCachedFile('')}
+                  style={{ background: 'transparent', border: 'none', color: '#ef4444', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
+                >
+                  Remove
                 </button>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <label style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '8px 12px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600' }}>
+                  <Paperclip size={14} /> Choose File
+                  <input type="file" onChange={handleFileChange} style={{ display: 'none' }} />
+                </label>
+                <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '300px' }}>
+                  {file ? file.name : 'No file selected'}
+                </span>
+                {file && (
+                  <button onClick={() => setFile(null)} style={{ background: 'transparent', border: 'none', color: '#ef4444', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>
+                    Clear
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
-          <div style={{ display: 'flex', gap: '8px', background: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.2)', padding: '10px 12px', borderRadius: '6px', fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.4' }}>
-            <AlertCircle size={16} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+          <div style={{ display: 'flex', gap: '8px', background: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.2)', padding: '8px 12px', borderRadius: '6px', fontSize: '11.5px', color: 'var(--text-muted)', lineHeight: '1.4' }}>
+            <AlertCircle size={15} style={{ color: 'var(--accent)', flexShrink: 0 }} />
             <span>Note: Messages open immediately. For files/media, the file will be pushed to the device and the WhatsApp share interface will launch.</span>
           </div>
 
@@ -122,15 +180,15 @@ export default function WhatsappModal({ isOpen, onClose, phone }) {
 
         {/* Footer */}
         <div style={{ padding: '12px 20px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: '10px', background: 'var(--bg-input)' }}>
-          <button onClick={onClose} style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text)', padding: '8px 16px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}>
+          <button onClick={onClose} style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text)', padding: '8px 16px', borderRadius: '6px', fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer' }}>
             Cancel
           </button>
           <button
             onClick={handleSend}
-            disabled={isSending || (!message.trim() && !file)}
-            style={{ background: '#25d366', border: 'none', color: '#fff', padding: '8px 16px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: (isSending || (!message.trim() && !file)) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', opacity: (isSending || (!message.trim() && !file)) ? 0.6 : 1 }}
+            disabled={isSending || (!message.trim() && !file && !cachedFile)}
+            style={{ background: '#25d366', border: 'none', color: '#fff', padding: '8px 16px', borderRadius: '6px', fontSize: '12.5px', fontWeight: 'bold', cursor: (isSending || (!message.trim() && !file && !cachedFile)) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', opacity: (isSending || (!message.trim() && !file && !cachedFile)) ? 0.6 : 1 }}
           >
-            <Send size={14} />
+            <Send size={13} />
             {isSending ? 'Sending...' : 'Send via WhatsApp'}
           </button>
         </div>
