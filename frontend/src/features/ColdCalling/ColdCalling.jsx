@@ -251,6 +251,7 @@ export default function ColdCalling() {
         isOpen={isWhatsappOpen}
         onClose={() => setIsWhatsappOpen(false)}
         phone={selectedContact?.phone_number}
+        contactName={selectedContact?.poc_name || selectedContact?.business_name}
       />
     </div>
   )
