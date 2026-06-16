@@ -1,4 +1,4 @@
-import { Phone, PhoneOff, RotateCcw, User, Briefcase, MapPin, Save } from 'lucide-react'
+import { Phone, PhoneOff, RotateCcw, User, Briefcase, MapPin, Save, MessageSquare } from 'lucide-react'
 
 export default function ContactForm({
   isAdding,
@@ -24,7 +24,8 @@ export default function ContactForm({
   handleUpdate,
   handleDial,
   handleHangup,
-  handleReset
+  handleReset,
+  handleWhatsappOpen
 }) {
   return (
     <div style={{ maxWidth: '650px', display: 'flex', flexDirection: 'column', gap: '25px' }}>
@@ -93,6 +94,13 @@ export default function ContactForm({
                 title="Redial"
               >
                 <RotateCcw size={16} />
+              </button>
+              <button 
+                onClick={handleWhatsappOpen} 
+                style={{ background: '#25d366', border: 'none', color: '#fff', padding: '10px 14px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13.5px' }}
+                title="Send WhatsApp Business Message"
+              >
+                <MessageSquare size={16} /> WhatsApp
               </button>
               <button 
                 onClick={handleHangup} 
