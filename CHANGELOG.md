@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 - Added Database Bulk Updater: a new tool page/utility featuring dynamic query row builders and grey horizontal "+" button to batch update any database value/notes on selected filter conditions.
 - Editable Call Attempts: converted the call attempts indicator to an inline numeric input in both Cold Calling and Justdial Leads right detail panes, allowing manual counters updates.
+- WhatsApp Business Integration: implemented a reusable frontend modal (`src/components/WhatsappModal.jsx`) and a backend ADB helper (`daemon/whatsapp_handler.py`) to compose text messages, choose files/media (automatically uploaded to Supabase storage and pushed to the phone via ADB), and launch WhatsApp Business chat views and auto-send actions.
 
 ## [1.4.4] - 2026-06-15
 ### Added
