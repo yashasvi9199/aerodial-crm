@@ -4,6 +4,8 @@ import { X, Send, Paperclip, AlertCircle } from 'lucide-react'
 import TemplateSelector from './TemplateSelector'
 
 export default function WhatsappModal({ isOpen, onClose, phone, contactName }) {
+  const [editablePhone, setEditablePhone] = useState(phone || '')
+  const [editableName, setEditableName] = useState(contactName || '')
   const [message, setMessage] = useState('')
   const [file, setFile] = useState(null)
   const [cachedFile, setCachedFile] = useState('')
@@ -33,23 +35,23 @@ export default function WhatsappModal({ isOpen, onClose, phone, contactName }) {
   }
 
   const handleSend = async () => {
-    if (!phone) {
-      alert('Phone number is missing!')
+    if (!editablePhone.trim()) {
+      alert('Recipient phone number is required!')
       return
     }
     setIsSending(true)
     try {
       let publicUrl = ''
-      let fileName = ''
+      let finalFileName = ''
 
       if (file) {
         // Attempt to upload file to Supabase storage bucket
         const fileExt = file.name.split('.').pop()
-        fileName = `${Date.now()}.${fileExt}`
+        finalFileName = `${Date.now()}.${fileExt}`
 
         const { error: uploadError } = await supabase.storage
           .from('whatsapp_media')
-          .upload(fileName, file)
+          .upload(finalFileName, file)
 
         if (uploadError) {
           throw new Error(`Storage upload failed: ${uploadError.message}. Make sure the 'whatsapp_media' bucket exists and is public in Supabase.`)
@@ -57,26 +59,38 @@ export default function WhatsappModal({ isOpen, onClose, phone, contactName }) {
 
         const { data } = supabase.storage
           .from('whatsapp_media')
-          .getPublicUrl(fileName)
+          .getPublicUrl(finalFileName)
 
         publicUrl = data?.publicUrl || ''
-        fileName = file.name
+        finalFileName = file.name
       } else if (cachedFile) {
         publicUrl = 'local_file'
-        fileName = cachedFile
+        finalFileName = cachedFile
       }
 
+      // 1. Dispatch ADB Command
       const command = JSON.stringify({
         action: 'whatsapp',
-        phone,
-        message,
+        phone: editablePhone.trim(),
+        message: message.trim(),
         file_url: publicUrl,
-        file_name: fileName
+        file_name: finalFileName
       })
 
-      const { error } = await supabase.from('system_state').update({ command }).eq('id', 1)
+      const { error: cmdError } = await supabase.from('system_state').update({ command }).eq('id', 1)
+      if (cmdError) throw cmdError
+
+      // 2. Insert to whatsapp_logs table
+      const { error: logError } = await supabase
+        .from('whatsapp_logs')
+        .insert([{
+          phone_number: editablePhone.trim(),
+          contact_name: editableName.trim() || null,
+          message_text: message.trim() || null,
+          file_name: finalFileName || null
+        }])
       
-      if (error) throw error
+      if (logError) throw logError
 
       alert('WhatsApp action triggered successfully! Check your phone.')
       setMessage('')
@@ -107,27 +121,32 @@ export default function WhatsappModal({ isOpen, onClose, phone, contactName }) {
         {/* Content */}
         <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
           
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '15px' }}>
-            <div style={{ flexGrow: 1 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+            <div>
               <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: 'bold' }}>RECIPIENT PHONE</label>
-              <div style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '8px 12px', borderRadius: '6px', fontSize: '13px', fontWeight: '600' }}>
-                {phone}
-              </div>
+              <input
+                type="text"
+                value={editablePhone}
+                onChange={(e) => setEditablePhone(e.target.value)}
+                style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '8px 12px', borderRadius: '6px', fontSize: '13px', fontWeight: '600', outline: 'none' }}
+              />
             </div>
-            {contactName && (
-              <div style={{ flexGrow: 1 }}>
-                <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: 'bold' }}>RECIPIENT NAME</label>
-                <div style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '8px 12px', borderRadius: '6px', fontSize: '13px', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {contactName}
-                </div>
-              </div>
-            )}
+            <div>
+              <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: 'bold' }}>RECIPIENT NAME</label>
+              <input
+                type="text"
+                value={editableName}
+                onChange={(e) => setEditableName(e.target.value)}
+                placeholder="No Name"
+                style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '8px 12px', borderRadius: '6px', fontSize: '13px', fontWeight: '600', outline: 'none' }}
+              />
+            </div>
           </div>
 
           {/* Template Selector Section */}
           <TemplateSelector
             onSelect={handleSelectTemplate}
-            contactName={contactName}
+            contactName={editableName}
             activeTemplateId={activeTemplateId}
           />
 
