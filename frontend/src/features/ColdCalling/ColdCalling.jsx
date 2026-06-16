@@ -248,6 +248,7 @@ export default function ColdCalling() {
         )}
       </div>
       <WhatsappModal
+        key={`${selectedContact?.id || 'none'}-${isWhatsappOpen}`}
         isOpen={isWhatsappOpen}
         onClose={() => setIsWhatsappOpen(false)}
         phone={selectedContact?.phone_number}
