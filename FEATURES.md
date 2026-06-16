@@ -45,3 +45,8 @@
 - **Multi-Query Builder**: Visual builder to edit and run multiple batch updates in parallel across contacts or leads.
 - **Custom Filters and Operators**: Clean dropdown interfaces supporting table fields, target values, operators, and match filters.
 - **Dynamic Input Typing**: Automatically adapts inputs (text inputs, numeric, select dropdowns) based on selected database schema columns.
+
+## 9. WhatsApp Business Dispatcher
+- **Composition Modal**: Easily compose messages and choose files/media (images, video, audio, PDFs, documents) to dispatch via WhatsApp Business.
+- **Supabase Storage integration**: Uploads attachments to Supabase Storage, giving public URLs for the bridge daemon to consume.
+- **ADB Automation Engine**: Pushes media/documents to `/sdcard/Download/` folder on the phone, scans files via MediaStore, opens WhatsApp Business chat/share views, and simulates send tap gestures.
