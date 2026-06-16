@@ -138,6 +138,11 @@ def main():
                             run_cmd(f"adb -s {d} shell \"su -c 'input keyevent 6'\"")
                         supabase.table('system_state').update({'command': 'idle'}).eq('id', 1).execute()
 
+                    if state['command'] and state['command'].startswith('whatsapp|') and is_connected:
+                        from whatsapp_handler import handle_whatsapp
+                        handle_whatsapp(device, state['command'], run_cmd)
+                        supabase.table('system_state').update({'command': 'idle'}).eq('id', 1).execute()
+
             # If device is connected, check call state and process dialing queue
             if is_connected:
                 # 3. CHECK PHONE CALL STATE (Every 0.4 seconds)
