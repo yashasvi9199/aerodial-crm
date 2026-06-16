@@ -287,6 +287,7 @@ export default function JustdialLeads() {
         isOpen={isWhatsappOpen}
         onClose={() => setIsWhatsappOpen(false)}
         phone={phone ? `+91${phone.replace(/\D/g, '')}` : ''}
+        contactName={selectedLead?.name}
       />
     </div>
   )
