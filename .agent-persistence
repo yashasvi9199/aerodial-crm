@@ -23,3 +23,7 @@
 - Created `scratch/sync_recent_4days.py` to sync 4-day call history and backfill dialed calls with random 30-110s durations.
 - Implemented Database Bulk Updater (`DbUpdater.jsx`) with dynamic dropdowns to batch update tables in parallel.
 - Made Call Attempts manually editable inside Cold Calling and Justdial Leads form panels.
+- Implemented WhatsApp Business message and media dispatcher: supports text, images, video, audio, PDFs, and generic files.
+- Separated WhatsApp logic into modular `whatsapp_handler.py` to keep `listener.py` under the 300-line limit (currently 296 lines).
+- Refactored redundant code in `JustdialLeads.jsx` to reduce its length (currently 293 lines) and keep it under the codebase file size limits.
+- Verified ESLint rules and resolved all unused variables in `DbUpdater.jsx` to achieve 100% clean check warnings.
