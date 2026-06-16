@@ -19,6 +19,8 @@ export default function ContactForm({
   setNotes,
   followUp,
   setFollowUp,
+  callCount,
+  setCallCount,
   handleUpdate,
   handleDial,
   handleHangup,
@@ -65,8 +67,14 @@ export default function ContactForm({
               <h2 style={{ margin: '0 0 6px 0', color: 'var(--text)', fontWeight: '600' }}>{selectedContact.business_name || 'No Identified Title'}</h2>
               <p style={{ margin: 0, color: 'var(--accent)', fontWeight: '600', fontSize: '18px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                 {selectedContact.phone_number}
-                <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 'normal', background: 'var(--bg-input)', padding: '2px 8px', borderRadius: '4px', border: '1px solid var(--border)' }}>
-                  Call Attempts: {selectedContact.call_count || 0}
+                <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 'normal', display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--bg-input)', padding: '2px 8px', borderRadius: '4px', border: '1px solid var(--border)' }}>
+                  Call Attempts:
+                  <input
+                    type="number"
+                    value={callCount}
+                    onChange={(e) => setCallCount(e.target.value)}
+                    style={{ width: '50px', background: 'transparent', border: 'none', color: 'var(--text)', padding: '0', fontSize: '12px', outline: 'none', fontWeight: 'bold', textAlign: 'center' }}
+                  />
                 </span>
               </p>
             </div>
