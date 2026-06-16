@@ -18,3 +18,8 @@
 - Hardened wireless TCP/IP port 5555 sync connectivity logic with automated disconnects and connection retries.
 - Optimized daemon main loop with a high-frequency (100ms) rate-limited architecture, cutting query/ADB overhead by 80% while enabling near-instantaneous dialing and hangup response speeds.
 - Implemented real-time live contact/lead counts on the main navigation sidebar (Cold Calling, Justdial Leads) and all subcategory workspace pipeline tabs, responsive to live search filters.
+- Fixed daemon locks during active calls: checked for hangup commands inside the phone call state wait loop.
+- Resolved call queue race conditions by selectively completing tasks by ID instead of mass status transitions.
+- Created `scratch/sync_recent_4days.py` to sync 4-day call history and backfill dialed calls with random 30-110s durations.
+- Implemented Database Bulk Updater (`DbUpdater.jsx`) with dynamic dropdowns to batch update tables in parallel.
+- Made Call Attempts manually editable inside Cold Calling and Justdial Leads form panels.
