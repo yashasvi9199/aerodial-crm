@@ -37,6 +37,11 @@
 - **Inline Card Editing**: Click the Edit icon on a card to render inputs directly within the card, removing sidebars and popups.
 
 ## 7. Telemetry & Activity Counters
-- **Call Attempts Tracking**: Automatically increments `call_count` for contacts and leads.
+- **Call Attempts Tracking & Manual Override**: Automatically increments `call_count` for contacts and leads during active call completions, with support for manual overrides via inline numeric inputs in form panels.
 - **Dually-Functional Logging**: Automatically registers incoming and outgoing calls and links them to database CRM records.
-- **History Sync Tool**: ADB-based python sync tool to pull past calls and batch update records.
+- **History Sync Tooling**: ADB-based python sync tools to query past device call logs (supporting 7-day depth and a specialized 4-day depth tool with random 30-110s duration backfilling for dialed calls).
+
+## 8. Database Bulk Updater
+- **Multi-Query Builder**: Visual builder to edit and run multiple batch updates in parallel across contacts or leads.
+- **Custom Filters and Operators**: Clean dropdown interfaces supporting table fields, target values, operators, and match filters.
+- **Dynamic Input Typing**: Automatically adapts inputs (text inputs, numeric, select dropdowns) based on selected database schema columns.
