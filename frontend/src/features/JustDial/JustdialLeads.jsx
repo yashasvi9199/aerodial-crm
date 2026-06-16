@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { Phone, PhoneOff, RotateCcw } from 'lucide-react'
+import { Phone, PhoneOff, RotateCcw, MessageSquare } from 'lucide-react'
 import LeadList from './LeadList'
 import LeadForm from './LeadForm'
+import WhatsappModal from '../../components/WhatsappModal'
 
 export default function JustdialLeads() {
   const [leads, setLeads] = useState([])
@@ -10,6 +11,7 @@ export default function JustdialLeads() {
   const [search, setSearch] = useState('')
   const [activeTab, setActiveTab] = useState('All')
   const [isAdding, setIsAdding] = useState(false)
+  const [isWhatsappOpen, setIsWhatsappOpen] = useState(false)
 
   // Lead editing/logging fields
   const [phone, setPhone] = useState('')
@@ -95,6 +97,12 @@ export default function JustdialLeads() {
     return () => { supabase.removeChannel(channel) }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const formatPhoneNum = (num) => {
+    let p = num.trim()
+    if (p.startsWith('+')) return p
+    return p.length === 12 && p.startsWith('91') ? '+' + p : '+91' + p
+  }
+
   const handleDial = async (num) => {
     if (!num) return
     await supabase.from('call_queue').insert([{ number: String(num).trim(), status: 'dialing' }])
@@ -105,17 +113,7 @@ export default function JustdialLeads() {
       alert('Please enter a phone number first.')
       return
     }
-    let formattedPhone = phone.trim()
-    if (!formattedPhone.startsWith('+')) {
-      if (formattedPhone.length === 10) {
-        formattedPhone = '+91' + formattedPhone
-      } else if (formattedPhone.length === 12 && formattedPhone.startsWith('91')) {
-        formattedPhone = '+' + formattedPhone
-      } else {
-        formattedPhone = '+91' + formattedPhone
-      }
-    }
-    await handleDial(formattedPhone)
+    await handleDial(formatPhoneNum(phone))
   }
 
   const handleHangup = async () => {
@@ -128,16 +126,7 @@ export default function JustdialLeads() {
       return
     }
 
-    let formattedPhone = phone.trim()
-    if (!formattedPhone.startsWith('+')) {
-      if (formattedPhone.length === 10) {
-        formattedPhone = '+91' + formattedPhone
-      } else if (formattedPhone.length === 12 && formattedPhone.startsWith('91')) {
-        formattedPhone = '+' + formattedPhone
-      } else {
-        formattedPhone = '+91' + formattedPhone
-      }
-    }
+    let formattedPhone = formatPhoneNum(phone)
 
     const payload = {
       name: name || 'Unnamed Lead',
@@ -253,6 +242,9 @@ export default function JustdialLeads() {
                 <button onClick={handleDialCurrent} style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: '6px', cursor: 'pointer', height: '40px' }} title="Redial">
                   <RotateCcw size={16} />
                 </button>
+                <button onClick={() => setIsWhatsappOpen(true)} style={{ background: '#25d366', border: 'none', color: '#fff', padding: '10px 14px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', height: '40px' }} title="Send WhatsApp Business Message">
+                  <MessageSquare size={16} /> WhatsApp
+                </button>
                 <button onClick={handleHangup} style={{ background: '#ef4444', border: 'none', color: '#fff', padding: '10px 14px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', height: '40px' }} title="Disconnect Call">
                   <PhoneOff size={16} /> Hang Up
                 </button>
@@ -291,6 +283,11 @@ export default function JustdialLeads() {
           </div>
         )}
       </div>
+      <WhatsappModal
+        isOpen={isWhatsappOpen}
+        onClose={() => setIsWhatsappOpen(false)}
+        phone={phone ? `+91${phone.replace(/\D/g, '')}` : ''}
+      />
     </div>
   )
 }
