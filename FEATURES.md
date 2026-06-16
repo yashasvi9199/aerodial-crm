@@ -47,6 +47,8 @@
 - **Dynamic Input Typing**: Automatically adapts inputs (text inputs, numeric, select dropdowns) based on selected database schema columns.
 
 ## 9. WhatsApp Business Dispatcher
-- **Composition Modal**: Easily compose messages and choose files/media (images, video, audio, PDFs, documents) to dispatch via WhatsApp Business.
-- **Supabase Storage integration**: Uploads attachments to Supabase Storage, giving public URLs for the bridge daemon to consume.
-- **ADB Automation Engine**: Pushes media/documents to `/sdcard/Download/` folder on the phone, scans files via MediaStore, opens WhatsApp Business chat/share views, and simulates send tap gestures.
+- **Composition Modal & Sidebar Hub**: Easily compose direct text messages using pre-loaded templates with dynamic `{name}` placeholder resolution.
+- **Editable Phone and Name Fields**: Allows full recipient input overrides when launching dispatches from any contact detail cards or workspace menus.
+- **ADB Automation Engine**: Automatically launches the WhatsApp Business chat view, checks soft keyboard visibility, automatically dismisses the keyboard if active, and simulates send tap gestures.
+- **Outbound Telemetry Log**: Registers sent messages in Supabase real-time `whatsapp_logs`, tracking recipient numbers, contact names, message text, and timestamp details.
+
