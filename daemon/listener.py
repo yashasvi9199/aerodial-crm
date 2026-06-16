@@ -130,9 +130,6 @@ def main():
                                 if action == 'whatsapp':
                                     from whatsapp_handler import handle_whatsapp_json
                                     handle_whatsapp_json(device, cmd_data, run_cmd)
-                                elif action == 'push_template':
-                                    from whatsapp_handler import handle_push_template_json
-                                    handle_push_template_json(device, cmd_data, run_cmd)
                                 supabase.table('system_state').update({'command': 'idle'}).eq('id', 1).execute()
                             except Exception as je:
                                 print(f"⚠️ JSON command error: {je}")
@@ -142,9 +139,6 @@ def main():
                             if cmd_str.startswith('whatsapp|'):
                                 from whatsapp_handler import handle_whatsapp
                                 handle_whatsapp(device, cmd_str, run_cmd)
-                            elif cmd_str.startswith('push_template|'):
-                                from whatsapp_handler import handle_push_template
-                                handle_push_template(device, cmd_str, run_cmd)
                             supabase.table('system_state').update({'command': 'idle'}).eq('id', 1).execute()
 
             if is_connected:
