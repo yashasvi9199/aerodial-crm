@@ -21,6 +21,12 @@ def run_cmd(command):
     result = subprocess.run(command, shell=True, capture_output=True, text=True)
     return result.stdout.strip()
 
+def update_queue_status(qid, status):
+    if qid:
+        supabase.table('call_queue').update({'status': status}).eq('id', qid).execute()
+    else:
+        supabase.table('call_queue').update({'status': status}).in_('status', ['dialing', 'call_active']).execute()
+
 def get_connected_devices():
     lines = run_cmd("adb devices").splitlines()[1:]
     devices = [l.split()[0] for l in lines if l.strip() and "device" in l and l.split()[1] == "device"]
@@ -91,6 +97,7 @@ def main():
     devices = []
     is_connected = False
     call_state = 0
+    active_call_task_id = None
     
     last_device_check = 0.0
     last_state_check = 0.0
@@ -143,6 +150,12 @@ def main():
                     
                     # Wait for call to terminate
                     while get_call_state(device) != 0:
+                        try:
+                            st = supabase.table('system_state').select('command').eq('id', 1).execute().data
+                            if st and st[0]['command'] == 'hangup':
+                                for d in devices: run_cmd(f"adb -s {d} shell \"su -c 'input keyevent 6'\"")
+                                supabase.table('system_state').update({'command': 'idle'}).eq('id', 1).execute()
+                        except Exception as e: print(f"⚠️ State error: {e}")
                         time.sleep(0.3)
                         
                     call_end_time = time.time()
@@ -152,26 +165,16 @@ def main():
                     
                     run_cmd(f"adb -s {device} shell \"su -c 'telecom set-user-selected-outgoing-phone-account'\"")
                     
-                    # Fetch last log entry from phone
                     latest_log = None
                     try:
                         cmd = f"adb -s {device} shell \"su -c 'content query --uri content://call_log/calls --projection date:duration:number:type --sort \\\"date DESC\\\" LIMIT 1'\""
                         out = run_cmd(cmd)
-                        first_row_line = next((line for line in out.splitlines() if "number=" in line), None)
-                        if first_row_line:
-                            date_match = re.search(r'date=(\d+)', first_row_line)
-                            dur_match = re.search(r'duration=(\d+)', first_row_line)
-                            num_match = re.search(r'number=([+\d#*]+)', first_row_line)
-                            type_match = re.search(r'type=(\d+)', first_row_line)
-                            if date_match and num_match and type_match:
-                                latest_log = {
-                                    'date': int(date_match.group(1)),
-                                    'duration': int(dur_match.group(1)) if dur_match else 0,
-                                    'number': num_match.group(1),
-                                    'type': int(type_match.group(1))
-                                }
-                    except Exception as ex:
-                        print(f"⚠️ Error reading Android call logs: {ex}")
+                        line = next((l for l in out.splitlines() if "number=" in l), None)
+                        if line:
+                            d_m, dur_m, n_m, t_m = re.search(r'date=(\d+)', line), re.search(r'duration=(\d+)', line), re.search(r'number=([+\d#*]+)', line), re.search(r'type=(\d+)', line)
+                            if d_m and n_m and t_m:
+                                latest_log = {'date': int(d_m.group(1)), 'duration': int(dur_m.group(1)) if dur_m else 0, 'number': n_m.group(1), 'type': int(t_m.group(1))}
+                    except Exception as ex: print(f"⚠️ Error reading Android call logs: {ex}")
                         
                     raw_number = None
                     call_type = 'outgoing'
@@ -241,11 +244,13 @@ def main():
                             'justdial_lead_id': jd_lead_id
                         }).execute()
                         
-                        supabase.table('call_queue').update({'status': 'completed'}).in_('status', ['dialing', 'call_active']).execute()
+                        update_queue_status(active_call_task_id, 'completed')
+                        active_call_task_id = None
                         print(f"✅ Call logged: {clean_num} ({call_type}, {duration}s)")
                     else:
                         print("⚠️ Call ended but no matched phone number could be determined.")
-                        supabase.table('call_queue').update({'status': 'failed_unknown'}).in_('status', ['dialing', 'call_active']).execute()
+                        update_queue_status(active_call_task_id, 'failed_unknown')
+                        active_call_task_id = None
 
                 # 4. PROCESS DIALING IN QUEUE (Every 0.4 seconds)
                 elif now - last_queue_check >= 0.4:
@@ -253,6 +258,7 @@ def main():
                     call_res = supabase.table('call_queue').select('*').eq('status', 'dialing').limit(1).execute()
                     if call_res.data:
                         call_task = call_res.data[0]
+                        active_call_task_id = call_task['id']
                         number = call_task['number']
                         print(f"[*] Placing outgoing call from queue: {number}")
                         
