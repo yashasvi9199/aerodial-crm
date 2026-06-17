@@ -130,6 +130,9 @@ def main():
                                 if action == 'whatsapp':
                                     from whatsapp_handler import handle_whatsapp_json
                                     handle_whatsapp_json(device, cmd_data, run_cmd)
+                                elif action == 'truecaller_lookup':
+                                    from truecaller_handler import handle_truecaller_json
+                                    handle_truecaller_json(device, cmd_data, run_cmd, supabase)
                                 supabase.table('system_state').update({'command': 'idle'}).eq('id', 1).execute()
                             except Exception as je:
                                 print(f"⚠️ JSON command error: {je}")
