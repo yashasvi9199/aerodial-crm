@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.8] - 2026-06-17
+### Added
+- WhatsApp Styling Toolbar: introduced character styling shortcuts (bold, italic, strikethrough, monospace, blockquotes, bullet lists) that insert formatting tags directly at the composer cursor.
+- Live Styled Preview: added a real-time message bubble preview rendering the formatted WhatsApp output before dispatch.
+- Live Chat History Sync: implemented background synchronization that periodically pulls the device `msgstore.db` database via rooted ADB shell, syncs incoming/outgoing messages, and renders them in a real-time WhatsApp-style chat timeline with status checks (single tick, double tick, blue ticks).
+
 ## [1.4.7] - 2026-06-17
 ### Added
 - Automated Keep-Alive System: added `scripts/keep_alive.py` and GitHub Actions daily cron job `.github/workflows/keep_alive.yml` to query Supabase, ping Cloudflare, and push Git updates to keep free tiers active.
