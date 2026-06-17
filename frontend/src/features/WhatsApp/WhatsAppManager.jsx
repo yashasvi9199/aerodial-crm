@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
 import { Send, MessageSquare, History, Phone, User } from 'lucide-react'
 import TemplateSelector from '../../components/TemplateSelector'
 import TemplateManager from './TemplateManager'
+import { formatWhatsappText, insertFormattingTag } from '../../lib/whatsappUtils'
 
 export default function WhatsAppManager() {
   const [phone, setPhone] = useState('')
@@ -11,6 +12,7 @@ export default function WhatsAppManager() {
   const [activeTemplateId, setActiveTemplateId] = useState(null)
   const [isSending, setIsSending] = useState(false)
   const [logs, setLogs] = useState([])
+  const textareaRef = useRef(null)
 
   const fetchLogs = async () => {
     try {
@@ -35,10 +37,7 @@ export default function WhatsAppManager() {
     }
     loadLogs()
     
-    const channel = supabase.channel('whatsapp_logs_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'whatsapp_logs' }, () => { fetchLogs() })
-      .subscribe()
-
+    const channel = supabase.channel('whatsapp_logs_realtime').on('postgres_changes', { event: '*', schema: 'public', table: 'whatsapp_logs' }, () => { fetchLogs() }).subscribe()
     return () => {
       active = false
       supabase.removeChannel(channel)
@@ -64,23 +63,11 @@ export default function WhatsAppManager() {
     setIsSending(true)
 
     try {
-      const command = JSON.stringify({
-        action: 'whatsapp',
-        phone: phone.trim(),
-        message: message.trim(),
-        file_url: '',
-        file_name: ''
-      })
-
+      const command = JSON.stringify({ action: 'whatsapp', phone: phone.trim(), message: message.trim(), file_url: '', file_name: '' })
       const { error: cmdError } = await supabase.from('system_state').update({ command }).eq('id', 1)
       if (cmdError) throw cmdError
 
-      const { error: logError } = await supabase.from('whatsapp_logs').insert([{
-        phone_number: phone.trim(),
-        contact_name: contactName.trim() || null,
-        message_text: message.trim() || null,
-        file_name: null
-      }])
+      const { error: logError } = await supabase.from('whatsapp_logs').insert([{ phone_number: phone.trim(), contact_name: contactName.trim() || null, message_text: message.trim() || null, file_name: null }])
       if (logError) throw logError
 
       alert('Message dispatch command sent!')
@@ -96,6 +83,15 @@ export default function WhatsAppManager() {
     }
   }
 
+  const formattingTools = [
+    { type: 'bold', label: 'B', title: 'Bold (*text*)', style: { fontWeight: 'bold' } },
+    { type: 'italic', label: 'I', title: 'Italic (_text_)', style: { fontStyle: 'italic' } },
+    { type: 'strikethrough', label: 'S', title: 'Strikethrough (~text~)', style: { textDecoration: 'line-through' } },
+    { type: 'monospace', label: 'Code', style: { fontFamily: 'monospace' } },
+    { type: 'blockquote', label: 'Quote' },
+    { type: 'bullet', label: 'List' }
+  ]
+
   return (
     <div style={{ padding: '24px', height: '100%', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
       
@@ -107,7 +103,7 @@ export default function WhatsAppManager() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '20px', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', alignItems: 'start' }}>
         
         <form onSubmit={handleSend} style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', padding: '20px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <h3 style={{ margin: '0 0 5px 0', fontSize: '15px', fontWeight: '750', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -138,8 +134,28 @@ export default function WhatsAppManager() {
 
           <div>
             <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '5px', fontWeight: 'bold' }}>MESSAGE TEXT</label>
-            <textarea placeholder="Type message body here..." value={message} onChange={(e) => setMessage(e.target.value)} style={{ width: '100%', height: '100px', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px', borderRadius: '6px', fontSize: '13px', outline: 'none', resize: 'vertical', fontFamily: 'inherit' }} />
+            
+            {/* Formatting Toolbar */}
+            <div style={{ display: 'flex', gap: '5px', marginBottom: '6px', flexWrap: 'wrap' }}>
+              {formattingTools.map(tool => (
+                <button key={tool.type} type="button" onClick={() => insertFormattingTag(textareaRef, message, setMessage, tool.type)} style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: '11px', fontWeight: '600', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', transition: 'all 0.15s', ...tool.style }}>{tool.label}</button>
+              ))}
+            </div>
+
+            <textarea ref={textareaRef} placeholder="Type message body here..." value={message} onChange={(e) => setMessage(e.target.value)} style={{ width: '100%', height: '100px', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px', borderRadius: '6px', fontSize: '13px', outline: 'none', resize: 'vertical', fontFamily: 'inherit' }} />
           </div>
+
+          {/* Live Preview */}
+          {message.trim() && (
+            <div>
+              <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: 'bold' }}>MESSAGE PREVIEW</label>
+              <div style={{ background: 'var(--bg-input)', backgroundImage: 'radial-gradient(var(--border) 0.8px, transparent 0)', backgroundSize: '12px 12px', padding: '12px', borderRadius: '6px', border: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end' }}>
+                <div style={{ backgroundColor: 'rgba(37, 211, 102, 0.15)', color: 'var(--text)', border: '1px solid rgba(37, 211, 102, 0.25)', padding: '6px 10px', borderRadius: '8px', maxWidth: '85%', fontSize: '12.5px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                  <div dangerouslySetInnerHTML={{ __html: formatWhatsappText(message) }} style={{ wordBreak: 'break-word' }} />
+                </div>
+              </div>
+            </div>
+          )}
 
           <button
             type="submit"
@@ -179,7 +195,9 @@ export default function WhatsAppManager() {
                     <td style={{ padding: '10px 8px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{new Date(log.sent_at).toLocaleString()}</td>
                     <td style={{ padding: '10px 8px', fontWeight: '600' }}>{log.phone_number}</td>
                     <td style={{ padding: '10px 8px', color: log.contact_name ? 'var(--text)' : 'var(--text-muted)' }}>{log.contact_name || '—'}</td>
-                    <td style={{ padding: '10px 8px', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={log.message_text}>{log.message_text || '—'}</td>
+                    <td style={{ padding: '10px 8px', maxWidth: '300px' }}>
+                      <div dangerouslySetInnerHTML={{ __html: formatWhatsappText(log.message_text) }} style={{ maxHeight: '60px', overflowY: 'auto', wordBreak: 'break-word' }} />
+                    </td>
                   </tr>
                 ))}
               </tbody>
