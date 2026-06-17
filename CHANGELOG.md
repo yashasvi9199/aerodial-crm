@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.9] - 2026-06-17
+### Added
+- Truecaller Name Lookup: implemented database resolver using rooted ADB shell access to copy and query the phone's Truecaller database (`tc.db`) locally.
+- Prepended '0' search prefix: added support to search using leading '0' prefix (e.g. `07976401542`) alongside standard format search queries to match local device formats.
+- Truecaller UI cache and sections: created a dedicated `truecaller_cache` database table and inline-editable Truecaller Section rendering dynamically across Contacts, Cold Calling Contacts, Justdial Leads, and WhatsApp Direct Composer & Modal inputs.
+
+### Fixed
+- WhatsApp Business dispatch mechanics: cleaned up sending gestures to tap exactly once and bypassed keyboard check/dismissal loops, ensuring robust dispatching without triggering accidental voice note recording.
+
 ## [1.4.8] - 2026-06-17
 ### Added
 - WhatsApp Styling Toolbar: introduced character styling shortcuts (bold, italic, strikethrough, monospace, blockquotes, bullet lists) that insert formatting tags directly at the composer cursor.
