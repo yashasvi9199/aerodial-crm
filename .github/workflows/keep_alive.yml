@@ -1,0 +1,34 @@
+name: Keep Alive
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Daily at midnight UTC
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed to commit timestamp
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install supabase
+
+      - name: Run Keep-Alive Script
+        run: python scripts/keep_alive.py
+
+      - name: Commit and Push timestamp changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add scripts/last_ping.txt
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: update keep-alive ping timestamp [skip ci]" && git push)
