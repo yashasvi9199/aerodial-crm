@@ -55,10 +55,18 @@
 - **Rich Text Formatting Toolbar**: Interactive styling toolbar buttons (Bold `*`, Italic `_`, Strikethrough `~`, Monospace ` ``` `, Blockquote `>`, Bullet List `-`) wrapping selection or inserting tags at cursor.
 - **Real-Time Message Previews**: Inline chat bubble rendering styled message output dynamically using custom HTML text format parsers.
 - **Rooted ADB Conversation History Sync**: Daemon-level worker copying and pulling WhatsApp Business local `msgstore.db` using root privileges (`su -c`) to sync actual message logs, delivery ticks, and timelines in real-time.
+- **Auto-Send Mechanics**: Automatically launches the WhatsApp Business chat view and simulates a single precise tap gesture on the Send button coordinates, bypassing keyboard dismissals to ensure stable delivery without triggering voice message recording.
 
 ## 10. Automated Keep-Alive Scheduler
 - **Daily Cron Job**: A scheduled GitHub Actions workflow that executes every 24 hours to automatically ping all free tier deployment endpoints.
 - **Database Query Activity**: Triggers light queries against the Supabase `system_state` table to keep the database project active and prevent pause/sleep timers.
 - **Git Push Activity Trigger**: Automatically commits and pushes a timestamp log to `scripts/last_ping.txt` to trigger git commit history, keeping GitHub Actions scheduled workflows from being deactivated due to repository inactivity.
 - **Web App Pings**: Hitting the Cloudflare Page URL regularly to refresh pages cache and verify live endpoints status.
+
+## 11. Truecaller Name Lookup Cache & UI
+- **Rooted SQLite DB Queries**: Copy and query Truecaller's local `tc.db` database directly on the connected phone using root privileges (`su -c`) without ever opening the Truecaller app on the screen.
+- **Prepended '0' Search Prefix**: Automatically search using a leading '0' prefix (e.g. `07976401542`) as well as the standard 10-digit number to support matching local format variants on the device.
+- **Supabase Cache Integration**: Lookups are cached inside a dedicated Supabase `truecaller_cache` table to enable instant lookup speeds on subsequent card loads.
+- **Editable Resolved Profiles**: All resolved Truecaller names displayed in Contacts, Cold Calling Contacts, Justdial Leads, and WhatsApp composers are inline-editable. Editing updates the cached name in the database, preserving custom names for all future views.
+
 
