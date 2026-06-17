@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { Send, MessageSquare, History, Phone, User } from 'lucide-react'
 import TemplateSelector from '../../components/TemplateSelector'
+import TemplateManager from './TemplateManager'
 
 export default function WhatsAppManager() {
   const [phone, setPhone] = useState('')
@@ -150,19 +151,7 @@ export default function WhatsAppManager() {
           </button>
         </form>
 
-        <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', padding: '20px', borderRadius: '10px', height: '100%', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-          <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '750', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '8px' }}><MessageSquare size={16} style={{ color: 'var(--accent)' }} /> WhatsApp Direct Messaging</h3>
-          <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: '1.6', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <p>Aerodial facilitates seamless text dispatches to your WhatsApp Business app on the connected device.</p>
-            <ol style={{ paddingLeft: '20px', margin: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <li>Select or create message templates with customizable templates.</li>
-              <li>Input client phone number (including country prefix if needed).</li>
-              <li>Type custom message or use pre-configured placeholders.</li>
-              <li>Click <strong>Send Message</strong> to deploy the ADB command to the device.</li>
-            </ol>
-            <p style={{ margin: '5px 0 0 0', padding: '8px 12px', borderLeft: '3px solid var(--accent)', background: 'var(--bg-input)', borderRadius: '0 4px 4px 0' }}><strong>Placeholder Tip:</strong> Message text supports the <code>{`{name}`}</code> template placeholder which dynamically resolves to the Recipient Name before dispatching.</p>
-          </div>
-        </div>
+        <TemplateManager />
 
       </div>
 
