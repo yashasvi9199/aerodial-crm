@@ -114,11 +114,14 @@ export default function WhatsappModal({ isOpen, onClose, phone, contactName }) {
           </div>
 
           {/* Template Selector Section */}
-          <TemplateSelector
-            onSelect={handleSelectTemplate}
-            contactName={editableName}
-            activeTemplateId={activeTemplateId}
-          />
+          <div>
+            <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '5px', fontWeight: 'bold' }}>CHOOSE A TEMPLATE</label>
+            <TemplateSelector
+              onSelect={handleSelectTemplate}
+              contactName={editableName}
+              activeTemplateId={activeTemplateId}
+            />
+          </div>
 
           <div>
             <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: 'bold' }}>MESSAGE TEXT</label>
