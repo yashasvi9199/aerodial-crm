@@ -4,6 +4,7 @@ import { Phone, PhoneOff, RotateCcw, MessageSquare } from 'lucide-react'
 import LeadList from './LeadList'
 import LeadForm from './LeadForm'
 import WhatsappModal from '../../components/WhatsappModal'
+import TruecallerSection from '../../components/TruecallerSection'
 
 export default function JustdialLeads() {
   const [leads, setLeads] = useState([])
@@ -224,7 +225,7 @@ export default function JustdialLeads() {
             {/* Calling Mechanism Card at the Top */}
             <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', padding: '20px', borderRadius: '8px' }}>
               <label style={{ display: 'block', fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: 'bold' }}>Direct Call Dialer (10-Digit Number)</label>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: phone ? '10px' : '0' }}>
                 <div style={{ display: 'flex', alignItems: 'center', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: '6px', flexGrow: 1, paddingLeft: '12px' }}>
                   <span style={{ color: 'var(--text-muted)', fontSize: '14px', marginRight: '4px', fontWeight: '600' }}>+91</span>
                   <input 
@@ -236,19 +237,12 @@ export default function JustdialLeads() {
                     style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text)', padding: '10px 8px', fontSize: '14.5px', outline: 'none', fontWeight: '600' }} 
                   />
                 </div>
-                <button onClick={handleDialCurrent} style={{ background: '#10b981', border: 'none', color: '#fff', padding: '10px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13.5px', height: '40px' }}>
-                  <Phone size={16} /> Dial
-                </button>
-                <button onClick={handleDialCurrent} style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: '6px', cursor: 'pointer', height: '40px' }} title="Redial">
-                  <RotateCcw size={16} />
-                </button>
-                <button onClick={() => setIsWhatsappOpen(true)} style={{ background: '#25d366', border: 'none', color: '#fff', padding: '10px 14px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', height: '40px' }} title="Send WhatsApp Business Message">
-                  <MessageSquare size={16} /> WhatsApp
-                </button>
-                <button onClick={handleHangup} style={{ background: '#ef4444', border: 'none', color: '#fff', padding: '10px 14px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', height: '40px' }} title="Disconnect Call">
-                  <PhoneOff size={16} /> Hang Up
-                </button>
+                <button onClick={handleDialCurrent} style={{ background: '#10b981', border: 'none', color: '#fff', padding: '10px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13.5px', height: '40px' }}><Phone size={16} /> Dial</button>
+                <button onClick={handleDialCurrent} style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: '6px', cursor: 'pointer', height: '40px' }} title="Redial"><RotateCcw size={16} /></button>
+                <button onClick={() => setIsWhatsappOpen(true)} style={{ background: '#25d366', border: 'none', color: '#fff', padding: '10px 14px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', height: '40px' }} title="Send WhatsApp Business Message"><MessageSquare size={16} /> WhatsApp</button>
+                <button onClick={handleHangup} style={{ background: '#ef4444', border: 'none', color: '#fff', padding: '10px 14px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', height: '40px' }} title="Disconnect Call"><PhoneOff size={16} /> Hang Up</button>
               </div>
+              <TruecallerSection phone={phone} />
             </div>
 
             {/* Lead Details Editing Form below Dialer */}
