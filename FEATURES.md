@@ -48,7 +48,14 @@
 
 ## 9. WhatsApp Business Dispatcher
 - **Composition Modal & Sidebar Hub**: Easily compose direct text messages using pre-loaded templates with dynamic `{name}` placeholder resolution.
+- **Dedicated Template Manager**: Fully separated component to create and delete templates, preventing form interference and ensuring reliable database saves.
 - **Editable Phone and Name Fields**: Allows full recipient input overrides when launching dispatches from any contact detail cards or workspace menus.
 - **ADB Automation Engine**: Automatically launches the WhatsApp Business chat view, checks soft keyboard visibility, automatically dismisses the keyboard if active, and simulates send tap gestures.
 - **Outbound Telemetry Log**: Registers sent messages in Supabase real-time `whatsapp_logs`, tracking recipient numbers, contact names, message text, and timestamp details.
+
+## 10. Automated Keep-Alive Scheduler
+- **Daily Cron Job**: A scheduled GitHub Actions workflow that executes every 24 hours to automatically ping all free tier deployment endpoints.
+- **Database Query Activity**: Triggers light queries against the Supabase `system_state` table to keep the database project active and prevent pause/sleep timers.
+- **Git Push Activity Trigger**: Automatically commits and pushes a timestamp log to `scripts/last_ping.txt` to trigger git commit history, keeping GitHub Actions scheduled workflows from being deactivated due to repository inactivity.
+- **Web App Pings**: Hitting the Cloudflare Page URL regularly to refresh pages cache and verify live endpoints status.
 
