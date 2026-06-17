@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { X, Send, AlertCircle, Check, CheckCheck } from 'lucide-react'
 import TemplateSelector from './TemplateSelector'
 import { formatWhatsappText, insertFormattingTag } from '../lib/whatsappUtils'
+import TruecallerSection from './TruecallerSection'
 
 export default function WhatsappModal({ isOpen, onClose, phone, contactName }) {
   const [editablePhone, setEditablePhone] = useState('')
@@ -141,6 +142,7 @@ export default function WhatsappModal({ isOpen, onClose, phone, contactName }) {
               <div>
                 <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: 'bold' }}>RECIPIENT PHONE</label>
                 <input type="text" value={editablePhone} onChange={(e) => setEditablePhone(e.target.value)} style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '8px 12px', borderRadius: '6px', fontSize: '13px', fontWeight: '600', outline: 'none' }} />
+                <TruecallerSection phone={editablePhone} />
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: 'bold' }}>RECIPIENT NAME</label>
