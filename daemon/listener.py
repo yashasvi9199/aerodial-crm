@@ -93,7 +93,7 @@ def main():
     devices = []
     is_connected = False
     active_call_task_id = None
-    last_device_check, last_state_check, last_queue_check = 0.0, 0.0, 0.0
+    last_device_check, last_state_check, last_queue_check, last_whatsapp_sync = 0.0, 0.0, 0.0, 0.0
 
     while True:
         try:
@@ -142,6 +142,15 @@ def main():
                             supabase.table('system_state').update({'command': 'idle'}).eq('id', 1).execute()
 
             if is_connected:
+                # Sync WhatsApp history periodically (every 15 seconds)
+                if now - last_whatsapp_sync >= 15.0:
+                    last_whatsapp_sync = now
+                    try:
+                        from whatsapp_handler import sync_whatsapp_history
+                        sync_whatsapp_history(device, run_cmd, supabase)
+                    except Exception as sync_ex:
+                        print(f"⚠️ WhatsApp background sync error: {sync_ex}")
+
                 call_state = get_call_state(device)
                 if call_state != 0:
                     print(f"\n[*] Active call state detected: {call_state}. Measuring duration...")
