@@ -1,4 +1,5 @@
 import { Phone, PhoneOff, RotateCcw, User, Briefcase, MapPin, Save, MessageSquare } from 'lucide-react'
+import TruecallerSection from '../../components/TruecallerSection'
 
 export default function ContactForm({
   isAdding,
@@ -58,6 +59,7 @@ export default function ContactForm({
                   style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text)', padding: '10px 8px', fontSize: '14.5px', outline: 'none', fontWeight: '600' }} 
                 />
               </div>
+              <TruecallerSection phone={phoneNumber} />
             </div>
           </div>
         </div>
@@ -78,6 +80,7 @@ export default function ContactForm({
                   />
                 </span>
               </p>
+              <TruecallerSection phone={selectedContact.phone_number} />
             </div>
             
             {/* Dial Controls */}
