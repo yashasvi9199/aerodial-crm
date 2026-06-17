@@ -128,13 +128,6 @@ def _execute_whatsapp(device, phone, message, run_cmd):
             time.sleep(1.0)
             print(f"[*] Polling for send button (attempt {attempt + 1}/5)...")
             
-            # Dismiss virtual keyboard if active to prevent button occlusion
-            kbd_out = run_cmd(f"adb -s {device} shell \"dumpsys input_method | grep mInputShown\"")
-            if "mInputShown=true" in kbd_out:
-                print("[*] Soft keyboard is open. Sending BACK keyevent to dismiss...")
-                run_cmd(f"adb -s {device} shell input keyevent 4")
-                time.sleep(0.5)
-                
             run_cmd(f"adb -s {device} shell uiautomator dump /sdcard/w_dump.xml", timeout=6)
             xml = run_cmd(f"adb -s {device} shell cat /sdcard/w_dump.xml", timeout=6)
             run_cmd(f"adb -s {device} shell rm /sdcard/w_dump.xml", timeout=4)
@@ -148,9 +141,7 @@ def _execute_whatsapp(device, phone, message, run_cmd):
         
         if send_btn_coords:
             cx, cy = send_btn_coords
-            print(f"[*] Send button found at ({cx}, {cy}). Tapping...")
-            run_cmd(f"adb -s {device} shell input tap {cx} {cy}")
-            time.sleep(0.5)
+            print(f"[*] Send button found at ({cx}, {cy}). Tapping EXACTLY ONCE...")
             run_cmd(f"adb -s {device} shell input tap {cx} {cy}")
         else:
             print("⚠️ Send button not detected in UI dump. Attempting fallback tap / keyevent...")
