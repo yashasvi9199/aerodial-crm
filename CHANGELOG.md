@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.7] - 2026-06-17
+### Added
+- Automated Keep-Alive System: added `scripts/keep_alive.py` and GitHub Actions daily cron job `.github/workflows/keep_alive.yml` to query Supabase, ping Cloudflare, and push Git updates to keep free tiers active.
+- Dedicated Template Manager: created a separate `TemplateManager.jsx` component for creating and deleting templates, cleanly separating it from the message composer.
+
+### Fixed
+- Fixed Template Saving Bug: resolved the nested form HTML bug that prevented template submissions from writing to the Supabase database.
+- Fixed Duplicate Label: resolved the duplicate "Choose Template" label on the screen.
+
 ## [1.4.6] - 2026-06-16
 ### Added
 - Outbound Dashboard Logs: added `whatsapp_logs` integration in Dashboard stats, unified log feed, and a dedicated logs tab for WhatsApp dispatches.
