@@ -4,6 +4,7 @@ import { Send, MessageSquare, History, Phone, User } from 'lucide-react'
 import TemplateSelector from '../../components/TemplateSelector'
 import TemplateManager from './TemplateManager'
 import { formatWhatsappText, insertFormattingTag } from '../../lib/whatsappUtils'
+import TruecallerSection from '../../components/TruecallerSection'
 
 export default function WhatsAppManager() {
   const [phone, setPhone] = useState('')
@@ -117,6 +118,7 @@ export default function WhatsAppManager() {
                 <Phone size={14} style={{ position: 'absolute', left: '10px', color: 'var(--text-muted)' }} />
                 <input type="text" required placeholder="e.g. 98280XXXXX" value={phone} onChange={(e) => setPhone(e.target.value)} style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 10px 10px 32px', borderRadius: '6px', fontSize: '13.5px', outline: 'none' }} />
               </div>
+              <TruecallerSection phone={phone} />
             </div>
             <div>
               <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '5px', fontWeight: 'bold' }}>RECIPIENT NAME</label>
