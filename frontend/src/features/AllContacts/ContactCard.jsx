@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Edit2, Check, X, Phone, User, Briefcase, MapPin, Calendar, Heart, ShieldAlert } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import TruecallerSection from '../../components/TruecallerSection'
 
 export default function ContactCard({ item, onUpdateSuccess }) {
   const isColdCall = item.platform === 'cold_call'
@@ -74,7 +75,6 @@ export default function ContactCard({ item, onUpdateSuccess }) {
   }
 
   const handleCancel = () => {
-    // Revert state
     setNameVal(isColdCall ? item.business_name || '' : item.name || '')
     setSecNameVal(isColdCall ? item.poc_name || '' : item.lead_name || '')
     setPhoneVal(isColdCall ? item.phone_number || '' : item.phone || '')
@@ -87,10 +87,7 @@ export default function ContactCard({ item, onUpdateSuccess }) {
     setIsEditing(false)
   }
 
-  // Styles based on platform theme
-  const cardBorder = isColdCall 
-    ? '1px solid rgba(16, 185, 129, 0.25)' 
-    : '1px solid rgba(59, 130, 246, 0.25)'
+  const cardBorder = isColdCall ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid rgba(59, 130, 246, 0.25)'
   const themeColor = isColdCall ? '#10b981' : '#3b82f6'
   const badgeBg = isColdCall ? 'rgba(16, 185, 129, 0.1)' : 'rgba(59, 130, 246, 0.1)'
 
@@ -105,11 +102,9 @@ export default function ContactCard({ item, onUpdateSuccess }) {
         flexDirection: 'column', 
         gap: '14px', 
         position: 'relative',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
-        transition: 'all 0.2s ease-in-out'
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)'
       }}
     >
-      {/* Top Banner Tag */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ fontSize: '10.5px', fontWeight: '800', textTransform: 'uppercase', color: themeColor, background: badgeBg, padding: '3px 8px', borderRadius: '12px', letterSpacing: '0.05em' }}>
           {isColdCall ? 'Cold Calling' : 'Justdial Lead'}
@@ -129,168 +124,92 @@ export default function ContactCard({ item, onUpdateSuccess }) {
             </button>
           ) : (
             <div style={{ display: 'flex', gap: '4px' }}>
-              <button 
-                onClick={handleSave} 
-                disabled={loading}
-                style={{ background: 'transparent', border: 'none', color: '#10b981', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}
-              >
-                <Check size={16} />
-              </button>
-              <button 
-                onClick={handleCancel} 
-                style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}
-              >
-                <X size={16} />
-              </button>
+              <button onClick={handleSave} disabled={loading} style={{ background: 'transparent', border: 'none', color: '#10b981', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}><Check size={16} /></button>
+              <button onClick={handleCancel} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}><X size={16} /></button>
             </div>
           )}
         </div>
       </div>
 
-      {/* Inline Fields Content */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
-        {/* Name / Business Name */}
         <div>
-          <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>
-            {isColdCall ? 'Business Name' : 'Lead Contact Name'}
-          </label>
+          <label style={labelStyle}>{isColdCall ? 'Business Name' : 'Lead Contact Name'}</label>
           {isEditing ? (
-            <input 
-              type="text" 
-              value={nameVal} 
-              onChange={(e) => setNameVal(e.target.value)} 
-              style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '5px 8px', borderRadius: '4px', outline: 'none' }}
-            />
+            <input type="text" value={nameVal} onChange={(e) => setNameVal(e.target.value)} style={inputStyle} />
           ) : (
-            <div style={{ fontWeight: '700', fontSize: '14.5px', color: 'var(--text)' }}>
-              {nameVal || 'Unnamed'}
+            <div style={{ fontWeight: '700', fontSize: '14.5px', color: 'var(--text)' }}>{nameVal || 'Unnamed'}</div>
+          )}
+        </div>
+
+        <div>
+          <label style={labelStyle}>{isColdCall ? 'POC Name' : 'Lead Target Name'}</label>
+          {isEditing ? (
+            <input type="text" value={secNameVal} onChange={(e) => setSecNameVal(e.target.value)} style={inputStyle} />
+          ) : (
+            <div style={{ color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px' }}><User size={13} color="var(--text-muted)" /> {secNameVal || '—'}</div>
+          )}
+        </div>
+
+        <div>
+          <label style={labelStyle}>Phone Number</label>
+          {isEditing ? (
+            <input type="text" value={phoneVal} onChange={(e) => setPhoneVal(e.target.value)} style={inputStyle} />
+          ) : (
+            <div>
+              <div style={{ color: themeColor, fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Phone size={13} color="var(--text-muted)" /> {phoneVal}</span>
+                <button onClick={handleDial} style={{ background: badgeBg, border: 'none', borderRadius: '4px', padding: '3px 8px', color: themeColor, cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: '11.5px', fontWeight: 'bold' }}>Call</button>
+              </div>
+              <TruecallerSection phone={phoneVal} />
             </div>
           )}
         </div>
 
-        {/* Secondary Detail Name */}
-        <div>
-          <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>
-            {isColdCall ? 'POC Name' : 'Lead Target Name'}
-          </label>
-          {isEditing ? (
-            <input 
-              type="text" 
-              value={secNameVal} 
-              onChange={(e) => setSecNameVal(e.target.value)} 
-              style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '5px 8px', borderRadius: '4px', outline: 'none' }}
-            />
-          ) : (
-            <div style={{ color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <User size={13} color="var(--text-muted)" /> {secNameVal || '—'}
-            </div>
-          )}
-        </div>
-
-        {/* Phone number */}
-        <div>
-          <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>
-            Phone Number
-          </label>
-          {isEditing ? (
-            <input 
-              type="text" 
-              value={phoneVal} 
-              onChange={(e) => setPhoneVal(e.target.value)} 
-              style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '5px 8px', borderRadius: '4px', outline: 'none' }}
-            />
-          ) : (
-            <div style={{ color: themeColor, fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Phone size={13} color="var(--text-muted)" /> {phoneVal}
-              </span>
-              <button 
-                onClick={handleDial} 
-                style={{ background: badgeBg, border: 'none', borderRadius: '4px', padding: '3px 8px', color: themeColor, cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: '11.5px', fontWeight: 'bold' }}
-              >
-                Call
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Profession & Location Grid */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
           <div>
-            <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>Profession</label>
+            <label style={labelStyle}>Profession</label>
             {isEditing ? (
               !isColdCall ? (
-                <select 
-                  value={professionVal} 
-                  onChange={(e) => setProfessionVal(e.target.value)} 
-                  style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '4px 6px', borderRadius: '4px', outline: 'none' }}
-                >
-                  {['Consumer', 'Carpenter', 'Retail', 'Unrelated'].map(p => (
-                    <option key={p} value={p}>{p}</option>
-                  ))}
+                <select value={professionVal} onChange={(e) => setProfessionVal(e.target.value)} style={selectStyle}>
+                  {['Consumer', 'Carpenter', 'Retail', 'Unrelated'].map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
               ) : (
-                <input 
-                  type="text" 
-                  value={professionVal} 
-                  onChange={(e) => setProfessionVal(e.target.value)} 
-                  style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '5px 8px', borderRadius: '4px', outline: 'none' }}
-                />
+                <input type="text" value={professionVal} onChange={(e) => setProfessionVal(e.target.value)} style={inputStyle} />
               )
             ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <Briefcase size={12} color="var(--text-muted)" /> {professionVal || 'Consumer'}
-              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Briefcase size={12} color="var(--text-muted)" /> {professionVal || 'Consumer'}</div>
             )}
           </div>
 
           <div>
-            <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>Location</label>
+            <label style={labelStyle}>Location</label>
             {isEditing ? (
-              <input 
-                type="text" 
-                value={locationVal} 
-                onChange={(e) => setLocationVal(e.target.value)} 
-                style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '5px 8px', borderRadius: '4px', outline: 'none' }}
-              />
+              <input type="text" value={locationVal} onChange={(e) => setLocationVal(e.target.value)} style={inputStyle} />
             ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <MapPin size={12} color="var(--text-muted)" /> {locationVal || '—'}
-              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><MapPin size={12} color="var(--text-muted)" /> {locationVal || '—'}</div>
             )}
           </div>
         </div>
 
-        {/* States, follow-up & quality */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
           <div>
-            <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>State</label>
+            <label style={labelStyle}>State</label>
             {isEditing ? (
-              <select 
-                value={stateVal} 
-                onChange={(e) => setStateVal(e.target.value)} 
-                style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '4px 6px', borderRadius: '4px', outline: 'none' }}
-              >
+              <select value={stateVal} onChange={(e) => setStateVal(e.target.value)} style={selectStyle}>
                 {isColdCall 
                   ? ['Answered', 'Busy', 'Unanswered', 'Incorrect', 'Not Called', 'Unresponsive'].map(s => <option key={s} value={s}>{s}</option>)
                   : ['Answered', 'Busy', 'Unanswered'].map(s => <option key={s} value={s}>{s}</option>)
                 }
               </select>
             ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '600' }}>
-                <Calendar size={12} color="var(--text-muted)" /> {stateVal}
-              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '600' }}><Calendar size={12} color="var(--text-muted)" /> {stateVal}</div>
             )}
           </div>
 
           <div>
-            <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>Follow Up</label>
+            <label style={labelStyle}>Follow Up</label>
             {isEditing ? (
-              <select 
-                value={followUpVal} 
-                onChange={(e) => setFollowUpVal(e.target.value)} 
-                style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '4px 6px', borderRadius: '4px', outline: 'none' }}
-              >
+              <select value={followUpVal} onChange={(e) => setFollowUpVal(e.target.value)} style={selectStyle}>
                 <option value="No">No</option>
                 <option value="Yes">Yes</option>
               </select>
@@ -302,36 +221,24 @@ export default function ContactCard({ item, onUpdateSuccess }) {
           </div>
         </div>
 
-        {/* Lead Quality for JD */}
         {!isColdCall && (
           <div>
-            <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>Quality</label>
+            <label style={labelStyle}>Quality</label>
             {isEditing ? (
-              <select 
-                value={qualityVal} 
-                onChange={(e) => setQualityVal(e.target.value)} 
-                style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '4px 6px', borderRadius: '4px', outline: 'none' }}
-              >
+              <select value={qualityVal} onChange={(e) => setQualityVal(e.target.value)} style={selectStyle}>
                 <option value="Correct Lead">Correct Lead</option>
                 <option value="Incorrect Lead">Incorrect Lead</option>
               </select>
             ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <ShieldAlert size={12} color={qualityVal === 'Incorrect Lead' ? '#ef4444' : '#10b981'} /> {qualityVal}
-              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><ShieldAlert size={12} color={qualityVal === 'Incorrect Lead' ? '#ef4444' : '#10b981'} /> {qualityVal}</div>
             )}
           </div>
         )}
 
-        {/* Notes */}
         <div>
-          <label style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>Notes</label>
+          <label style={labelStyle}>Notes</label>
           {isEditing ? (
-            <textarea 
-              value={notesVal} 
-              onChange={(e) => setNotesVal(e.target.value)} 
-              style={{ width: '100%', minHeight: '50px', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '5px 8px', borderRadius: '4px', outline: 'none', resize: 'vertical', fontFamily: 'inherit' }}
-            />
+            <textarea value={notesVal} onChange={(e) => setNotesVal(e.target.value)} style={{ ...inputStyle, minHeight: '50px', resize: 'vertical', fontFamily: 'inherit' }} />
           ) : (
             <div style={{ background: 'var(--bg-input)', padding: '6px 8px', borderRadius: '4px', border: '1px solid var(--border)', minHeight: '34px', fontSize: '12px', whiteSpace: 'pre-wrap', color: 'var(--text-muted)' }}>
               {notesVal || 'No notes written.'}
@@ -342,3 +249,7 @@ export default function ContactCard({ item, onUpdateSuccess }) {
     </div>
   )
 }
+
+const labelStyle = { fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }
+const inputStyle = { width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '5px 8px', borderRadius: '4px', outline: 'none' }
+const selectStyle = { width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '4px 6px', borderRadius: '4px', outline: 'none' }
