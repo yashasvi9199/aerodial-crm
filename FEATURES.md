@@ -46,12 +46,15 @@
 - **Custom Filters and Operators**: Clean dropdown interfaces supporting table fields, target values, operators, and match filters.
 - **Dynamic Input Typing**: Automatically adapts inputs (text inputs, numeric, select dropdowns) based on selected database schema columns.
 
-## 9. WhatsApp Business Dispatcher
+## 9. WhatsApp Business Dispatcher & Live Sync
 - **Composition Modal & Sidebar Hub**: Easily compose direct text messages using pre-loaded templates with dynamic `{name}` placeholder resolution.
 - **Dedicated Template Manager**: Fully separated component to create and delete templates, preventing form interference and ensuring reliable database saves.
 - **Editable Phone and Name Fields**: Allows full recipient input overrides when launching dispatches from any contact detail cards or workspace menus.
 - **ADB Automation Engine**: Automatically launches the WhatsApp Business chat view, checks soft keyboard visibility, automatically dismisses the keyboard if active, and simulates send tap gestures.
 - **Outbound Telemetry Log**: Registers sent messages in Supabase real-time `whatsapp_logs`, tracking recipient numbers, contact names, message text, and timestamp details.
+- **Rich Text Formatting Toolbar**: Interactive styling toolbar buttons (Bold `*`, Italic `_`, Strikethrough `~`, Monospace ` ``` `, Blockquote `>`, Bullet List `-`) wrapping selection or inserting tags at cursor.
+- **Real-Time Message Previews**: Inline chat bubble rendering styled message output dynamically using custom HTML text format parsers.
+- **Rooted ADB Conversation History Sync**: Daemon-level worker copying and pulling WhatsApp Business local `msgstore.db` using root privileges (`su -c`) to sync actual message logs, delivery ticks, and timelines in real-time.
 
 ## 10. Automated Keep-Alive Scheduler
 - **Daily Cron Job**: A scheduled GitHub Actions workflow that executes every 24 hours to automatically ping all free tier deployment endpoints.
