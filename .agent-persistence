@@ -26,4 +26,10 @@
 - Implemented WhatsApp Business message and media dispatcher: supports text, images, video, audio, PDFs, and generic files.
 - Separated WhatsApp logic into modular `whatsapp_handler.py` to keep `listener.py` under the 300-line limit (currently 296 lines).
 - Refactored redundant code in `JustdialLeads.jsx` to reduce its length (currently 293 lines) and keep it under the codebase file size limits.
-- Verified ESLint rules and resolved all unused variables in `DbUpdater.jsx` to achieve 100% clean check warnings.
+- Implemented WhatsApp formatting editor toolbars and dynamic live previews in both direct and modal composers.
+- Configured rooted ADB sync worker to copy, pull, and parse `msgstore.db` to feed real-time client chat history threads inside the CRM.
+- Appended `truecaller_cache` database table migration schema to `supbase_queries.sql` to cache resolved profiles.
+- Integrated invisible Truecaller name lookup (copied and queried `tc.db` from phone via rooted ADB) without launching the app, prepending a leading '0' prefix for search queries.
+- Implemented inline-editable Truecaller section in Contacts, Cold Calling, Justdial Leads, and WhatsApp composers, saving edits back to database cache.
+- Fixed WhatsApp Business auto-sending click mechanics by bypassing keyboard dismissal and tapping coordinates exactly once to prevent voice note recording loops.
+
