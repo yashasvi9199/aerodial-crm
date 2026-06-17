@@ -198,3 +198,19 @@ create policy "Allow all access during development whatsapp_messages" on public.
 
 -- 14.2. Enable Realtime replication
 alter publication supabase_realtime add table public.whatsapp_messages;
+
+--------------------------------------------------------------------------------------
+
+-- 15. Create Truecaller Cache table
+create table if not exists public.truecaller_cache (
+    phone_number text primary key,
+    name text,
+    updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- 15.1. Enable RLS and create policy
+alter table public.truecaller_cache enable row level security;
+create policy "Allow all access during development truecaller_cache" on public.truecaller_cache for all using (true);
+
+-- 15.2. Enable Realtime replication
+alter publication supabase_realtime add table public.truecaller_cache;
