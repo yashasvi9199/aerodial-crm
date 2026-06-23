@@ -38,10 +38,6 @@ def get_connected_devices():
     devices.sort(key=lambda d: 0 if ":" in d else 1)
     return devices
 
-def check_adb_status():
-    """Returns True if a device is connected wirelessly or via USB"""
-    return len(get_connected_devices()) > 0
-
 def get_airtel_sub_id(device):
     try:
         out = run_cmd(f"adb -s {device} shell \"su -c 'content query --uri content://telephony/siminfo --projection _id:display_name'\"")
