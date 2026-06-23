@@ -15,13 +15,17 @@ if not SUPABASE_URL or not SUPABASE_KEY:
     print("Please export SUPABASE_URL and SUPABASE_ANON_KEY before running.")
     sys.exit(1)
 
+import shlex
+
 def run_cmd(command):
-    res = subprocess.run(command, shell=True, capture_output=True, text=True)
+    if isinstance(command, str):
+        command = shlex.split(command)
+    res = subprocess.run(command, capture_output=True, text=True)
     return res.stdout.strip()
 
 def get_connected_devices():
     devices = []
-    out = run_cmd("adb devices")
+    out = run_cmd(["adb", "devices"])
     for line in out.splitlines()[1:]:
         if line.strip() and ("device" in line) and not ("list of" in line.lower()):
             parts = line.split()
@@ -49,7 +53,7 @@ def main():
     print(f"[*] Querying call log database since 4 days ago ({datetime.datetime.fromtimestamp(four_days_ago_ms/1000).strftime('%Y-%m-%d %H:%M:%S')})...")
     
     projection = "date:duration:number:type"
-    cmd = f"adb -s {device} shell \"su -c 'content query --uri content://call_log/calls --projection {projection} --where \\\"date >= {four_days_ago_ms}\\\" --sort \\\"date DESC\\\"'\""
+    cmd = ["adb", "-s", device, "shell", f"su -c 'content query --uri content://call_log/calls --projection {projection} --where \"date >= {four_days_ago_ms}\" --sort \"date DESC\"'"]
     out = run_cmd(cmd)
     
     if not out:
