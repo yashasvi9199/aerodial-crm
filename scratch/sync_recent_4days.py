@@ -81,6 +81,8 @@ def main():
     
     logs_added = 0
     logs_updated = 0
+    updates_to_perform = []
+    inserts_to_perform = []
     
     # Iterate from oldest to newest to ensure chronological insertion
     for call in reversed(calls):
@@ -135,7 +137,7 @@ def main():
         end_win = (dt + datetime.timedelta(seconds=60)).isoformat()
         
         exist_res = supabase.table('call_logs')\
-            .select('id, duration_seconds')\
+            .select('*')\
             .eq('phone_number', clean_num)\
             .gte('call_date', start_win)\
             .lte('call_date', end_win)\
@@ -147,14 +149,14 @@ def main():
             existing = exist_res.data[0]
             # Update duration if database currently has 0 or if we're filling a dialed call's duration
             if existing['duration_seconds'] == 0 and duration > 0:
-                supabase.table('call_logs').update({
-                    'duration_seconds': duration,
-                    'status': status_log
-                }).eq('id', existing['id']).execute()
-                logs_updated += 1
+                # To upsert safely in PostgREST, we must provide the entire row because missing fields
+                # might violate NOT NULL constraints during the insert phase of UPSERT.
+                existing['duration_seconds'] = duration
+                existing['status'] = status_log
+                updates_to_perform.append(existing)
         else:
             # Insert new log
-            supabase.table('call_logs').insert({
+            inserts_to_perform.append({
                 'phone_number': clean_num,
                 'duration_seconds': duration,
                 'status': status_log,
@@ -163,8 +165,16 @@ def main():
                 'platform': platform,
                 'contact_id': contact_id,
                 'justdial_lead_id': jd_lead_id
-            }).execute()
-            logs_added += 1
+            })
+
+    # Execute bulk operations
+    if updates_to_perform:
+        supabase.table('call_logs').upsert(updates_to_perform).execute()
+        logs_updated = len(updates_to_perform)
+
+    if inserts_to_perform:
+        supabase.table('call_logs').insert(inserts_to_perform).execute()
+        logs_added = len(inserts_to_perform)
 
     print(f"[+] Sync logs table done: {logs_added} logs created, {logs_updated} logs updated.")
     
