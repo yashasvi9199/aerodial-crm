@@ -122,12 +122,21 @@ def _execute_whatsapp(device, phone, message, run_cmd):
         url = f"https://api.whatsapp.com/send?phone={clean_num}&text={urllib.parse.quote(message)}"
         run_cmd(f"adb -s {device} shell \"am start -a android.intent.action.VIEW -d '{url}' com.whatsapp.w4b\"")
         
-        # Wait for WhatsApp and keyboard to fully load, polling for send button
-        send_btn_coords = None
-        for attempt in range(5):
-            time.sleep(1.0)
-            print(f"[*] Polling for send button (attempt {attempt + 1}/5)...")
+        # Wait for WhatsApp to fully load by checking window focus
+        for attempt in range(10):
+            time.sleep(0.5)
+            # Use dumpsys to check focus, much faster than UI dump
+            focus_out = run_cmd(f"adb -s {device} shell \"dumpsys window windows | grep -E 'mCurrentFocus|mFocusedApp'\"", timeout=4)
+            if "com.whatsapp.w4b" in focus_out:
+                print(f"[*] WhatsApp in focus after {attempt + 1} checks. Delaying for keyboard...")
+                time.sleep(1.0)  # Extra delay to let UI settle/keyboard pop
+                break
+            print(f"[*] Waiting for WhatsApp focus (attempt {attempt + 1}/10)...")
             
+        print("[*] Performing UI dump polling for send button...")
+        send_btn_coords = None
+
+        for attempt in range(3):
             run_cmd(f"adb -s {device} shell uiautomator dump /sdcard/w_dump.xml", timeout=6)
             xml = run_cmd(f"adb -s {device} shell cat /sdcard/w_dump.xml", timeout=6)
             run_cmd(f"adb -s {device} shell rm /sdcard/w_dump.xml", timeout=4)
@@ -138,6 +147,9 @@ def _execute_whatsapp(device, phone, message, run_cmd):
                 x1, y1, x2, y2 = int(m.group(1)), int(m.group(2)), int(m.group(3)), int(m.group(4))
                 send_btn_coords = ((x1 + x2) // 2, (y1 + y2) // 2)
                 break
+
+            time.sleep(1.0)
+            print(f"[*] Retry UI dump for send button (attempt {attempt + 2}/3)...")
         
         if send_btn_coords:
             cx, cy = send_btn_coords
