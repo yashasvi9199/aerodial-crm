@@ -120,7 +120,8 @@ def _execute_whatsapp(device, phone, message, run_cmd):
             
         print(f"[*] WhatsApp text. Prefilling chat: {clean_num}...")
         url = f"https://api.whatsapp.com/send?phone={clean_num}&text={urllib.parse.quote(message)}"
-        run_cmd(f"adb -s {device} shell \"am start -a android.intent.action.VIEW -d '{url}' com.whatsapp.w4b\"")
+        cmd_list = ["adb", "-s", device, "shell", "am", "start", "-a", "android.intent.action.VIEW", "-d", f"'{url}'", "com.whatsapp.w4b"]
+        run_cmd(cmd_list)
         
         # Wait for WhatsApp and keyboard to fully load, polling for send button
         send_btn_coords = None

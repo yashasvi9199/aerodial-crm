@@ -16,7 +16,8 @@ if not SUPABASE_URL or not SUPABASE_KEY:
     sys.exit(1)
 
 def run_cmd(command):
-    res = subprocess.run(command, shell=True, capture_output=True, text=True)
+    shell_arg = isinstance(command, str)
+    res = subprocess.run(command, shell=shell_arg, capture_output=True, text=True)
     return res.stdout.strip()
 
 def get_connected_devices():

@@ -20,7 +20,8 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 # --- ADB FUNCTIONS ---
 def run_cmd(command, timeout=15):
     try:
-        result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=timeout)
+        shell_arg = isinstance(command, str)
+        result = subprocess.run(command, shell=shell_arg, capture_output=True, text=True, timeout=timeout)
         return result.stdout.strip()
     except subprocess.TimeoutExpired:
         print(f"⚠️ Command timed out after {timeout}s: {command}")
