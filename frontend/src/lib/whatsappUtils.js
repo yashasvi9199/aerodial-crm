@@ -10,6 +10,8 @@
  * - * bullet list / - bullet list
  * - 1. numbered list
  */
+import DOMPurify from 'dompurify';
+
 export function formatWhatsappText(text) {
   if (!text) return '';
   
@@ -61,7 +63,7 @@ export function formatWhatsappText(text) {
   // Strikethrough: ~text~
   html = html.replace(/~([^\s~][^~]*[^\s~]|[^\s~])~/g, '<del>$1</del>');
 
-  return html;
+  return DOMPurify.sanitize(html, { ALLOWED_ATTR: ['style', 'start'] });
 }
 
 /**
