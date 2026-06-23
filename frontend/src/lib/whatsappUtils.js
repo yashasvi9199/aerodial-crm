@@ -1,3 +1,5 @@
+import DOMPurify from 'dompurify';
+
 /**
  * Parses raw WhatsApp message formatting markup into stylized HTML.
  * Supports:
@@ -61,7 +63,7 @@ export function formatWhatsappText(text) {
   // Strikethrough: ~text~
   html = html.replace(/~([^\s~][^~]*[^\s~]|[^\s~])~/g, '<del>$1</del>');
 
-  return html;
+  return DOMPurify.sanitize(html);
 }
 
 /**
