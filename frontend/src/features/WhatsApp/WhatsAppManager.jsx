@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import DOMPurify from 'dompurify'
 import { supabase } from '../../lib/supabase'
 import { Send, MessageSquare, History, Phone, User } from 'lucide-react'
 import TemplateSelector from '../../components/TemplateSelector'
@@ -153,7 +154,7 @@ export default function WhatsAppManager() {
               <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: 'bold' }}>MESSAGE PREVIEW</label>
               <div style={{ background: 'var(--bg-input)', backgroundImage: 'radial-gradient(var(--border) 0.8px, transparent 0)', backgroundSize: '12px 12px', padding: '12px', borderRadius: '6px', border: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end' }}>
                 <div style={{ backgroundColor: 'rgba(37, 211, 102, 0.15)', color: 'var(--text)', border: '1px solid rgba(37, 211, 102, 0.25)', padding: '6px 10px', borderRadius: '8px', maxWidth: '85%', fontSize: '12.5px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-                  <div dangerouslySetInnerHTML={{ __html: formatWhatsappText(message) }} style={{ wordBreak: 'break-word' }} />
+                  <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(formatWhatsappText(message)) }} style={{ wordBreak: 'break-word' }} />
                 </div>
               </div>
             </div>
@@ -198,7 +199,7 @@ export default function WhatsAppManager() {
                     <td style={{ padding: '10px 8px', fontWeight: '600' }}>{log.phone_number}</td>
                     <td style={{ padding: '10px 8px', color: log.contact_name ? 'var(--text)' : 'var(--text-muted)' }}>{log.contact_name || '—'}</td>
                     <td style={{ padding: '10px 8px', maxWidth: '300px' }}>
-                      <div dangerouslySetInnerHTML={{ __html: formatWhatsappText(log.message_text) }} style={{ maxHeight: '60px', overflowY: 'auto', wordBreak: 'break-word' }} />
+                      <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(formatWhatsappText(log.message_text)) }} style={{ maxHeight: '60px', overflowY: 'auto', wordBreak: 'break-word' }} />
                     </td>
                   </tr>
                 ))}
