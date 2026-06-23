@@ -1,9 +1,12 @@
 import subprocess
 import re
 import time
+import shlex
 
 def run_cmd(command):
-    result = subprocess.run(command, shell=True, capture_output=True, text=True)
+    if isinstance(command, str):
+        command = shlex.split(command)
+    result = subprocess.run(command, shell=False, capture_output=True, text=True)
     return result.stdout.strip()
 
 def get_phone_ip():

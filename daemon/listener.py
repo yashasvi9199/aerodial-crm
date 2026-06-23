@@ -4,6 +4,7 @@ import subprocess
 import re
 import datetime
 import json
+import shlex
 from supabase import create_client, Client
 
 # --- SETUP SUPABASE ---
@@ -19,8 +20,10 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # --- ADB FUNCTIONS ---
 def run_cmd(command, timeout=15):
+    if isinstance(command, str):
+        command = shlex.split(command)
     try:
-        result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=timeout)
+        result = subprocess.run(command, shell=False, capture_output=True, text=True, timeout=timeout)
         return result.stdout.strip()
     except subprocess.TimeoutExpired:
         print(f"⚠️ Command timed out after {timeout}s: {command}")
