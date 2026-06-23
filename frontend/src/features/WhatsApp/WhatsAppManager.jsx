@@ -26,21 +26,11 @@ export default function WhatsAppManager() {
   }
 
   useEffect(() => {
-    let active = true
-    const loadLogs = async () => {
-      try {
-        const { data, error } = await supabase.from('whatsapp_logs').select('*').order('sent_at', { ascending: false })
-        if (error) throw error
-        if (active) setLogs(data || [])
-      } catch (err) {
-        console.error('Error fetching logs:', err)
-      }
-    }
-    loadLogs()
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchLogs()
     
     const channel = supabase.channel('whatsapp_logs_realtime').on('postgres_changes', { event: '*', schema: 'public', table: 'whatsapp_logs' }, () => { fetchLogs() }).subscribe()
     return () => {
-      active = false
       supabase.removeChannel(channel)
     }
   }, [])
