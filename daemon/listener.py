@@ -89,12 +89,62 @@ def get_last_outgoing_call_duration(device, clean_num, start_time_ms, is_root=Fa
         print(f"⚠️ Error querying call logs: {e}")
     return None
 
+def get_device_ip(device):
+    # Try 4 fallback methods to obtain the active IP address
+    ip = run_cmd(f"adb -s {device} shell getprop dhcp.wlan0.ipaddress")
+    if ip and re.match(r'^\d+\.\d+\.\d+\.\d+$', ip):
+        return ip
+    out = run_cmd(f"adb -s {device} shell ip route")
+    m = re.search(r'src\s+(\d+\.\d+\.\d+\.\d+)', out)
+    if m:
+        return m.group(1)
+    out = run_cmd(f"adb -s {device} shell ip addr show wlan0")
+    m = re.search(r'inet\s+(\d+\.\d+\.\d+\.\d+)', out)
+    if m:
+        return m.group(1)
+    out = run_cmd(f"adb -s {device} shell dumpsys wifi")
+    m = re.search(r'IP\s+address\s+(\d+\.\d+\.\d+\.\d+)', out, re.IGNORECASE)
+    if m:
+        return m.group(1)
+    return ""
+
+def get_device_details(device):
+    brand = run_cmd(f"adb -s {device} shell getprop ro.product.brand").strip()
+    model = run_cmd(f"adb -s {device} shell getprop ro.product.model").strip()
+    android_ver = run_cmd(f"adb -s {device} shell getprop ro.build.version.release").strip()
+    
+    display_id = run_cmd(f"adb -s {device} shell getprop ro.build.display.id").strip().lower()
+    brand_lower = brand.lower()
+    os_name = "Android"
+    
+    if "lineage" in display_id or "aosp" in display_id:
+        os_name = "LineageOS/AOSP"
+    elif "hos" in display_id or brand_lower == "huawei":
+        os_name = "HarmonyOS"
+    elif brand_lower in ["oppo", "realme"]:
+        os_name = "ColorOS"
+    elif brand_lower == "vivo":
+        os_name = "FuntouchOS"
+    elif brand_lower == "xiaomi":
+        os_name = "MIUI/HyperOS"
+    elif brand_lower == "lava":
+        os_name = "LavaOS"
+    elif brand_lower == "micromax":
+        os_name = "Micromax"
+        
+    return {
+        "brand": brand,
+        "model": model,
+        "android_version": android_ver,
+        "os_name": os_name
+    }
+
 def perform_usb_sync(device):
     print(f"\n[*] Remote Command Received: EXECUTING USB SYNC on {device}...")
     if ":" in device: return True
-    ip_match = re.search(r'inet\s+(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+)', run_cmd(f"adb -s {device} shell ip addr"))
-    if ip_match:
-        ip = ip_match.group(1)
+    ip = get_device_ip(device)
+    if ip:
+        print(f"[*] Dynamic IP resolved: {ip}. Attempting TCP/IP bridge...")
         run_cmd(f"adb -s {device} tcpip 5555")
         time.sleep(3)
         run_cmd(f"adb disconnect {ip}:5555")
@@ -103,7 +153,7 @@ def perform_usb_sync(device):
                 print(f"✅ Sync Successful: {ip}")
                 return True
             time.sleep(1.5)
-    print("❌ Sync Failed. Is USB plugged in?")
+    print("❌ Sync Failed. Is USB plugged in and Wi-Fi active?")
     return False
 
 
@@ -129,7 +179,8 @@ def main():
                 is_root = check_rooted(device)
                 tc_installed = check_package(device, "com.truecaller")
                 w4b_installed = check_package(device, "com.whatsapp.w4b")
-                current_status = f"connected|root:{'1' if is_root else '0'}|truecaller:{'1' if tc_installed else '0'}|whatsapp:{'1' if w4b_installed else '0'}"
+                details = get_device_details(device)
+                current_status = f"connected|root:{'1' if is_root else '0'}|truecaller:{'1' if tc_installed else '0'}|whatsapp:{'1' if w4b_installed else '0'}|brand:{details['brand']}|os:{details['os_name']}|model:{details['model']}"
             else:
                 current_status = 'disconnected'
             
@@ -138,8 +189,12 @@ def main():
                 state_res = supabase.table('system_state').select('*').eq('id', 1).execute()
                 if state_res.data:
                     state = state_res.data[0]
-                    if state['adb_status'] != current_status:
-                        supabase.table('system_state').update({'adb_status': current_status}).eq('id', 1).execute()
+                    # Update status and push heartbeat
+                    now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+                    supabase.table('system_state').update({
+                        'adb_status': current_status,
+                        'updated_at': now_iso
+                    }).eq('id', 1).execute()
 
                     cmd_str = state['command']
                     if cmd_str and cmd_str != 'idle' and is_connected:
@@ -303,7 +358,12 @@ def main():
                         elif len(clean_num) == 12 and clean_num.startswith("91"): clean_num = "+" + clean_num
                             
                         cmd_prefix = "su -c " if is_root else ""
-                        run_cmd(f"adb -s {device} shell \"{cmd_prefix}am start -a android.intent.action.CALL -d tel:{clean_num}\"")
+                        intent_extras = ""
+                        if not is_root:
+                            # Fallback intent extra routing for non-rooted Android brands (Oppo, Vivo, Lava, Micromax, etc.)
+                            intent_extras = " --ei simId 1 --ei com.android.phone.extra.slot 1 --ei slot 1 --ei phone 1 --ei subscription 1"
+                        
+                        run_cmd(f"adb -s {device} shell \"{cmd_prefix}am start -a android.intent.action.CALL -d tel:{clean_num}{intent_extras}\"")
                         time.sleep(1.5)
                         
             elif not is_connected and now - last_queue_check >= 1.0:
