@@ -1,0 +1,13 @@
+# local env files
+.env
+.env.local
+.env.*.local
+Carpenter Data.xlsx
+scratch/
+
+# Python Cache
+__pycache__/
+*.pyc
+daemon/__pycache__/
+daemon/downloads/
+
