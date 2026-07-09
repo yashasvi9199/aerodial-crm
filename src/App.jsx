@@ -13,14 +13,29 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard')
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light')
   const [adbStatus, setAdbStatus] = useState('disconnected')
+  const [updatedAt, setUpdatedAt] = useState(null)
+  const [nowTime, setNowTime] = useState(Date.now())
   const [isSyncing, setIsSyncing] = useState(false)
   const [coldCallingCount, setColdCallingCount] = useState(0)
   const [justdialCount, setJustdialCount] = useState(0)
 
-  const isConnected = adbStatus.startsWith('connected')
+  useEffect(() => {
+    const timer = setInterval(() => setNowTime(Date.now()), 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  const isHeartbeatValid = updatedAt ? (nowTime - new Date(updatedAt).getTime()) < 8000 : false
+  const isConnected = adbStatus.startsWith('connected') && isHeartbeatValid
   const isRooted = adbStatus.includes('root:1')
   const isTruecallerInstalled = adbStatus.includes('truecaller:1')
   const isWhatsappBusinessInstalled = adbStatus.includes('whatsapp:1')
+
+  const brandMatch = adbStatus.match(/brand:([^|]+)/)
+  const deviceBrand = brandMatch ? brandMatch[1] : ''
+  const osMatch = adbStatus.match(/os:([^|]+)/)
+  const deviceOS = osMatch ? osMatch[1] : ''
+  const modelMatch = adbStatus.match(/model:([^|]+)/)
+  const deviceModel = modelMatch ? modelMatch[1] : ''
 
   useEffect(() => {
     // Apply theme
@@ -35,6 +50,7 @@ export default function App() {
         const { data } = await supabase.from('system_state').select('*').eq('id', 1).single()
         if (data) {
           setAdbStatus(data.adb_status)
+          setUpdatedAt(data.updated_at)
           if (data.command === 'idle') setIsSyncing(false)
         }
 
@@ -57,6 +73,7 @@ export default function App() {
     const stateSub = supabase.channel('app_state')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'system_state' }, (p) => {
         setAdbStatus(p.new.adb_status)
+        setUpdatedAt(p.new.updated_at)
         if (p.new.command === 'idle') setIsSyncing(false)
       })
       .subscribe()
@@ -195,6 +212,8 @@ export default function App() {
             </div>
             {isConnected && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', paddingLeft: '8px', fontSize: '11px', color: 'var(--text-muted)', borderLeft: '2px solid var(--border)' }}>
+                {deviceBrand && <div style={{ textTransform: 'capitalize', fontWeight: 'bold', color: 'var(--accent)' }}>{deviceBrand} ({deviceModel})</div>}
+                {deviceOS && <div>OS: {deviceOS}</div>}
                 <div>Privilege: {isRooted ? 'Rooted' : 'Non-rooted'}</div>
                 <div>Truecaller: {isTruecallerInstalled ? 'Ready' : 'Not Ready'}</div>
                 <div>WhatsApp Biz: {isWhatsappBusinessInstalled ? 'Installed' : 'Missing'}</div>
