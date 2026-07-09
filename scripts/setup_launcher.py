@@ -7,7 +7,7 @@ def create_desktop_icon():
     current_dir = os.path.dirname(os.path.abspath(__file__))
     project_dir = os.path.dirname(current_dir)
     runner_path = os.path.join(current_dir, "run_daemon.sh")
-    icon_path = os.path.join(project_dir, "frontend", "public", "favicon.svg")
+    icon_path = os.path.join(project_dir, "public", "favicon.svg")
     if not os.path.exists(icon_path):
         icon_path = "utilities-terminal"  # Fallback system icon
 
