@@ -1,0 +1,15 @@
+{
+  "name": "aerodial-crm-root",
+  "version": "1.5.0",
+  "private": true,
+  "scripts": {
+    "dev:frontend": "npm run dev --prefix frontend",
+    "build:frontend": "npm run build --prefix frontend",
+    "start:daemon": "python3 daemon/listener.py",
+    "setup:daemon": "python3 scripts/setup_launcher.py",
+    "pages:deploy": "wrangler pages deploy frontend/dist"
+  },
+  "devDependencies": {
+    "wrangler": "^3.109.0"
+  }
+}
