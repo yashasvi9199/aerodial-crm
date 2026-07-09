@@ -1,15 +1,34 @@
 {
-  "name": "aerodial-crm-root",
-  "version": "1.5.0",
+  "name": "aerodial-crm",
   "private": true,
+  "version": "1.5.0",
+  "type": "module",
   "scripts": {
-    "dev:frontend": "npm run dev --prefix frontend",
-    "build:frontend": "npm run build --prefix frontend",
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
     "start:daemon": "python3 daemon/listener.py",
     "setup:daemon": "python3 scripts/setup_launcher.py",
-    "pages:deploy": "wrangler pages deploy frontend/dist"
+    "pages:deploy": "wrangler pages deploy dist"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.108.1",
+    "lucide-react": "^1.18.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "eslint": "^10.3.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "globals": "^17.6.0",
+    "vite": "^8.0.12",
     "wrangler": "^3.109.0"
   }
 }

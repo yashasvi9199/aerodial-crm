@@ -11,3 +11,4 @@ __pycache__/
 daemon/__pycache__/
 daemon/downloads/
 
+node_modules
