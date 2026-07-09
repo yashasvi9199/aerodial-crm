@@ -1,5 +1,5 @@
 {
   "name": "aerodial-crm",
-  "pages_build_output_dir": "frontend/dist",
+  "pages_build_output_dir": "dist",
   "compatibility_date": "2026-07-09"
 }
