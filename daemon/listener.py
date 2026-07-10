@@ -21,8 +21,18 @@ from adb_helper import (
 )
 
 # --- SETUP SUPABASE ---
-SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_KEY = os.environ.get("SUPABASE_ANON_KEY")
+# Try to load .env from parent directory
+env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
+if os.path.exists(env_path):
+    with open(env_path, "r") as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                key, val = line.split("=", 1)
+                os.environ[key.strip()] = val.strip().strip('"').strip("'")
+
+SUPABASE_URL = os.environ.get("SUPABASE_URL") or os.environ.get("VITE_SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_ANON_KEY") or os.environ.get("VITE_SUPABASE_ANON_KEY")
 
 if not SUPABASE_URL or not SUPABASE_KEY:
     print("❌ Error: Missing Supabase Environment Variables.")
