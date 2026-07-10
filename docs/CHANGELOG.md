@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.6.4] - 2026-07-10
+### Added
+- Added Truecaller APK installer action handler in the python daemon listener and "Install APK" button in Setup tab to install Truecaller via ADB in a single click.
+- Added WhatsApp Business Play Store redirection link in Setup tab when the app is missing from the device.
+
+## [1.6.3] - 2026-07-10
+### Fixed
+- Mapped SIM card slot index (0/1) to telephony database subscription IDs (`_id` column) in `adb_helper.py` and `listener.py` to fix rooted multi-SIM carrier routing.
+- Fixed React/ESLint issues (unused variables, impure hooks, and cascading setState triggers).
+
 ## [1.6.2] - 2026-07-10
 ### Fixed
 - Added auto-loading of `.env` files in the python daemon listener and supported Vite-prefixed environment variables (`VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`) as fallbacks.
