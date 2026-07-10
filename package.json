@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start:daemon": "python3 daemon/listener.py",
+    "start:daemon": "daemon/.venv/bin/python daemon/listener.py",
     "setup:daemon": "python3 scripts/setup_launcher.py",
     "pages:deploy": "wrangler pages deploy dist"
   },
