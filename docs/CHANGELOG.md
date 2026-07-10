@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.0] - 2026-07-10
+### Added
+- Real-time incoming call detection: daemon uses dumpsys, notifications, and logcat methods combined to resolve and display caller details instantly in a premium UI HUD.
+- Google Play Store redirection buttons for Truecaller and WhatsApp Business setup items.
+
 ## [1.6.5] - 2026-07-10
 ### Fixed
 - Fixed browser console HTTP 400 Bad Request error when saving default SIM slot by adding missing `default_sim_slot` column to `system_state` table.
