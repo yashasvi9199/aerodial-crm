@@ -36,6 +36,7 @@ export default function App() {
   let deviceBrand = ''
   let deviceModel = ''
   let deviceOS = ''
+  let incomingCall = null
 
   try {
     if (adbStatus && adbStatus.startsWith('{')) {
@@ -47,6 +48,7 @@ export default function App() {
       deviceBrand = parsed.brand
       deviceModel = parsed.model
       deviceOS = parsed.os_name
+      incomingCall = parsed.incoming_call
     } else {
       isConnected = adbStatus.startsWith('connected') && isHeartbeatValid
       isRooted = adbStatus.includes('root:1')
@@ -283,6 +285,50 @@ export default function App() {
           {activeTab === 'setup' && <SetupTab />}
         </main>
       </div>
+
+      {/* REALTIME INCOMING CALL HUD BANNER */}
+      {incomingCall && (
+        <div style={{
+          position: 'fixed',
+          bottom: '24px',
+          right: '24px',
+          zIndex: 9999,
+          background: '#1e1b4b',
+          border: '2px solid var(--accent)',
+          borderRadius: '16px',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)',
+          padding: '16px 20px',
+          width: '320px',
+          color: '#ffffff',
+          animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
+              background: 'var(--accent)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#000000',
+              animation: 'pulse 1.5s infinite'
+            }}>
+              <Phone size={18} />
+            </div>
+            <div>
+              <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--accent)', fontWeight: 'bold' }}>Incoming Call</div>
+              <div style={{ fontSize: '15px', fontWeight: '700', marginTop: '1px' }}>{incomingCall.name}</div>
+            </div>
+          </div>
+          <div style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.8)', paddingLeft: '48px', fontWeight: '500' }}>
+            {incomingCall.number}
+          </div>
+        </div>
+      )}
 
     </div>
   )
