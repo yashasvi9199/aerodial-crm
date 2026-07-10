@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { Edit2, Check, X, Shield, Loader2 } from 'lucide-react'
 
@@ -30,9 +30,9 @@ export default function TruecallerSection({ phone }) {
 
   useEffect(() => {
     if (!isValid) {
-      setName(null)
-      setIsSearching(false)
-      setIsEditing(false)
+      setName(prev => prev !== null ? null : prev)
+      setIsSearching(prev => prev ? false : prev)
+      setIsEditing(prev => prev ? false : prev)
       return
     }
 
