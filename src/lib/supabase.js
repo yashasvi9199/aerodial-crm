@@ -8,4 +8,8 @@ const supabaseAnonKey = (typeof window !== 'undefined' && window.VITE_SUPABASE_A
   import.meta.env?.VITE_SUPABASE_ANON_KEY || 
   (typeof globalThis !== 'undefined' && globalThis.process?.env?.VITE_SUPABASE_ANON_KEY) || '';
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Fallback to placeholders if missing to prevent module loading crashes
+const finalUrl = (supabaseUrl && supabaseUrl.startsWith('https://')) ? supabaseUrl : 'https://placeholder.supabase.co';
+const finalKey = supabaseAnonKey || 'placeholder-key';
+
+export const supabase = createClient(finalUrl, finalKey)
