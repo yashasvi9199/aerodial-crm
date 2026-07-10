@@ -125,6 +125,11 @@ export default function ContactList({
               <div style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>{c.phone_number}</span>
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  {c.whatsapp_sent === 'Yes' && (
+                    <span style={{ fontSize: '9px', background: 'rgba(37, 211, 102, 0.15)', color: '#25d366', padding: '1px 5px', borderRadius: '4px', fontWeight: 'bold', border: '1px solid rgba(37, 211, 102, 0.3)' }}>
+                      WA Sent
+                    </span>
+                  )}
                   <span style={{ fontSize: '10px', background: 'rgba(255, 255, 255, 0.05)', color: 'var(--text-muted)', padding: '1px 4px', borderRadius: '3px' }}>
                     Calls: {c.call_count || 0}
                   </span>
