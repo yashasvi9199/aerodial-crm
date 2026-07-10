@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.1] - 2026-07-10
+### Fixed
+- Fixed call logging logic to register contact call status updates and write `last_call_at` using a human-readable local time format: `January 01, 2000 | 04:00 PM`.
+- Added custom date sorting comparison to safely handle the new pipe-delimited format on client browsers.
+- Added visual `Last Called` timestamp indicators to contact card listings and details card layout.
+
 ## [1.7.0] - 2026-07-10
 ### Added
 - Real-time incoming call detection: daemon uses dumpsys, notifications, and logcat methods combined to resolve and display caller details instantly in a premium UI HUD.
