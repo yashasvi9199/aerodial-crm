@@ -11,5 +11,6 @@
 - 2026-07-10 (Incoming Detection & Links): Implemented multi-method incoming call number resolution (telephony, notifications, logcat) in daemon, added a real-time incoming call HUD popup, and replaced ADB setup installers with Play Store redirection links. Bumped version to 1.7.0.
 - 2026-07-10 (Call Timestamp Formatting): Updated call logs to write timestamps in a human-readable local time format: `January 01, 2000 | 04:00 PM`. Displayed the last called status on both contact cards in list view and details editor card, and added custom date parsing to frontend comparison sorting. Bumped version to 1.7.1.
 - 2026-07-10 (Realtime Channel Fix): Generated unique Supabase Realtime channel names for each component mount inside TruecallerSection to resolve console subscription collision errors. Bumped version to 1.7.2.
+- 2026-07-10 (WhatsApp Sent Status): Added `whatsapp_sent` column to contacts table in DB, created form dropdown selector in Cold Calling editor view to manage it manually, and added a visual `WA Sent` badge to sidebar contact items. Bumped version to 1.7.3.
 
 
