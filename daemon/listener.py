@@ -68,6 +68,48 @@ def get_call_state(device):
         states = re.findall(r'mCallState=(\d+)', out)
     return max(int(s) for s in states) if states else 0
 
+def get_incoming_number(device):
+    """
+    Resolves the incoming caller number using dumpsys telephony, dumpsys notification, and logcat.
+    """
+    import re
+    # Method 1: dumpsys telephony.registry
+    out_tel = run_cmd(f"adb -s {device} shell \"dumpsys telephony.registry | grep mCallIncomingNumber\"")
+    for line in out_tel.splitlines():
+        if "mCallIncomingNumber=" in line:
+            num = line.split("=", 1)[1].strip()
+            clean = re.sub(r'[^\d+]', '', num)
+            if len(clean) >= 10:
+                return clean
+
+    # Method 2: dumpsys notification (dialer notification extras)
+    out_notif = run_cmd(f"adb -s {device} shell \"dumpsys notification | grep -E 'extras=|android.title|android.text|Notification\(pkg='\"")
+    pkg = ""
+    for line in out_notif.splitlines():
+        if "Notification(pkg=" in line:
+            pkg_match = re.search(r'pkg=([^\s\),]+)', line)
+            if pkg_match:
+                pkg = pkg_match.group(1).lower()
+        if any(keyword in pkg for keyword in ["dialer", "phone", "incall", "telecom"]):
+            nums = re.findall(r'\b[+0-9\s-]{10,20}\b', line)
+            for n in nums:
+                clean = re.sub(r'[^\d+]', '', n)
+                if len(clean) >= 10:
+                    return clean
+
+    # Method 3: logcat -d
+    out_log = run_cmd(f"adb -s {device} shell \"logcat -d -b main -t 150 | grep -Ei 'incoming|phone_state|callstate|calllog'\"")
+    for line in out_log.splitlines():
+        nums = re.findall(r'\b[+0-9\s-]{10,20}\b', line)
+        for n in nums:
+            clean = re.sub(r'[^\d+]', '', n)
+            if len(clean) >= 10:
+                if "197" in clean or len(clean) > 15:
+                    continue
+                return clean
+                
+    return None
+
 # --- MAIN DAEMON LOOP ---
 def main():
     print("🚀 AeroDial Local Daemon Started (JSON Ready).\n")
@@ -99,6 +141,29 @@ def main():
                 details = get_device_details(device)
                 sims = get_sim_cards(device, is_root)
                 
+                # Detect incoming call details
+                call_state = get_call_state(device)
+                incoming_number = None
+                incoming_caller_name = None
+                if call_state == 1:  # RINGING
+                    incoming_number = get_incoming_number(device)
+                    if incoming_number:
+                        clean_num = incoming_number
+                        if len(clean_num) == 10:
+                            clean_num = "+91" + clean_num
+                        elif len(clean_num) == 12 and clean_num.startswith("91"):
+                            clean_num = "+" + clean_num
+                        
+                        last_10 = clean_num[-10:]
+                        # Lookup contact info
+                        contact_res = supabase.table('contacts').select('poc_name, business_name').like('phone_number', f'%{last_10}').execute()
+                        if contact_res.data:
+                            incoming_caller_name = contact_res.data[0].get('poc_name') or contact_res.data[0].get('business_name')
+                        else:
+                            jd_res = supabase.table('justdial_leads').select('name, lead_name').like('phone', f'%{last_10}').execute()
+                            if jd_res.data:
+                                incoming_caller_name = jd_res.data[0].get('name') or jd_res.data[0].get('lead_name')
+                
                 status_payload = {
                     "status": "connected",
                     "is_root": is_root,
@@ -110,7 +175,12 @@ def main():
                     "dialer_details": details["dialer_details"],
                     "phone_support": details["phone_support"],
                     "sim_cards": sims,
-                    "default_sim_slot": default_sim_slot
+                    "default_sim_slot": default_sim_slot,
+                    "call_state": call_state,
+                    "incoming_call": {
+                        "number": incoming_number,
+                        "name": incoming_caller_name or "Unknown Caller"
+                    } if incoming_number else None
                 }
                 current_status = json.dumps(status_payload)
             else:
