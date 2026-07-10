@@ -1,5 +1,10 @@
 # Release Notes
 
+## [1.7.6] - 2026-07-10
+### Fixed
+- Fixed module initialization crash on production when environment variables are missing.
+- Added `docs/CLOUDFLARE_SETUP.md` configuration guide.
+
 ## [1.7.5] - 2026-07-10
 ### Fixed
 - Wrapped Truecaller database sub-queries in individual try-except blocks to prevent schema mismatch crashes, ensuring search query name resolutions succeed.
