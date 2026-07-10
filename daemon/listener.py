@@ -22,7 +22,8 @@ from adb_helper import (
 
 # --- SETUP SUPABASE ---
 # Try to load .env from parent directory
-env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+env_path = os.path.join(PROJECT_ROOT, ".env")
 if os.path.exists(env_path):
     with open(env_path, "r") as f:
         for line in f:
@@ -142,6 +143,14 @@ def main():
                                 elif action == 'truecaller_lookup':
                                     from truecaller_handler import handle_truecaller_json
                                     handle_truecaller_json(device, cmd_data, run_cmd, supabase)
+                                elif action == 'install_truecaller':
+                                    apk_path = os.path.join(PROJECT_ROOT, "resources", "Truecaller_v26.27.5.apk")
+                                    if os.path.exists(apk_path):
+                                        print(f"[*] Installing Truecaller APK: {apk_path}")
+                                        res = run_cmd(f"adb -s {device} install -r \"{apk_path}\"")
+                                        print(f"[*] Install output: {res}")
+                                    else:
+                                        print(f"❌ Error: Truecaller APK not found at {apk_path}")
                                 supabase.table('system_state').update({'command': 'idle'}).eq('id', 1).execute()
                             except Exception as je:
                                 print(f"⚠️ JSON command error: {je}")
