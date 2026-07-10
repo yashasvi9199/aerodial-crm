@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { getStoredLogs, clearLogs, writeLog } from '../lib/logger';
 
+const FAILSAFE_METHODS = ['default', 'slot0', 'slot1', 'generic', 'root_service'];
+
 /**
  * JSDoc: Custom hook for the Setup tab features.
  * Separates business logic from the UI view for SIM slot choice,
@@ -10,12 +12,10 @@ import { getStoredLogs, clearLogs, writeLog } from '../lib/logger';
 export function useSetup() {
   const [adbStatus, setAdbStatus] = useState('{"status":"disconnected"}');
   const [updatedAt, setUpdatedAt] = useState(null);
-  const [nowTime, setNowTime] = useState(Date.now());
-  const [logs, setLogs] = useState([]);
+  const [nowTime, setNowTime] = useState(() => Date.now());
+  const [logs, setLogs] = useState(() => getStoredLogs());
   const [isTestPopupOpen, setIsTestPopupOpen] = useState(false);
   const [failsafeIndex, setFailsafeIndex] = useState(0);
-
-  const failsafeMethods = ['default', 'slot0', 'slot1', 'generic', 'root_service'];
 
   // Keep nowTime updated for heartbeat check
   useEffect(() => {
@@ -56,7 +56,6 @@ export function useSetup() {
   }, []);
 
   useEffect(() => {
-    syncLogs();
     window.addEventListener('aerodial_logs_updated', syncLogs);
     return () => {
       window.removeEventListener('aerodial_logs_updated', syncLogs);
@@ -114,7 +113,7 @@ export function useSetup() {
   // Queue a 197 test call utilizing failsafe options
   const triggerTestCall = useCallback(async (methodIndex = 0) => {
     try {
-      const method = failsafeMethods[methodIndex];
+      const method = FAILSAFE_METHODS[methodIndex];
       writeLog('INFO', `Triggering 197 test call. Failsafe Method: ${method}`);
       await supabase.from('call_queue').insert([{ 
         number: `197#${method}`, 
@@ -129,8 +128,8 @@ export function useSetup() {
 
   const handleFailsafeRetry = useCallback(() => {
     const nextIndex = failsafeIndex + 1;
-    if (nextIndex < failsafeMethods.length) {
-      writeLog('WARN', `Test unsuccessful. Retrying with failsafe method: ${failsafeMethods[nextIndex]}`);
+    if (nextIndex < FAILSAFE_METHODS.length) {
+      writeLog('WARN', `Test unsuccessful. Retrying with failsafe method: ${FAILSAFE_METHODS[nextIndex]}`);
       triggerTestCall(nextIndex);
     } else {
       writeLog('ERROR', 'All dialer failsafe methods exhausted without success.');
@@ -154,8 +153,8 @@ export function useSetup() {
       downloadAnchor.click();
       downloadAnchor.remove();
       writeLog('INFO', 'Logs exported/downloaded by user.');
-    } catch (e) {
-      writeLog('ERROR', 'Failed to export logs.');
+    } catch (err) {
+      writeLog('ERROR', `Failed to export logs: ${err.message}`);
     }
   }, [logs]);
 
