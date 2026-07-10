@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.6] - 2026-07-10
+### Fixed
+- Prevented module initialization crash on production when environment variables are unset, by using placeholder credentials.
+- Created `docs/CLOUDFLARE_SETUP.md` with detailed instructions on configuring Supabase environment variables on Cloudflare Pages.
+
 ## [1.7.5] - 2026-07-10
 ### Fixed
 - Fixed Truecaller lookup failure by wrapping individual table queries (history, aggregated_contact, and raw_contact) in try-except blocks, preventing database schema mismatches from aborting the resolver.
