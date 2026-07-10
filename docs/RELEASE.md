@@ -1,5 +1,15 @@
 # Release Notes
 
+## [1.6.4] - 2026-07-10
+### Added
+- Created a single-click Truecaller APK installer via ADB (`adb install -r`) when the app is detected as missing from the active device.
+- Integrated a direct Play Store link in Setup tab to easily download WhatsApp Business if not present on the phone.
+
+## [1.6.3] - 2026-07-10
+### Fixed
+- Fixed rooted multi-SIM card choice routing by mapping the selected SIM slot (0/1) to the actual active database subscription ID (`_id` column) before calling `telecom set-user-selected-outgoing-phone-account`.
+- Cleaned up React linter warnings and errors (render impurity, unused hooks, and cascading state triggers).
+
 ## [1.6.2] - 2026-07-10
 ### Fixed
 - Configured python daemon to automatically parse and load environment variables from the root `.env` file, supporting both standard (`SUPABASE_URL` / `SUPABASE_ANON_KEY`) and Vite-prefixed (`VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`) variables.
