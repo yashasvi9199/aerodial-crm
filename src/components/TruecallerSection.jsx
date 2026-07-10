@@ -93,7 +93,8 @@ export default function TruecallerSection({ phone }) {
     }, 500) // 500ms debounce
 
     // Setup realtime subscription
-    const channel = supabase.channel(`truecaller_rt_${normalizedNumber.replace('+', '')}`)
+    const uniqueChannelName = `truecaller_rt_${normalizedNumber.replace('+', '')}_${Math.random().toString(36).substring(2, 9)}`;
+    const channel = supabase.channel(uniqueChannelName)
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
