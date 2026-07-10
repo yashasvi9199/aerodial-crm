@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.5] - 2026-07-10
+### Fixed
+- Fixed Truecaller lookup failure by wrapping individual table queries (history, aggregated_contact, and raw_contact) in try-except blocks, preventing database schema mismatches from aborting the resolver.
+
 ## [1.7.4] - 2026-07-10
 ### Added
 - Added Truecaller search intent fallback to the python daemon: launches Truecaller search view via ADB command when direct database query misses, waits for caching, and queries local `tc.db` database again.
