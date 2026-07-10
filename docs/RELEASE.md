@@ -1,5 +1,10 @@
 # Release Notes
 
+## [1.7.0] - 2026-07-10
+### Added
+- Integrated universal incoming call detection (combines dumpsys, notifications, and logcat parsing) to show a real-time caller HUD.
+- Swapped ADB installers with direct Google Play Store link actions for missing device apps.
+
 ## [1.6.5] - 2026-07-10
 ### Fixed
 - Fixed 400 Bad Request error on system_state PATCH by adding the missing `default_sim_slot` column.
