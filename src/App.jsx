@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './lib/supabase'
-import { RefreshCw, CheckCircle2, XCircle, BarChart3, Phone, Users, Sun, Moon, Search, Database, MessageSquare } from 'lucide-react'
+import { RefreshCw, CheckCircle2, XCircle, BarChart3, Phone, Users, Sun, Moon, Search, Database, MessageSquare, Settings } from 'lucide-react'
 import Dashboard from './features/Dashboard/Dashboard'
 import ColdCalling from './features/ColdCalling/ColdCalling'
 import JustdialLeads from './features/JustDial/JustdialLeads'
 import AllContacts from './features/AllContacts/AllContacts'
 import DbUpdater from './features/DbUpdater/DbUpdater'
 import WhatsAppManager from './features/WhatsApp/WhatsAppManager'
+import SetupTab from './components/SetupTab'
+import { initLogger } from './lib/logger'
 import './index.css'
 
 export default function App() {
@@ -20,22 +22,46 @@ export default function App() {
   const [justdialCount, setJustdialCount] = useState(0)
 
   useEffect(() => {
+    initLogger()
     const timer = setInterval(() => setNowTime(Date.now()), 1000)
     return () => clearInterval(timer)
   }, [])
 
-  const isHeartbeatValid = updatedAt ? (nowTime - new Date(updatedAt).getTime()) < 8000 : false
-  const isConnected = adbStatus.startsWith('connected') && isHeartbeatValid
-  const isRooted = adbStatus.includes('root:1')
-  const isTruecallerInstalled = adbStatus.includes('truecaller:1')
-  const isWhatsappBusinessInstalled = adbStatus.includes('whatsapp:1')
+  const isHeartbeatValid = updatedAt ? Math.abs(nowTime - new Date(updatedAt).getTime()) < 15000 : false
+  
+  let isConnected = false
+  let isRooted = false
+  let isTruecallerInstalled = false
+  let isWhatsappBusinessInstalled = false
+  let deviceBrand = ''
+  let deviceModel = ''
+  let deviceOS = ''
 
-  const brandMatch = adbStatus.match(/brand:([^|]+)/)
-  const deviceBrand = brandMatch ? brandMatch[1] : ''
-  const osMatch = adbStatus.match(/os:([^|]+)/)
-  const deviceOS = osMatch ? osMatch[1] : ''
-  const modelMatch = adbStatus.match(/model:([^|]+)/)
-  const deviceModel = modelMatch ? modelMatch[1] : ''
+  try {
+    if (adbStatus && adbStatus.startsWith('{')) {
+      const parsed = JSON.parse(adbStatus)
+      isConnected = parsed.status === 'connected' && isHeartbeatValid
+      isRooted = parsed.is_root
+      isTruecallerInstalled = parsed.truecaller
+      isWhatsappBusinessInstalled = parsed.whatsapp
+      deviceBrand = parsed.brand
+      deviceModel = parsed.model
+      deviceOS = parsed.os_name
+    } else {
+      isConnected = adbStatus.startsWith('connected') && isHeartbeatValid
+      isRooted = adbStatus.includes('root:1')
+      isTruecallerInstalled = adbStatus.includes('truecaller:1')
+      isWhatsappBusinessInstalled = adbStatus.includes('whatsapp:1')
+      const brandMatch = adbStatus.match(/brand:([^|]+)/)
+      deviceBrand = brandMatch ? brandMatch[1] : ''
+      const osMatch = adbStatus.match(/os:([^|]+)/)
+      deviceOS = osMatch ? osMatch[1] : ''
+      const modelMatch = adbStatus.match(/model:([^|]+)/)
+      deviceModel = modelMatch ? modelMatch[1] : ''
+    }
+  } catch (e) {
+    // Fail silently or fallback
+  }
 
   useEffect(() => {
     // Apply theme
@@ -112,15 +138,7 @@ export default function App() {
     await supabase.from('system_state').update({ command: 'run_sync' }).eq('id', 1)
   }
 
-  const triggerTestCall = async () => {
-    try {
-      await supabase.from('call_queue').insert([{ number: '197', status: 'dialing' }])
-      alert('Test call on 197 queued! Verify dialing on your phone.')
-    } catch (err) {
-      console.error(err)
-      alert(`Error queuing test call: ${err.message}`)
-    }
-  }
+
 
   const toggleTheme = () => {
     setTheme(prev => prev === 'light' ? 'dark' : 'light')
@@ -146,7 +164,8 @@ export default function App() {
             { id: 'coldcalling', label: 'Cold Calling', icon: <Phone size={18} /> },
             { id: 'justdial', label: 'Justdial Leads', icon: <Users size={18} /> },
             { id: 'whatsapp', label: 'WhatsApp', icon: <MessageSquare size={18} /> },
-            { id: 'dbupdater', label: 'DB Updater', icon: <Database size={18} /> }
+            { id: 'dbupdater', label: 'DB Updater', icon: <Database size={18} /> },
+            { id: 'setup', label: 'Setup', icon: <Settings size={18} /> }
           ].map(btn => (
             <button 
               key={btn.id} 
@@ -256,6 +275,7 @@ export default function App() {
           {activeTab === 'justdial' && <JustdialLeads />}
           {activeTab === 'whatsapp' && <WhatsAppManager />}
           {activeTab === 'dbupdater' && <DbUpdater />}
+          {activeTab === 'setup' && <SetupTab />}
         </main>
       </div>
 
