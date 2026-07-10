@@ -1,5 +1,10 @@
 # Release Notes
 
+## [1.7.1] - 2026-07-10
+### Fixed
+- Fixed call logging registration to correctly capture called history and format timestamps as `January 01, 2000 | 04:00 PM`.
+- Added visible Last Called timestamp information to UI cards and list items.
+
 ## [1.7.0] - 2026-07-10
 ### Added
 - Integrated universal incoming call detection (combines dumpsys, notifications, and logcat parsing) to show a real-time caller HUD.
