@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.2] - 2026-07-10
+### Fixed
+- Fixed Supabase Realtime channel name collisions in `TruecallerSection` by generating a unique channel name on each mount, resolving console errors and crashes when switching contacts.
+
 ## [1.7.1] - 2026-07-10
 ### Fixed
 - Fixed call logging logic to register contact call status updates and write `last_call_at` using a human-readable local time format: `January 01, 2000 | 04:00 PM`.
