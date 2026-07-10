@@ -147,17 +147,19 @@ def get_sim_cards(device, is_root=False):
     sims = []
     if is_root:
         try:
-            out = run_cmd(f"adb -s {device} shell \"su -c 'content query --uri content://telephony/siminfo --projection sim_id:display_name:number'\"")
+            out = run_cmd(f"adb -s {device} shell \"su -c 'content query --uri content://telephony/siminfo --projection _id:sim_id:display_name:number'\"")
             for line in out.splitlines():
                 if "sim_id=" in line:
+                    id_match = re.search(r'_id=(\d+)', line)
                     sim_id_match = re.search(r'sim_id=(\d+)', line)
                     display_name_match = re.search(r'display_name=([^,]+)', line)
                     number_match = re.search(r'number=([^,]+)', line)
                     if sim_id_match:
                         slot = int(sim_id_match.group(1))
+                        sub_id = int(id_match.group(1)) if id_match else slot + 1
                         carrier = display_name_match.group(1) if display_name_match else f"SIM {slot+1}"
                         number = number_match.group(1) if number_match else "Unknown"
-                        sims.append({"slot": slot, "carrier": carrier.strip(), "number": number.strip()})
+                        sims.append({"slot": slot, "sub_id": sub_id, "carrier": carrier.strip(), "number": number.strip()})
             if sims:
                 return sims
         except Exception:
