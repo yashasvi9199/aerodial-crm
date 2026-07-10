@@ -2,35 +2,53 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { Edit2, Check, X, Shield, Loader2 } from 'lucide-react'
 
+// Normalize the phone number format
+const getNormalizedPhone = (rawPhone) => {
+  if (!rawPhone) return ''
+  const clean = rawPhone.replace(/\D/g, '')
+  if (clean.length === 10) {
+    return `+91${clean}`
+  } else if (clean.length === 12 && clean.startsWith('91')) {
+    return `+${clean}`
+  } else if (clean.startsWith('91') && clean.length > 10) {
+    return `+${clean}`
+  } else if (clean.length > 0 && !rawPhone.startsWith('+')) {
+    return `+91${clean.slice(-10)}`
+  }
+  return rawPhone.startsWith('+') ? rawPhone : `+${clean}`
+};
+
 export default function TruecallerSection({ phone }) {
-  const [name, setName] = useState(null)
+  const [name, setName] = useState(() => {
+    const normalized = getNormalizedPhone(phone);
+    if (!normalized || normalized.length !== 13 || !normalized.startsWith('+91')) return null;
+    return localStorage.getItem('tc_' + normalized);
+  })
   const [isEditing, setIsEditing] = useState(false)
   const [editVal, setEditVal] = useState('')
   const [loading, setLoading] = useState(false)
-  const [isSearching, setIsSearching] = useState(false)
+  const [isSearching, setIsSearching] = useState(() => {
+    const normalized = getNormalizedPhone(phone);
+    if (!normalized || normalized.length !== 13 || !normalized.startsWith('+91')) return false;
+    const cached = localStorage.getItem('tc_' + normalized);
+    return cached === 'Searching...';
+  })
   
-  // Normalize the phone number format
-  const getNormalizedPhone = (rawPhone) => {
-    if (!rawPhone) return ''
-    const clean = rawPhone.replace(/\D/g, '')
-    if (clean.length === 10) {
-      return `+91${clean}`
-    } else if (clean.length === 12 && clean.startsWith('91')) {
-      return `+${clean}`
-    } else if (clean.startsWith('91') && clean.length > 10) {
-      return `+${clean}`
-    } else if (clean.length > 0 && !rawPhone.startsWith('+')) {
-      return `+91${clean.slice(-10)}`
-    }
-    return rawPhone.startsWith('+') ? rawPhone : `+${clean}`
-  };
-
   const [prevPhone, setPrevPhone] = useState(phone)
 
   if (phone !== prevPhone) {
     setPrevPhone(phone)
-    setName(null)
-    setIsSearching(false)
+    setName(() => {
+      const normalized = getNormalizedPhone(phone);
+      if (!normalized || normalized.length !== 13 || !normalized.startsWith('+91')) return null;
+      return localStorage.getItem('tc_' + normalized);
+    })
+    setIsSearching(() => {
+      const normalized = getNormalizedPhone(phone);
+      if (!normalized || normalized.length !== 13 || !normalized.startsWith('+91')) return false;
+      const cached = localStorage.getItem('tc_' + normalized);
+      return cached === 'Searching...';
+    })
     setIsEditing(false)
   }
 
@@ -39,13 +57,6 @@ export default function TruecallerSection({ phone }) {
 
   useEffect(() => {
     if (!isValid) return;
-
-    // Try to load from localStorage first
-    const cached = localStorage.getItem('tc_' + normalizedNumber)
-    if (cached) {
-      setName(cached)
-      setIsSearching(cached === 'Searching...')
-    }
 
     // Debounce state lookup
     const delayDebounce = setTimeout(async () => {
