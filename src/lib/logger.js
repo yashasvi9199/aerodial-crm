@@ -66,6 +66,8 @@ export function initLogger() {
   const originalLog = console.log;
   const originalWarn = console.warn;
   const originalError = console.error;
+  const originalInfo = console.info;
+  const originalDebug = console.debug;
 
   console.log = (...args) => {
     originalLog.apply(console, args);
@@ -81,6 +83,29 @@ export function initLogger() {
     originalError.apply(console, args);
     writeLog('ERROR', args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '));
   };
+
+  console.info = (...args) => {
+    if (originalInfo) originalInfo.apply(console, args);
+    writeLog('INFO', args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '));
+  };
+
+  console.debug = (...args) => {
+    if (originalDebug) originalDebug.apply(console, args);
+    writeLog('DEBUG', args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '));
+  };
+
+  // 1.1 Capture uncaught global runtime errors
+  window.addEventListener('error', (event) => {
+    const msg = event.error ? event.error.message || event.error : event.message || 'Unknown runtime error';
+    writeLog('ERROR', `Uncaught Script Error: ${msg} at ${event.filename || 'unknown'}:${event.lineno || 0}`);
+  }, true);
+
+  // 1.2 Capture unhandled promise rejections
+  window.addEventListener('unhandledrejection', (event) => {
+    const reason = event.reason;
+    const msg = reason ? (reason.message || (typeof reason === 'object' ? JSON.stringify(reason) : String(reason))) : 'Unknown rejection';
+    writeLog('ERROR', `Unhandled Promise Rejection: ${msg}`);
+  }, true);
 
   // 2. Interaction logging
   window.addEventListener('click', (e) => {

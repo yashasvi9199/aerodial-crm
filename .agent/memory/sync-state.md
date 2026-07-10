@@ -5,5 +5,8 @@
 - 2026-07-10 (Fixes): Fixed missing 'supabase' module error in the daemon listener by implementing a local virtual environment (.venv) and updating the npm start script. Added an automated .env file loader in listener.py supporting both Vite-prefixed and standard Supabase environment keys. Bumped version to 1.6.2.
 - 2026-07-10 (SIM & Lint Fixes): Mapped SIM card slot index to telephony database subscription IDs (`_id` column) in adb_helper.py and listener.py to allow successful rooted multi-SIM carrier switching. Fixed various React/ESLint issues (unused variables, impure hook render calls, cascading useEffect setState triggers). Bounded codebase to clean, error-free state verified by npm run lint. Bumped version to 1.6.3.
 - 2026-07-10 (Truecaller Install & W4B): Implemented single-click Truecaller APK installer via ADB in the python daemon and Setup tab UI. Added diagnostic checks for Truecaller/WhatsApp Business and a Play Store redirect link for missing WhatsApp Business instances. Bumped version to 1.6.4.
+- 2026-07-10 (Truecaller APK): Staged and committed the uploaded Truecaller APK (Truecaller_v26.27.5.apk) under resources/ directory for ADB installer use.
+- 2026-07-10 (DB Schema Fixes): Fixed HTTP 400 system_state PATCH by adding default_sim_slot column and verified whatsapp_messages schema in DATABASE.sql to resolve daemon warning. Bumped version to 1.6.5.
+- 2026-07-10 (SIM & Console Logs): Added optimistic state updates in useSetup.js to eliminate UI selection delay when switching SIMs, and enhanced logger.js to capture console.info, console.debug, uncaught script errors, and unhandled promise rejections across all browsers.
 
 

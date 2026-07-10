@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.6.5] - 2026-07-10
+### Fixed
+- Fixed browser console HTTP 400 Bad Request error when saving default SIM slot by adding missing `default_sim_slot` column to `system_state` table.
+- Resolved terminal daemon warning concerning missing `whatsapp_messages` schema cache entry.
+
 ## [1.6.4] - 2026-07-10
 ### Added
 - Added Truecaller APK installer action handler in the python daemon listener and "Install APK" button in Setup tab to install Truecaller via ADB in a single click.

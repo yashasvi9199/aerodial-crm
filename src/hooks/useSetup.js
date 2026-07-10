@@ -16,6 +16,7 @@ export function useSetup() {
   const [logs, setLogs] = useState(() => getStoredLogs());
   const [isTestPopupOpen, setIsTestPopupOpen] = useState(false);
   const [failsafeIndex, setFailsafeIndex] = useState(0);
+  const [localSimSlot, setLocalSimSlot] = useState(null);
 
   // Keep nowTime updated for heartbeat check
   useEffect(() => {
@@ -31,6 +32,9 @@ export function useSetup() {
         if (data) {
           setAdbStatus(data.adb_status);
           setUpdatedAt(data.updated_at);
+          if (typeof data.default_sim_slot === 'number') {
+            setLocalSimSlot(data.default_sim_slot);
+          }
         }
       } catch (err) {
         console.error('Error fetching system state:', err);
@@ -42,6 +46,9 @@ export function useSetup() {
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'system_state' }, (payload) => {
         setAdbStatus(payload.new.adb_status);
         setUpdatedAt(payload.new.updated_at);
+        if (typeof payload.new.default_sim_slot === 'number') {
+          setLocalSimSlot(payload.new.default_sim_slot);
+        }
       })
       .subscribe();
 
@@ -95,6 +102,11 @@ export function useSetup() {
     console.error('Error decoding adbStatus JSON:', e);
   }
 
+  // Inject optimistic SIM slot
+  if (localSimSlot !== null) {
+    parsedStatus.default_sim_slot = localSimSlot;
+  }
+
   const timeDiff = updatedAt ? Math.abs(nowTime - new Date(updatedAt).getTime()) : 999999;
   const isHeartbeatValid = timeDiff < 15000;
   const isPythonRunning = isHeartbeatValid;
@@ -102,6 +114,7 @@ export function useSetup() {
 
   // Change default SIM card slot configuration
   const selectDefaultSimSlot = useCallback(async (slotIndex) => {
+    setLocalSimSlot(slotIndex); // Optimistically set immediately!
     try {
       writeLog('INFO', `User changed default SIM slot to: Slot ${slotIndex + 1}`);
       await supabase.from('system_state').update({ default_sim_slot: slotIndex }).eq('id', 1);

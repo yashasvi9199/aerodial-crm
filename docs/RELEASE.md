@@ -1,5 +1,10 @@
 # Release Notes
 
+## [1.6.5] - 2026-07-10
+### Fixed
+- Fixed 400 Bad Request error on system_state PATCH by adding the missing `default_sim_slot` column.
+- Added missing `whatsapp_messages` schema to resolve local python daemon sync warning.
+
 ## [1.6.4] - 2026-07-10
 ### Added
 - Created a single-click Truecaller APK installer via ADB (`adb install -r`) when the app is detected as missing from the active device.
