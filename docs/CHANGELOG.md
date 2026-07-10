@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.4] - 2026-07-10
+### Added
+- Added Truecaller search intent fallback to the python daemon: launches Truecaller search view via ADB command when direct database query misses, waits for caching, and queries local `tc.db` database again.
+
 ## [1.7.3] - 2026-07-10
 ### Added
 - Added `whatsapp_sent` status column to contacts database table and managed editable state options within the Cold Calling workspace.
