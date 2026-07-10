@@ -137,9 +137,14 @@ export default function App() {
     setIsSyncing(true)
     await supabase.from('system_state').update({ command: 'run_sync' }).eq('id', 1)
   }
-
-
-
+  const triggerTestCall = async () => {
+    try {
+      await supabase.from('call_queue').insert([{ number: '197', status: 'dialing' }])
+      alert('Test call on 197 queued! Verify dialing on your phone.')
+    } catch (err) {
+      console.error('Error triggering test call:', err)
+    }
+  }
   const toggleTheme = () => {
     setTheme(prev => prev === 'light' ? 'dark' : 'light')
   }
