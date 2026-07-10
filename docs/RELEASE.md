@@ -1,5 +1,9 @@
 # Release Notes
 
+## [1.7.4] - 2026-07-10
+### Added
+- Added Truecaller search intent fallback to launch app on device during lookup miss.
+
 ## [1.7.3] - 2026-07-10
 ### Added
 - Added editable `whatsapp_sent` status indicators to contacts table and layout.
