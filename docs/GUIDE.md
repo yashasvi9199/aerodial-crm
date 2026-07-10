@@ -30,5 +30,21 @@ AeroDial CRM coordinates dial actions and WhatsApp Business messaging tasks trig
   ```
 - Run the frontend dashboard development environment:
   ```bash
-  npm run dev:frontend
+  npm run dev
   ```
+
+## Feature Matrix: Rooted vs. Non-Rooted Devices
+
+AeroDial CRM automatically detects your device's root capability and unlocks advanced features accordingly.
+
+| Feature | Non-Rooted Mode | Rooted Mode |
+| :--- | :--- | :--- |
+| **Outbound Calling** | Yes (via AOSP intent fallback) | Yes (fully automated) |
+| **ROM-specific Dialers** | Supported via intent routing | Supported via intent routing |
+| **Heartbeat & State Sync** | Yes | Yes |
+| **Sim Card Detection** | Slot index & carrier via `dumpsys` | Carrier, phone number, and slot info |
+| **Default SIM Choice** | Appended to dial intent extras | Injected into default telecom settings |
+| **Call Duration Logs** | Read from caller database | Read from caller database |
+| **Failsafe Dial Retries** | Supported (up to 4 methods) | Supported (includes root service override) |
+| **WhatsApp Message Dispatch**| Yes (via local automation) | Yes (via local automation) |
+
