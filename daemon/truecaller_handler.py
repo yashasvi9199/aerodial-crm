@@ -36,29 +36,52 @@ def handle_truecaller_json(device, data, run_cmd, supabase):
                 conn = sqlite3.connect(db_local_path)
                 cursor = conn.cursor()
                 
-                # Query history_with_aggregated_contact_number first (more recent calls)
-                cursor.execute("""
-                    SELECT contact_name, cached_name 
-                    FROM history_with_aggregated_contact_number 
-                    WHERE (normalized_number LIKE ? OR raw_number LIKE ? OR normalized_number LIKE ? OR raw_number LIKE ?)
-                      AND (contact_name IS NOT NULL AND contact_name != '' OR cached_name IS NOT NULL AND cached_name != '')
-                    ORDER BY timestamp DESC LIMIT 1
-                """, (f"%{search_num}", f"%{search_num}", f"%{phone_10_digits}", f"%{phone_10_digits}"))
-                row = cursor.fetchone()
-                if row:
-                    name_val = row[0] or row[1]
-                else:
-                    # Query raw_contact
+                # Query history table if it exists
+                try:
                     cursor.execute("""
-                        SELECT contact_name 
-                        FROM raw_contact 
-                        WHERE (contact_default_number LIKE ? OR search_query LIKE ? OR contact_default_number LIKE ? OR search_query LIKE ?)
-                          AND contact_name IS NOT NULL AND contact_name != ''
-                        LIMIT 1
+                        SELECT cached_name 
+                        FROM history 
+                        WHERE (normalized_number LIKE ? OR raw_number LIKE ? OR normalized_number LIKE ? OR raw_number LIKE ?)
+                          AND (cached_name IS NOT NULL AND cached_name != '')
+                        ORDER BY timestamp DESC LIMIT 1
                     """, (f"%{search_num}", f"%{search_num}", f"%{phone_10_digits}", f"%{phone_10_digits}"))
                     row = cursor.fetchone()
                     if row:
                         name_val = row[0]
+                except Exception as he:
+                    print(f"[*] history table query skipped: {he}")
+                
+                # Query aggregated_contact table if name not found yet
+                if not name_val:
+                    try:
+                        cursor.execute("""
+                            SELECT contact_name 
+                            FROM aggregated_contact 
+                            WHERE (contact_default_number LIKE ? OR contact_default_number LIKE ?)
+                              AND contact_name IS NOT NULL AND contact_name != ''
+                            LIMIT 1
+                        """, (f"%{phone_10_digits}", f"%{search_num}"))
+                        row = cursor.fetchone()
+                        if row:
+                            name_val = row[0]
+                    except Exception as ae:
+                        print(f"[*] aggregated_contact table query skipped: {ae}")
+
+                # Query raw_contact table if name not found yet
+                if not name_val:
+                    try:
+                        cursor.execute("""
+                            SELECT contact_name 
+                            FROM raw_contact 
+                            WHERE (contact_default_number LIKE ? OR search_query LIKE ? OR contact_default_number LIKE ? OR search_query LIKE ?)
+                              AND contact_name IS NOT NULL AND contact_name != ''
+                            LIMIT 1
+                        """, (f"%{search_num}", f"%{search_num}", f"%{phone_10_digits}", f"%{phone_10_digits}"))
+                        row = cursor.fetchone()
+                        if row:
+                            name_val = row[0]
+                    except Exception as re_ex:
+                        print(f"[*] raw_contact table query skipped: {re_ex}")
                         
                 conn.close()
         except Exception as ex:
