@@ -1,7 +1,12 @@
 import os
+import sys
 import time
 import datetime
 import json
+
+# Add current folder to path to resolve local imports correctly
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from supabase import create_client
 
 from adb_helper import (
