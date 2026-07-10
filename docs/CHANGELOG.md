@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.3] - 2026-07-10
+### Added
+- Added `whatsapp_sent` status column to contacts database table and managed editable state options within the Cold Calling workspace.
+- Added visual `WA Sent` indicators/badges next to contact items inside the contact list.
+
 ## [1.7.2] - 2026-07-10
 ### Fixed
 - Fixed Supabase Realtime channel name collisions in `TruecallerSection` by generating a unique channel name on each mount, resolving console errors and crashes when switching contacts.
