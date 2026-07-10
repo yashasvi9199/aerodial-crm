@@ -246,6 +246,8 @@ def main():
                     print(f"\n[*] Active call state detected: {call_state}. Measuring duration...")
                     start_time_ms = int(time.time() * 1000)
                     start_time_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+                    import datetime as dt_mod
+                    start_time_formatted = dt_mod.datetime.now().strftime("%B %d, %Y | %I:%M %p")
                     call_start_time = time.time()
                     
                     while get_call_state(device) != 0:
@@ -316,7 +318,7 @@ def main():
                             contact_id, platform = contact['id'], "cold_call"
                             curr_count = contact.get('call_count', 0) or 0
                             supabase.table('contacts').update({
-                                'last_call_at': start_time_iso,
+                                'last_call_at': start_time_formatted,
                                 'call_duration': f"{duration}s",
                                 'status_update': "Answered" if duration > 0 else "Unanswered",
                                 'call_count': curr_count + 1
