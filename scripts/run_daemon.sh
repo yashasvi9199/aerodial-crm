@@ -16,13 +16,17 @@ if [ -n "$PID" ]; then
     fi
 else
     echo "Starting AeroDial Daemon in the background..."
-    # Ensure dependencies are installed
+    # Ensure virtual environment and dependencies are installed
+    if [ ! -d "daemon/.venv" ]; then
+        echo "Creating virtual environment..."
+        python3 -m venv daemon/.venv
+    fi
     if [ -f "daemon/requirements.txt" ]; then
-        python3 -m pip install -r daemon/requirements.txt --quiet
+        daemon/.venv/bin/pip install -r daemon/requirements.txt --quiet
     fi
     
     # Run the listener in background redirecting logs
-    nohup python3 daemon/listener.py > daemon/daemon.log 2>&1 &
+    nohup daemon/.venv/bin/python daemon/listener.py > daemon/daemon.log 2>&1 &
     
     # Notify user of success
     if command -v notify-send >/dev/null 2>&1; then
