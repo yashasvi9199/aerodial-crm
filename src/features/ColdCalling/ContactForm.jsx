@@ -80,6 +80,11 @@ export default function ContactForm({
                   />
                 </span>
               </p>
+              {selectedContact.last_call_at && (
+                <p style={{ margin: '6px 0', fontSize: '12px', color: 'var(--text-muted)' }}>
+                  Last Called: <strong style={{ color: 'var(--accent)' }}>{selectedContact.last_call_at}</strong>
+                </p>
+              )}
               <TruecallerSection phone={selectedContact.phone_number} />
             </div>
             
