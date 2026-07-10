@@ -1,4 +1,3 @@
-import React from 'react';
 
 /**
  * JSDoc: Renders the enhanced test call popup.
