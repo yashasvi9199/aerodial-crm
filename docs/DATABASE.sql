@@ -239,3 +239,12 @@
 -- DROP POLICY IF EXISTS "Allow all access during development whatsapp_messages" ON public.whatsapp_messages;
 -- CREATE POLICY "Allow all access during development whatsapp_messages" ON public.whatsapp_messages FOR ALL USING (true);
 -- ALTER PUBLICATION supabase_realtime ADD TABLE public.whatsapp_messages;
+
+--------------------------------------------------------------------------------------
+
+-- Date: 2026-07-10 13:52:00
+-- Feature: Contact WhatsApp Sent Status
+-- Type: FIX
+-- Notes: Add whatsapp_sent column to contacts table.
+
+ALTER TABLE public.contacts ADD COLUMN IF NOT EXISTS whatsapp_sent text DEFAULT 'No';
