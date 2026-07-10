@@ -1,5 +1,9 @@
 # Release Notes
 
+## [1.7.2] - 2026-07-10
+### Fixed
+- Fixed Supabase Realtime channel name collision error in Truecaller profile section.
+
 ## [1.7.1] - 2026-07-10
 ### Fixed
 - Fixed call logging registration to correctly capture called history and format timestamps as `January 01, 2000 | 04:00 PM`.
