@@ -1,5 +1,10 @@
 # Release Notes
 
+## [1.7.3] - 2026-07-10
+### Added
+- Added editable `whatsapp_sent` status indicators to contacts table and layout.
+- Added visual `WA Sent` badge to contact list cards.
+
 ## [1.7.2] - 2026-07-10
 ### Fixed
 - Fixed Supabase Realtime channel name collision error in Truecaller profile section.
