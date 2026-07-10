@@ -69,4 +69,12 @@
 - **Supabase Cache Integration**: Lookups are cached inside a dedicated Supabase `truecaller_cache` table to enable instant lookup speeds on subsequent card loads.
 - **Editable Resolved Profiles**: All resolved Truecaller names displayed in Contacts, Cold Calling Contacts, Justdial Leads, and WhatsApp composers are inline-editable. Editing updates the cached name in the database, preserving custom names for all future views.
 
+## 12. Setup & Diagnostics Panel
+- **Multi-Device Brand/OS Skin Detection**: Automatically checks and resolves system build parameters (AOSP, MIUI, HarmonyOS, ColorOS, FuntouchOS, etc.) to determine support status and dialer requirements.
+- **SIM Card Scanner**: Reads available SIM slot index, carrier brand, and phone number using root query database fallbacks and non-root `dumpsys` methods.
+- **Default SIM Selector**: Configure outbound dialing preference by default (saved in central settings and applied dynamically via ROM-specific intent extra parameters).
+- **Failsafe Dialer Fallbacks**: Enhanced 197 test dialog prompts user on successful call. If "No" is chosen, loops through 5 independent dialing fallback formats (ROM slot intents, AOSP intent, and root direct service dialer overrides) to establish a successful connection.
+- **Diagnostics Event & Error Logger**: Intercepts console logging and user actions, writing an audit list to `localStorage` (capped at 500 lines) with features to export as JSON or email developer.
+
+
 
