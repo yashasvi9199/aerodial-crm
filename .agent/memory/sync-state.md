@@ -8,5 +8,6 @@
 - 2026-07-10 (Truecaller APK): Staged and committed the uploaded Truecaller APK (Truecaller_v26.27.5.apk) under resources/ directory for ADB installer use.
 - 2026-07-10 (DB Schema Fixes): Fixed HTTP 400 system_state PATCH by adding default_sim_slot column and verified whatsapp_messages schema in DATABASE.sql to resolve daemon warning. Bumped version to 1.6.5.
 - 2026-07-10 (SIM & Console Logs): Added optimistic state updates in useSetup.js to eliminate UI selection delay when switching SIMs, and enhanced logger.js to capture console.info, console.debug, uncaught script errors, and unhandled promise rejections across all browsers.
+- 2026-07-10 (Incoming Detection & Links): Implemented multi-method incoming call number resolution (telephony, notifications, logcat) in daemon, added a real-time incoming call HUD popup, and replaced ADB setup installers with Play Store redirection links. Bumped version to 1.7.0.
 
 
