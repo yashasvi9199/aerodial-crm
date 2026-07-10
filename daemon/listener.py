@@ -3,6 +3,12 @@ import sys
 import time
 import datetime
 import json
+import subprocess
+
+# If not running inside the local virtual environment, re-execute using the venv python
+venv_python = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".venv", "bin", "python")
+if os.path.exists(venv_python) and sys.executable != venv_python:
+    os.execv(venv_python, [venv_python] + sys.argv)
 
 # Add current folder to path to resolve local imports correctly
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
