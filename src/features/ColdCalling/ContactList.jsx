@@ -57,9 +57,15 @@ export default function ContactList({
       const nameB = (b.business_name || b.poc_name || '').toLowerCase()
       return nameA.localeCompare(nameB)
     } else {
-      const timeA = a.last_call_at ? new Date(a.last_call_at).getTime() : 0
-      const timeB = b.last_call_at ? new Date(b.last_call_at).getTime() : 0
-      return timeB - timeA
+      const parseCustomDate = (str) => {
+        if (!str) return 0;
+        const cleanStr = str.replace('|', '').trim();
+        const d = new Date(cleanStr);
+        return isNaN(d.getTime()) ? 0 : d.getTime();
+      };
+      const timeA = parseCustomDate(a.last_call_at);
+      const timeB = parseCustomDate(b.last_call_at);
+      return timeB - timeA;
     }
   })
 
@@ -111,6 +117,11 @@ export default function ContactList({
               <div style={{ fontWeight: '600', fontSize: '13.5px', color: 'var(--text)', marginBottom: '4px' }}>
                 {c.business_name || 'Unnamed Record'}
               </div>
+              {c.last_call_at && (
+                <div style={{ fontSize: '11px', color: 'var(--accent)', marginBottom: '4px', fontWeight: '500' }}>
+                  Last Called: {c.last_call_at}
+                </div>
+              )}
               <div style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>{c.phone_number}</span>
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
