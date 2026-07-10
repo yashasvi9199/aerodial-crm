@@ -25,16 +25,20 @@ export default function TruecallerSection({ phone }) {
     return rawPhone.startsWith('+') ? rawPhone : `+${clean}`
   };
 
+  const [prevPhone, setPrevPhone] = useState(phone)
+
+  if (phone !== prevPhone) {
+    setPrevPhone(phone)
+    setName(null)
+    setIsSearching(false)
+    setIsEditing(false)
+  }
+
   const normalizedNumber = getNormalizedPhone(phone)
   const isValid = normalizedNumber && normalizedNumber.length === 13 && normalizedNumber.startsWith('+91')
 
   useEffect(() => {
-    if (!isValid) {
-      setName(prev => prev !== null ? null : prev)
-      setIsSearching(prev => prev ? false : prev)
-      setIsEditing(prev => prev ? false : prev)
-      return
-    }
+    if (!isValid) return;
 
     // Try to load from localStorage first
     const cached = localStorage.getItem('tc_' + normalizedNumber)
