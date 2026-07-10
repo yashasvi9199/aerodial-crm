@@ -1,5 +1,9 @@
 # Release Notes
 
+## [1.7.5] - 2026-07-10
+### Fixed
+- Wrapped Truecaller database sub-queries in individual try-except blocks to prevent schema mismatch crashes, ensuring search query name resolutions succeed.
+
 ## [1.7.4] - 2026-07-10
 ### Added
 - Added Truecaller search intent fallback to launch app on device during lookup miss.
