@@ -41,7 +41,7 @@ export function writeLog(level, message) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
     // Dispatch custom event so listeners know logs updated
     window.dispatchEvent(new CustomEvent('aerodial_logs_updated'));
-  } catch (e) {
+  } catch {
     // Avoid infinite recursion by not using console.error here
   }
 }
