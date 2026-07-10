@@ -260,16 +260,36 @@ def main():
                         call_task = call_res.data[0]
                         active_call_task_id = call_task['id']
                         number = call_task['number']
-                        print(f"[*] Placing outgoing call from queue: {number}")
+                        method = "default"
+                        if "#" in str(number):
+                            number_parts = str(number).split("#", 1)
+                            number = number_parts[0]
+                            method = number_parts[1]
+                            
+                        print(f"[*] Placing outgoing call from queue: {number} (Method: {method})")
                         supabase.table('call_queue').update({'status': 'call_active'}).eq('id', call_task['id']).execute()
                         
                         details = get_device_details(device)
-                        intent_extras = get_dialer_intent_extras(details["os_name"], default_sim_slot)
                         
+                        if method == "slot0":
+                            intent_extras = get_dialer_intent_extras(details["os_name"], 0)
+                        elif method == "slot1":
+                            intent_extras = get_dialer_intent_extras(details["os_name"], 1)
+                        elif method == "generic":
+                            intent_extras = ""
+                        else:
+                            intent_extras = get_dialer_intent_extras(details["os_name"], default_sim_slot)
+                            
                         if is_root:
-                            comp = "com.android.phone/com.android.services.telephony.TelephonyConnectionService"
-                            run_cmd(f"adb -s {device} shell \"su -c 'telecom set-user-selected-outgoing-phone-account {comp} {default_sim_slot} 0'\"")
-                            cmd_prefix = "su -c "
+                            if method == "root_service":
+                                # Direct service call for dialing using phone service
+                                run_cmd(f"adb -s {device} shell \"su -c 'service call phone 2 s16 {number}'\"")
+                                time.sleep(1.5)
+                                continue
+                            else:
+                                comp = "com.android.phone/com.android.services.telephony.TelephonyConnectionService"
+                                run_cmd(f"adb -s {device} shell \"su -c 'telecom set-user-selected-outgoing-phone-account {comp} {default_sim_slot} 0'\"")
+                                cmd_prefix = "su -c "
                         else:
                             cmd_prefix = ""
                             
