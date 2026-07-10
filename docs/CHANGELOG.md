@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.6.2] - 2026-07-10
+### Fixed
+- Added auto-loading of `.env` files in the python daemon listener and supported Vite-prefixed environment variables (`VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`) as fallbacks.
+
 ## [1.6.1] - 2026-07-10
 ### Fixed
 - Resolved `Cannot find module 'supabase'` error in python daemon listener by routing start scripts to use project virtual environment and installing python dependencies.
