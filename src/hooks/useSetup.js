@@ -158,6 +158,16 @@ export function useSetup() {
     }
   }, [logs]);
 
+  const installTruecaller = useCallback(async () => {
+    try {
+      writeLog('INFO', 'Initiated Truecaller APK installation via ADB.');
+      const command = JSON.stringify({ action: 'install_truecaller' });
+      await supabase.from('system_state').update({ command }).eq('id', 1);
+    } catch (err) {
+      writeLog('ERROR', `Failed to send Truecaller install command: ${err.message}`);
+    }
+  }, []);
+
   return {
     parsedStatus,
     isPythonRunning,
@@ -170,6 +180,7 @@ export function useSetup() {
     setIsTestPopupOpen,
     handleFailsafeRetry,
     handleTestSuccess,
-    exportLogs
+    exportLogs,
+    installTruecaller
   };
 }
