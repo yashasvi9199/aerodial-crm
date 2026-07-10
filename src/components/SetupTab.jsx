@@ -20,8 +20,7 @@ export default function SetupTab() {
     setIsTestPopupOpen,
     handleFailsafeRetry,
     handleTestSuccess,
-    exportLogs,
-    installTruecaller
+    exportLogs
   } = useSetup();
 
   const activeSlot = parsedStatus.default_sim_slot || 0;
