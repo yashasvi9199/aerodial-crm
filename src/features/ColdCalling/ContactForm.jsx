@@ -22,6 +22,8 @@ export default function ContactForm({
   setFollowUp,
   callCount,
   setCallCount,
+  whatsappSent,
+  setWhatsappSent,
   handleUpdate,
   handleDial,
   handleHangup,
@@ -200,19 +202,36 @@ export default function ContactForm({
       </div>
 
       {/* Details and Follow-Up Toggle */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-panel)', border: '1px solid var(--border)', padding: '15px 20px', borderRadius: '8px' }}>
-        <div>
-          <div style={{ fontWeight: '600', color: 'var(--text)', fontSize: '13.5px' }}>Priority Follow Up</div>
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Flag this contact to follow up later</div>
+      <div style={{ display: 'flex', gap: '15px', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-panel)', border: '1px solid var(--border)', padding: '15px 20px', borderRadius: '8px' }}>
+          <div>
+            <div style={{ fontWeight: '600', color: 'var(--text)', fontSize: '13.5px' }}>Priority Follow Up</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Flag this contact to follow up later</div>
+          </div>
+          <select 
+            value={followUp} 
+            onChange={(e) => setFollowUp(e.target.value)} 
+            style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '6px 12px', borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+          >
+            <option value="No">No</option>
+            <option value="Yes">Yes</option>
+          </select>
         </div>
-        <select 
-          value={followUp} 
-          onChange={(e) => setFollowUp(e.target.value)} 
-          style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '6px 12px', borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-        >
-          <option value="No">No</option>
-          <option value="Yes">Yes</option>
-        </select>
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-panel)', border: '1px solid var(--border)', padding: '15px 20px', borderRadius: '8px' }}>
+          <div>
+            <div style={{ fontWeight: '600', color: 'var(--text)', fontSize: '13.5px' }}>WhatsApp Sent Status</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Indicate if a WhatsApp message was sent to this user</div>
+          </div>
+          <select 
+            value={whatsappSent} 
+            onChange={(e) => setWhatsappSent(e.target.value)} 
+            style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '6px 12px', borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+          >
+            <option value="No">No</option>
+            <option value="Yes">Yes</option>
+          </select>
+        </div>
       </div>
  
       {/* Action Buttons */}
