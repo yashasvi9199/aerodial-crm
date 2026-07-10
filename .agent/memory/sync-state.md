@@ -9,5 +9,6 @@
 - 2026-07-10 (DB Schema Fixes): Fixed HTTP 400 system_state PATCH by adding default_sim_slot column and verified whatsapp_messages schema in DATABASE.sql to resolve daemon warning. Bumped version to 1.6.5.
 - 2026-07-10 (SIM & Console Logs): Added optimistic state updates in useSetup.js to eliminate UI selection delay when switching SIMs, and enhanced logger.js to capture console.info, console.debug, uncaught script errors, and unhandled promise rejections across all browsers.
 - 2026-07-10 (Incoming Detection & Links): Implemented multi-method incoming call number resolution (telephony, notifications, logcat) in daemon, added a real-time incoming call HUD popup, and replaced ADB setup installers with Play Store redirection links. Bumped version to 1.7.0.
+- 2026-07-10 (Call Timestamp Formatting): Updated call logs to write timestamps in a human-readable local time format: `January 01, 2000 | 04:00 PM`. Displayed the last called status on both contact cards in list view and details editor card, and added custom date parsing to frontend comparison sorting. Bumped version to 1.7.1.
 
 
