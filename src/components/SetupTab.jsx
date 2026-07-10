@@ -1,7 +1,6 @@
-import React from 'react';
 import { useSetup } from '../hooks/useSetup';
 import TestCallPopup from './TestCallPopup';
-import { Check, X, Shield, Phone, Download, Trash, Mail, RefreshCw } from 'lucide-react';
+import { Check, X, Shield, Phone, Download, Trash, Mail } from 'lucide-react';
 
 /**
  * JSDoc: Setup tab component.
