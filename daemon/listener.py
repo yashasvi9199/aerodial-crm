@@ -303,7 +303,14 @@ def main():
                                 continue
                             else:
                                 comp = "com.android.phone/com.android.services.telephony.TelephonyConnectionService"
-                                run_cmd(f"adb -s {device} shell \"su -c 'telecom set-user-selected-outgoing-phone-account {comp} {default_sim_slot} 0'\"")
+                                target_slot = 0 if method == "slot0" else (1 if method == "slot1" else default_sim_slot)
+                                sub_id = target_slot + 1
+                                if 'sims' in locals() and sims:
+                                    for s in sims:
+                                        if s.get("slot") == target_slot:
+                                            sub_id = s.get("sub_id", target_slot + 1)
+                                            break
+                                run_cmd(f"adb -s {device} shell \"su -c 'telecom set-user-selected-outgoing-phone-account {comp} {sub_id} 0'\"")
                                 cmd_prefix = "su -c "
                         else:
                             cmd_prefix = ""
