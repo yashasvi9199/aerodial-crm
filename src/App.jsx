@@ -16,7 +16,7 @@ export default function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light')
   const [adbStatus, setAdbStatus] = useState('disconnected')
   const [updatedAt, setUpdatedAt] = useState(null)
-  const [nowTime, setNowTime] = useState(Date.now())
+  const [nowTime, setNowTime] = useState(() => Date.now())
   const [isSyncing, setIsSyncing] = useState(false)
   const [coldCallingCount, setColdCallingCount] = useState(0)
   const [justdialCount, setJustdialCount] = useState(0)
@@ -59,8 +59,8 @@ export default function App() {
       const modelMatch = adbStatus.match(/model:([^|]+)/)
       deviceModel = modelMatch ? modelMatch[1] : ''
     }
-  } catch (e) {
-    // Fail silently or fallback
+  } catch (err) {
+    console.error('Failed to parse adbStatus JSON', err)
   }
 
   useEffect(() => {
