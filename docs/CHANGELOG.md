@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.6.0] - 2026-07-10
+### Added
+- Setup Diagnostics Tab: allows managing default SIM card slot routing, inspecting system metrics, and downloading logs.
+- Failsafe Dialing Retries: automatically rotates dialer configurations upon failed 197 test runs.
+- Browser Audit Logs: captures console warnings/errors and user navigation actions in local storage with exports.
+- Extracted ADB operations into a separate `adb_helper.py` to keep python source files under 300 lines limit.
+
+## [1.5.0] - 2026-07-09
+### Added
+- Multi-Device ROM skin & OS detection (AOSP, HOS3, ColorOS, FuntouchOS, Vivo, Lava, Micromax).
+- Heartbeat and daemon background runner script setup with desktop launchers.
+- WhatsApp Business package presence checks.
+
 ## [1.4.9] - 2026-06-17
 ### Added
 - Truecaller Name Lookup: implemented database resolver using rooted ADB shell access to copy and query the phone's Truecaller database (`tc.db`) locally.
