@@ -13,5 +13,6 @@
 - 2026-07-10 (Realtime Channel Fix): Generated unique Supabase Realtime channel names for each component mount inside TruecallerSection to resolve console subscription collision errors. Bumped version to 1.7.2.
 - 2026-07-10 (WhatsApp Sent Status): Added `whatsapp_sent` column to contacts table in DB, created form dropdown selector in Cold Calling editor view to manage it manually, and added a visual `WA Sent` badge to sidebar contact items. Bumped version to 1.7.3.
 - 2026-07-10 (Truecaller Search Intent Fallback): Enhanced Truecaller name resolver in daemon to launch search query intent on device when direct SQL check fails, enabling background fetching and local caching. Bumped version to 1.7.4.
+- 2026-07-10 (Truecaller DB Schema Fix): Wrapped history, aggregated_contact, and raw_contact sub-queries in distinct try-except blocks to prevent database table omission exceptions from aborting lookup execution. Bumped version to 1.7.5.
 
 
