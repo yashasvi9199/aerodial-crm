@@ -65,25 +65,24 @@ export default function SetupTab() {
               <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: parsedStatus.truecaller ? '#10b981' : '#ef4444', fontWeight: 'bold' }}>
                 {parsedStatus.truecaller ? <Check size={16} /> : <X size={16} />} 
                 {parsedStatus.truecaller ? 'Installed' : 'Missing'}
-                {!parsedStatus.truecaller && isDeviceConnected && (
-                  <button 
-                    onClick={installTruecaller}
+                {!parsedStatus.truecaller && (
+                  <a 
+                    href="https://play.google.com/store/apps/details?id=com.truecaller&pcampaignid=web_share"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     style={{
-                      background: 'var(--accent)',
-                      color: 'var(--bg-panel)',
-                      border: 'none',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      color: 'var(--text)',
+                      textDecoration: 'none',
                       borderRadius: '4px',
                       padding: '2px 8px',
                       fontSize: '11px',
-                      cursor: 'pointer',
                       fontWeight: 'bold',
-                      transition: 'opacity 0.2s'
+                      border: '1px solid var(--border)'
                     }}
-                    onMouseOver={(e) => e.currentTarget.style.opacity = '0.8'}
-                    onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
                   >
-                    Install APK
-                  </button>
+                    Play Store
+                  </a>
                 )}
               </span>
             </div>
@@ -108,7 +107,7 @@ export default function SetupTab() {
                       border: '1px solid var(--border)'
                     }}
                   >
-                    Get W4B
+                    Play Store
                   </a>
                 )}
               </span>
