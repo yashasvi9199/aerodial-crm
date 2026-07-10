@@ -22,6 +22,7 @@ export default function ColdCalling() {
   const [followUp, setFollowUp] = useState('No')
   const [notes, setNotes] = useState('')
   const [callCount, setCallCount] = useState(0)
+  const [whatsappSent, setWhatsappSent] = useState('No')
 
   const selectContact = (c) => {
     setSelectedContact(c)
@@ -34,6 +35,7 @@ export default function ColdCalling() {
     setFollowUp(c.follow_up || 'No')
     setNotes(c.notes || '')
     setCallCount(c.call_count || 0)
+    setWhatsappSent(c.whatsapp_sent || 'No')
     setIsAdding(false)
   }
 
@@ -48,6 +50,7 @@ export default function ColdCalling() {
     setFollowUp('No')
     setNotes('')
     setCallCount(0)
+    setWhatsappSent('No')
     setIsAdding(true)
   }
 
@@ -127,7 +130,8 @@ export default function ColdCalling() {
           status_update: statusUpdate,
           follow_up: followUp,
           notes: notes,
-          call_count: parseInt(callCount, 10) || 0
+          call_count: parseInt(callCount, 10) || 0,
+          whatsapp_sent: whatsappSent
         }
       ])
 
@@ -147,6 +151,7 @@ export default function ColdCalling() {
       setStatusUpdate('Answered')
       setFollowUp('No')
       setNotes('')
+      setWhatsappSent('No')
       fetchContacts(null)
     } else {
       if (!selectedContact) return
@@ -158,7 +163,8 @@ export default function ColdCalling() {
         status_update: statusUpdate,
         follow_up: followUp,
         notes: notes,
-        call_count: parseInt(callCount, 10) || 0
+        call_count: parseInt(callCount, 10) || 0,
+        whatsapp_sent: whatsappSent
       }).eq('id', selectedContact.id)
 
       if (error) {
@@ -176,6 +182,7 @@ export default function ColdCalling() {
       setFollowUp('No')
       setNotes('')
       setCallCount(0)
+      setWhatsappSent('No')
       setIsAdding(false)
       setSelectedContact(null)
       fetchContacts(null)
@@ -192,6 +199,7 @@ export default function ColdCalling() {
       setStatusUpdate('Answered')
       setFollowUp('No')
       setNotes('')
+      setWhatsappSent('No')
     } else if (selectedContact) {
       selectContact(selectedContact)
     }
@@ -235,6 +243,8 @@ export default function ColdCalling() {
             setFollowUp={setFollowUp}
             callCount={callCount}
             setCallCount={setCallCount}
+            whatsappSent={whatsappSent}
+            setWhatsappSent={setWhatsappSent}
             handleUpdate={handleUpdate}
             handleDial={handleDial}
             handleHangup={handleHangup}
