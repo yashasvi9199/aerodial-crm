@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.6.1] - 2026-07-10
+### Fixed
+- Resolved `Cannot find module 'supabase'` error in python daemon listener by routing start scripts to use project virtual environment and installing python dependencies.
+
 ## [1.6.0] - 2026-07-10
 ### Added
 - Setup Diagnostics Tab: allows managing default SIM card slot routing, inspecting system metrics, and downloading logs.
