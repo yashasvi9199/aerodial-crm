@@ -20,7 +20,8 @@ export default function SetupTab() {
     setIsTestPopupOpen,
     handleFailsafeRetry,
     handleTestSuccess,
-    exportLogs
+    exportLogs,
+    installTruecaller
   } = useSetup();
 
   const activeSlot = parsedStatus.default_sim_slot || 0;
@@ -57,6 +58,59 @@ export default function SetupTab() {
               <span>Root Privilege status</span>
               <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: parsedStatus.is_root ? '#10b981' : '#f59e0b', fontWeight: 'bold' }}>
                 <Shield size={16} /> {parsedStatus.is_root ? 'Rooted' : 'Non-Rooted'}
+              </span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Truecaller app</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: parsedStatus.truecaller ? '#10b981' : '#ef4444', fontWeight: 'bold' }}>
+                {parsedStatus.truecaller ? <Check size={16} /> : <X size={16} />} 
+                {parsedStatus.truecaller ? 'Installed' : 'Missing'}
+                {!parsedStatus.truecaller && isDeviceConnected && (
+                  <button 
+                    onClick={installTruecaller}
+                    style={{
+                      background: 'var(--accent)',
+                      color: 'var(--bg-panel)',
+                      border: 'none',
+                      borderRadius: '4px',
+                      padding: '2px 8px',
+                      fontSize: '11px',
+                      cursor: 'pointer',
+                      fontWeight: 'bold',
+                      transition: 'opacity 0.2s'
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.opacity = '0.8'}
+                    onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+                  >
+                    Install APK
+                  </button>
+                )}
+              </span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>WhatsApp Business</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: parsedStatus.whatsapp ? '#10b981' : '#ef4444', fontWeight: 'bold' }}>
+                {parsedStatus.whatsapp ? <Check size={16} /> : <X size={16} />} 
+                {parsedStatus.whatsapp ? 'Installed' : 'Missing'}
+                {!parsedStatus.whatsapp && (
+                  <a 
+                    href="https://play.google.com/store/apps/details?id=com.whatsapp.w4b&pcampaignid=web_share"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      color: 'var(--text)',
+                      textDecoration: 'none',
+                      borderRadius: '4px',
+                      padding: '2px 8px',
+                      fontSize: '11px',
+                      fontWeight: 'bold',
+                      border: '1px solid var(--border)'
+                    }}
+                  >
+                    Get W4B
+                  </a>
+                )}
               </span>
             </div>
             <div style={{ borderTop: '1px solid var(--border)', paddingTop: '12px' }}>
