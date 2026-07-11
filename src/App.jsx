@@ -261,14 +261,7 @@ export default function App() {
       <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         
         {/* Top Header */}
-        <header style={{ height: '64px', background: 'var(--bg-panel)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 25px', flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            {isConnected 
-              ? <span style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--bg-badge-success)', color: '#10b981', padding: '5px 12px', borderRadius: '20px', fontSize: '12.5px', fontWeight: '600' }}><CheckCircle2 size={13}/> Core Bridged</span>
-              : <span style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--bg-badge-danger)', color: '#ef4444', padding: '5px 12px', borderRadius: '20px', fontSize: '12.5px', fontWeight: '600' }}><XCircle size={13}/> Link Terminated</span>
-            }
-          </div>
-          
+        <header style={{ height: '64px', background: 'var(--bg-panel)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', padding: '0 25px', flexShrink: 0 }}>
           <button onClick={toggleTheme} style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '8px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s ease' }}>
             {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
           </button>
