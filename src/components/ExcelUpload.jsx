@@ -124,10 +124,11 @@ export default function ExcelUpload({ onUploadSuccess }) {
 
         if (error) throw error
 
+        console.info(`[ExcelUpload] Bulk imported ${uniqueData.length} contacts successfully via sheet upload.`)
         setStatus('🟢 Data imported successfully!')
         if (onUploadSuccess) onUploadSuccess()
       } catch (err) {
-        console.error(err)
+        console.error('[ExcelUpload] Bulk import failed:', err)
         setStatus(`❌ Failure: ${err.message || 'Error executing upload'}`)
       } finally {
         setLoading(false)
@@ -145,10 +146,11 @@ export default function ExcelUpload({ onUploadSuccess }) {
     try {
       const { error } = await supabase.from('contacts').delete().neq('id', 0)
       if (error) throw error
+      console.info('[ExcelUpload] Successfully deleted/cleared all contacts from the database.')
       setStatus('🟢 Contacts cleared successfully!')
       if (onUploadSuccess) onUploadSuccess()
     } catch (err) {
-      console.error(err)
+      console.error('[ExcelUpload] Failed to clear contacts:', err)
       setStatus(`❌ Error clearing: ${err.message}`)
     } finally {
       setLoading(false)
