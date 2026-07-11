@@ -136,10 +136,12 @@ export default function ColdCalling() {
       ])
 
       if (error) {
+        console.error('[ColdCalling] Failed to create new contact:', error)
         alert(`Create Error: ${error.message}`)
         return
       }
 
+      console.info(`[ColdCalling] Successfully created new contact: "${businessName.trim()}" (${formattedPhone})`)
       alert('New contact created!')
       setIsAdding(false)
       setSelectedContact(null)
@@ -168,10 +170,12 @@ export default function ColdCalling() {
       }).eq('id', selectedContact.id)
 
       if (error) {
+        console.error(`[ColdCalling] Failed to update contact ID ${selectedContact.id}:`, error)
         alert(`Update Error: ${error.message}`)
         return
       }
 
+      console.info(`[ColdCalling] Successfully updated contact ID ${selectedContact.id}: "${selectedContact.business_name || ''}" (${selectedContact.phone_number})`)
       alert('Contact details updated successfully!')
       setBusinessName('')
       setPhoneNumber('')
