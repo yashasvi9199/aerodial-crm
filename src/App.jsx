@@ -18,6 +18,7 @@ export default function App() {
   const [updatedAt, setUpdatedAt] = useState(null)
   const [nowTime, setNowTime] = useState(() => Date.now())
   const [isSyncing, setIsSyncing] = useState(false)
+  const [isSyncingCallLogs, setIsSyncingCallLogs] = useState(false)
   const [coldCallingCount, setColdCallingCount] = useState(0)
   const [justdialCount, setJustdialCount] = useState(0)
 
@@ -79,7 +80,10 @@ export default function App() {
         if (data) {
           setAdbStatus(data.adb_status)
           setUpdatedAt(data.updated_at)
-          if (data.command === 'idle') setIsSyncing(false)
+          if (data.command === 'idle') {
+            setIsSyncing(false)
+            setIsSyncingCallLogs(false)
+          }
         }
 
         const { count: cCount } = await supabase
@@ -102,7 +106,10 @@ export default function App() {
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'system_state' }, (p) => {
         setAdbStatus(p.new.adb_status)
         setUpdatedAt(p.new.updated_at)
-        if (p.new.command === 'idle') setIsSyncing(false)
+        if (p.new.command === 'idle') {
+          setIsSyncing(false)
+          setIsSyncingCallLogs(false)
+        }
       })
       .subscribe()
 
@@ -138,6 +145,10 @@ export default function App() {
   const triggerUsbSync = async () => {
     setIsSyncing(true)
     await supabase.from('system_state').update({ command: 'run_sync' }).eq('id', 1)
+  }
+  const triggerSyncCallLogs = async () => {
+    setIsSyncingCallLogs(true)
+    await supabase.from('system_state').update({ command: 'sync_call_logs' }).eq('id', 1)
   }
   const triggerTestCall = async () => {
     try {
@@ -246,9 +257,13 @@ export default function App() {
               </div>
             )}
           </div>
-          <button onClick={triggerUsbSync} disabled={isSyncing} style={{ width: '100%', background: 'var(--accent)', color: 'var(--bg-dark)', border: 'none', padding: '10px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: isSyncing ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+           <button onClick={triggerUsbSync} disabled={isSyncing} style={{ width: '100%', background: 'var(--accent)', color: 'var(--bg-dark)', border: 'none', padding: '10px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: isSyncing ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
             <RefreshCw size={14} className={isSyncing ? 'spin' : ''} />
             {isSyncing ? 'Syncing...' : 'Force Local Sync'}
+          </button>
+          <button onClick={triggerSyncCallLogs} disabled={isSyncingCallLogs} style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: isSyncingCallLogs ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'all 0.15s ease' }}>
+            <Database size={14} className={isSyncingCallLogs ? 'spin' : ''} style={{ color: 'var(--accent)' }} />
+            {isSyncingCallLogs ? 'Fetching Logs...' : 'Fetch Call Logs'}
           </button>
           <button onClick={triggerTestCall} style={{ width: '100%', background: 'transparent', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'all 0.15s ease' }}>
             <Phone size={14} style={{ color: 'var(--accent)' }} />
