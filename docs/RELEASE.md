@@ -1,5 +1,13 @@
 # Release Notes
 
+## [1.7.9] - 2026-07-11
+### Added
+- Added manual "Fetch Call Logs" button and command triggers to update call counters and timing.
+- Added database schema column `last_contact_at` to track timestamps and sort contacts/leads by last contact made.
+- Implemented sorting controls (Time/Name, Asc/Desc) on All Contacts, Cold Calling, and Justdial Leads views.
+- Throttled daemon status heartbeat from 0.4s to 3s to stabilize network connection and prevent Supabase rate drops.
+- Removed connection status indicators from top header.
+
 ## [1.7.8] - 2026-07-11
 ### Added
 - Added mutation console logging across Contacts (Cold Calling), Leads (Justdial), Templates (WhatsApp), and Excel Upload components to track and audit user actions.
