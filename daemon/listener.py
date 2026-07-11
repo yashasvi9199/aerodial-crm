@@ -23,7 +23,8 @@ from adb_helper import (
     get_device_details,
     perform_usb_sync,
     get_sim_cards,
-    get_dialer_intent_extras
+    get_dialer_intent_extras,
+    get_device_ip
 )
 
 # --- SETUP SUPABASE ---
@@ -167,6 +168,7 @@ def main():
                 
                 status_payload = {
                     "status": "connected",
+                    "device_ip": get_device_ip(device),
                     "is_root": is_root,
                     "truecaller": tc_installed,
                     "whatsapp": w4b_installed,
@@ -199,60 +201,88 @@ def main():
                     }).eq('id', 1).execute()
 
                     cmd_str = db_state.get('command', 'idle')
-                    if cmd_str and cmd_str != 'idle' and is_connected:
-                        if cmd_str == 'run_sync':
-                            success = perform_usb_sync(device)
-                            supabase.table('system_state').update({
-                                'command': 'idle', 
-                                'adb_status': current_status
-                            }).eq('id', 1).execute()
-                        elif cmd_str == 'sync_call_logs':
-                            print("[*] Remote Command Received: SYNC CALL LOGS FROM DEVICE...")
-                            script_path = os.path.join(PROJECT_ROOT, "scripts", "sync_recent_4days.py")
-                            env_copy = os.environ.copy()
-                            if 'VITE_SUPABASE_URL' in env_copy and 'SUPABASE_URL' not in env_copy:
-                                env_copy['SUPABASE_URL'] = env_copy['VITE_SUPABASE_URL']
-                            if 'VITE_SUPABASE_ANON_KEY' in env_copy and 'SUPABASE_ANON_KEY' not in env_copy:
-                                env_copy['SUPABASE_ANON_KEY'] = env_copy['VITE_SUPABASE_ANON_KEY']
-                            
-                            try:
-                                res = subprocess.run([sys.executable, script_path], capture_output=True, text=True, env=env_copy, timeout=120)
-                                print(f"[+] Sync script output:\n{res.stdout}\n{res.stderr}")
-                            except Exception as ex:
-                                print(f"⚠️ Error running call logs sync script: {ex}")
-                            
-                            supabase.table('system_state').update({
-                                'command': 'idle',
-                                'adb_status': current_status
-                            }).eq('id', 1).execute()
-                        elif cmd_str == 'hangup':
-                            print("[*] Remote Command Received: HANGUP ALL ACTIVE CALLS...")
-                            for d in devices:
-                                cmd_prefix = "su -c " if is_root else ""
-                                run_cmd(f"adb -s {d} shell \"{cmd_prefix}input keyevent 6\"")
-                            supabase.table('system_state').update({'command': 'idle'}).eq('id', 1).execute()
-                        elif cmd_str.startswith('{'):
+                    if cmd_str and cmd_str != 'idle':
+                        cmd_data = {}
+                        if cmd_str.startswith('{'):
                             try:
                                 cmd_data = json.loads(cmd_str)
-                                action = cmd_data.get('action')
-                                if action == 'whatsapp':
-                                    from whatsapp_handler import handle_whatsapp_json
-                                    handle_whatsapp_json(device, cmd_data, run_cmd)
-                                elif action == 'truecaller_lookup':
-                                    from truecaller_handler import handle_truecaller_json
-                                    handle_truecaller_json(device, cmd_data, run_cmd, supabase)
-                                elif action == 'install_truecaller':
-                                    apk_path = os.path.join(PROJECT_ROOT, "resources", "Truecaller_v26.27.5.apk")
-                                    if os.path.exists(apk_path):
-                                        print(f"[*] Installing Truecaller APK: {apk_path}")
-                                        res = run_cmd(f"adb -s {device} install -r \"{apk_path}\"")
-                                        print(f"[*] Install output: {res}")
-                                    else:
-                                        print(f"❌ Error: Truecaller APK not found at {apk_path}")
+                            except Exception:
+                                pass
+                        
+                        action = cmd_data.get('action')
+
+                        # 1. Connection-independent commands (connect wireless)
+                        if action == 'connect_wireless_adb':
+                            ip = cmd_data.get('ip')
+                            if ip:
+                                print(f"[*] Remote Command Received: CONNECT WIRELESS ADB to {ip}...")
+                                # Try to switch any USB-connected devices to TCPIP mode first
+                                usb_devs = [d for d in get_connected_devices() if ":" not in d]
+                                if usb_devs:
+                                    print(f"[*] Switching USB device {usb_devs[0]} to tcpip mode...")
+                                    run_cmd(f"adb -s {usb_devs[0]} tcpip 5555")
+                                    time.sleep(3)
+                                
+                                connect_res = run_cmd(f"adb connect {ip}")
+                                print(f"[+] ADB connect output: {connect_res}")
+                            supabase.table('system_state').update({'command': 'idle'}).eq('id', 1).execute()
+                        
+                        # 2. Commands that require an active connection
+                        elif is_connected:
+                            if cmd_str == 'run_sync':
+                                success = perform_usb_sync(device)
+                                supabase.table('system_state').update({
+                                    'command': 'idle', 
+                                    'adb_status': current_status
+                                }).eq('id', 1).execute()
+                            elif cmd_str == 'sync_call_logs':
+                                print("[*] Remote Command Received: SYNC CALL LOGS FROM DEVICE...")
+                                script_path = os.path.join(PROJECT_ROOT, "scripts", "sync_recent_4days.py")
+                                env_copy = os.environ.copy()
+                                if 'VITE_SUPABASE_URL' in env_copy and 'SUPABASE_URL' not in env_copy:
+                                    env_copy['SUPABASE_URL'] = env_copy['VITE_SUPABASE_URL']
+                                if 'VITE_SUPABASE_ANON_KEY' in env_copy and 'SUPABASE_ANON_KEY' not in env_copy:
+                                    env_copy['SUPABASE_ANON_KEY'] = env_copy['VITE_SUPABASE_ANON_KEY']
+                                
+                                try:
+                                    res = subprocess.run([sys.executable, script_path], capture_output=True, text=True, env=env_copy, timeout=120)
+                                    print(f"[+] Sync script output:\n{res.stdout}\n{res.stderr}")
+                                except Exception as ex:
+                                    print(f"⚠️ Error running call logs sync script: {ex}")
+                                
+                                supabase.table('system_state').update({
+                                    'command': 'idle',
+                                    'adb_status': current_status
+                                }).eq('id', 1).execute()
+                            elif cmd_str == 'hangup':
+                                print("[*] Remote Command Received: HANGUP ALL ACTIVE CALLS...")
+                                for d in devices:
+                                    cmd_prefix = "su -c " if is_root else ""
+                                    run_cmd(f"adb -s {d} shell \"{cmd_prefix}input keyevent 6\"")
                                 supabase.table('system_state').update({'command': 'idle'}).eq('id', 1).execute()
-                            except Exception as je:
-                                print(f"⚠️ JSON command error: {je}")
+                            elif action == 'whatsapp':
+                                from whatsapp_handler import handle_whatsapp_json
+                                handle_whatsapp_json(device, cmd_data, run_cmd)
                                 supabase.table('system_state').update({'command': 'idle'}).eq('id', 1).execute()
+                            elif action == 'truecaller_lookup':
+                                from truecaller_handler import handle_truecaller_json
+                                handle_truecaller_json(device, cmd_data, run_cmd, supabase)
+                                supabase.table('system_state').update({'command': 'idle'}).eq('id', 1).execute()
+                            elif action == 'install_truecaller':
+                                apk_path = os.path.join(PROJECT_ROOT, "resources", "Truecaller_v26.27.5.apk")
+                                if os.path.exists(apk_path):
+                                    print(f"[*] Installing Truecaller APK: {apk_path}")
+                                    res = run_cmd(f"adb -s {device} install -r \"{apk_path}\"")
+                                    print(f"[*] Install output: {res}")
+                                else:
+                                    print(f"❌ Error: Truecaller APK not found at {apk_path}")
+                                supabase.table('system_state').update({'command': 'idle'}).eq('id', 1).execute()
+                            else:
+                                # Reset unknown command
+                                supabase.table('system_state').update({'command': 'idle'}).eq('id', 1).execute()
+                        else:
+                            # Not connected and not a connection-independent command
+                            supabase.table('system_state').update({'command': 'idle'}).eq('id', 1).execute()
 
             if is_connected:
                 if now - last_whatsapp_sync >= 15.0:

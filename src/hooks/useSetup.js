@@ -181,6 +181,20 @@ export function useSetup() {
     }
   }, []);
 
+  const connectWirelessAdb = useCallback(async (ipAddress) => {
+    if (!ipAddress || !ipAddress.trim()) {
+      alert('Please enter a valid IP address.');
+      return;
+    }
+    try {
+      writeLog('INFO', `Initiated wireless ADB connection to IP: ${ipAddress}`);
+      const command = JSON.stringify({ action: 'connect_wireless_adb', ip: ipAddress.trim() });
+      await supabase.from('system_state').update({ command }).eq('id', 1);
+    } catch (err) {
+      writeLog('ERROR', `Failed to send wireless connect command: ${err.message}`);
+    }
+  }, []);
+
   return {
     parsedStatus,
     isPythonRunning,
@@ -194,6 +208,7 @@ export function useSetup() {
     handleFailsafeRetry,
     handleTestSuccess,
     exportLogs,
-    installTruecaller
+    installTruecaller,
+    connectWirelessAdb
   };
 }
