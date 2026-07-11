@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Search, Plus } from 'lucide-react'
 import { fuzzyMatch } from '../../lib/utils'
 
@@ -11,6 +12,9 @@ export default function LeadList({
   setActiveTab,
   handleStartNewLead
 }) {
+  const [sortBy, setSortBy] = useState('Time') // 'Time' | 'Name'
+  const [sortOrder, setSortOrder] = useState('desc') // 'asc' | 'desc'
+
   // Filter leads based on search
   const searchFilteredLeads = leads.filter(l => {
     const query = search.toLowerCase()
@@ -40,11 +44,23 @@ export default function LeadList({
     'Correct Leads': searchFilteredLeads.filter(l => l.lead_quality === 'Correct Lead' || !l.lead_quality || l.lead_quality === 'Correct').length
   }
 
-  // Sort leads: descending order of time and date (updated_at) in all tabs
+  // Sort leads
   const sortedLeads = [...filteredLeads].sort((a, b) => {
-    const timeA = a.updated_at ? new Date(a.updated_at).getTime() : 0
-    const timeB = b.updated_at ? new Date(b.updated_at).getTime() : 0
-    return timeB - timeA
+    let comparison = 0
+    if (sortBy === 'Time') {
+      const getMs = (item) => {
+        const dateVal = item.last_contact_at || item.updated_at || item.created_at
+        if (!dateVal) return 0
+        const d = new Date(dateVal)
+        return isNaN(d.getTime()) ? 0 : d.getTime()
+      }
+      comparison = getMs(a) - getMs(b)
+    } else {
+      const nameA = (a.name || a.lead_name || '').toLowerCase()
+      const nameB = (b.name || b.lead_name || '').toLowerCase()
+      comparison = nameA.localeCompare(nameB)
+    }
+    return sortOrder === 'desc' ? -comparison : comparison
   })
 
   return (
@@ -79,6 +95,75 @@ export default function LeadList({
             {tab} ({tabCounts[tab]})
           </button>
         ))}
+      </div>
+
+      {/* Sorting Controls */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px solid var(--border)', background: 'var(--bg-input)' }}>
+        <div style={{ display: 'flex', background: 'var(--bg-panel)', padding: '2px', borderRadius: '6px' }}>
+          <button
+            onClick={() => setSortBy('Time')}
+            style={{
+              border: 'none',
+              background: sortBy === 'Time' ? 'var(--bg-input)' : 'transparent',
+              color: sortBy === 'Time' ? 'var(--accent)' : 'var(--text-muted)',
+              padding: '4px 10px',
+              borderRadius: '4px',
+              fontSize: '11px',
+              fontWeight: 'bold',
+              cursor: 'pointer'
+            }}
+          >
+            Time
+          </button>
+          <button
+            onClick={() => setSortBy('Name')}
+            style={{
+              border: 'none',
+              background: sortBy === 'Name' ? 'var(--bg-input)' : 'transparent',
+              color: sortBy === 'Name' ? 'var(--accent)' : 'var(--text-muted)',
+              padding: '4px 10px',
+              borderRadius: '4px',
+              fontSize: '11px',
+              fontWeight: 'bold',
+              cursor: 'pointer'
+            }}
+          >
+            Name
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', background: 'var(--bg-panel)', padding: '2px', borderRadius: '6px' }}>
+          <button
+            onClick={() => setSortOrder('asc')}
+            style={{
+              border: 'none',
+              background: sortOrder === 'asc' ? 'var(--bg-input)' : 'transparent',
+              color: sortOrder === 'asc' ? 'var(--accent)' : 'var(--text-muted)',
+              padding: '4px 10px',
+              borderRadius: '4px',
+              fontSize: '11px',
+              fontWeight: 'bold',
+              cursor: 'pointer'
+            }}
+          >
+            Asc
+          </button>
+          <button
+            onClick={() => setSortOrder('desc')}
+            style={{
+              border: 'none',
+              background: sortOrder === 'desc' ? 'var(--bg-input)' : 'transparent',
+              color: sortOrder === 'desc' ? 'var(--accent)' : 'var(--text-muted)',
+              padding: '4px 10px',
+              borderRadius: '4px',
+              fontSize: '11px',
+              fontWeight: 'bold',
+              cursor: 'pointer'
+            }}
+          >
+            Desc
+          </button>
+        </div>
       </div>
 
       <div style={{ flexGrow: 1, overflowY: 'auto', padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
