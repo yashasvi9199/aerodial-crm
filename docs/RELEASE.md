@@ -1,5 +1,9 @@
 # Release Notes
 
+## [1.7.8] - 2026-07-11
+### Added
+- Added mutation console logging across Contacts (Cold Calling), Leads (Justdial), Templates (WhatsApp), and Excel Upload components to track and audit user actions.
+
 ## [1.7.7] - 2026-07-11
 ### Fixed
 - Fixed Database Bulk Updater query construction to chain `.select()` correctly, ensuring database updates run and return updated records.
