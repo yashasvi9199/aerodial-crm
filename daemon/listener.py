@@ -341,6 +341,7 @@ def main():
                             curr_count = contact.get('call_count', 0) or 0
                             supabase.table('contacts').update({
                                 'last_call_at': start_time_formatted,
+                                'last_contact_at': start_time_iso,
                                 'call_duration': f"{duration}s",
                                 'status_update': "Answered" if duration > 0 else "Unanswered",
                                 'call_count': curr_count + 1
@@ -355,6 +356,7 @@ def main():
                                     'contacted': "Yes" if duration > 0 else "No",
                                     'contact_state': "Answered" if duration > 0 else "Unanswered",
                                     'updated_at': start_time_iso,
+                                    'last_contact_at': start_time_iso,
                                     'call_count': curr_count + 1
                                 }).eq('id', jd_lead_id).execute()
                                 
