@@ -94,16 +94,9 @@ export default function AllContacts() {
 
   // Sort list
   const sortedList = filteredList.sort((a, b) => {
-    let comparison = 0
-    if (sortBy === 'Time') {
-      const timeA = a.sortDate ? new Date(a.sortDate).getTime() : 0
-      const timeB = b.sortDate ? new Date(b.sortDate).getTime() : 0
-      comparison = timeA - timeB
-    } else {
-      const nameA = String(a.displayName).toLowerCase()
-      const nameB = String(b.displayName).toLowerCase()
-      comparison = nameA.localeCompare(nameB)
-    }
+    const comparison = sortBy === 'Time'
+      ? (a.sortDate ? new Date(a.sortDate).getTime() : 0) - (b.sortDate ? new Date(b.sortDate).getTime() : 0)
+      : String(a.displayName).toLowerCase().localeCompare(String(b.displayName).toLowerCase())
     return sortOrder === 'desc' ? -comparison : comparison
   })
 
