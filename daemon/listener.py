@@ -117,6 +117,7 @@ def main():
     is_connected = False
     active_call_task_id = None
     last_device_check, last_state_check, last_queue_check, last_whatsapp_sync = 0.0, 0.0, 0.0, 0.0
+    last_status_sent = None
 
     while True:
         try:
@@ -186,8 +187,10 @@ def main():
             else:
                 current_status = json.dumps({"status": "disconnected"})
             
-            if now - last_state_check >= 0.4:
+            status_changed = (current_status != last_status_sent)
+            if status_changed or (now - last_state_check >= 3.0):
                 last_state_check = now
+                last_status_sent = current_status
                 if db_state:
                     now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
                     supabase.table('system_state').update({
@@ -201,6 +204,25 @@ def main():
                             success = perform_usb_sync(device)
                             supabase.table('system_state').update({
                                 'command': 'idle', 
+                                'adb_status': current_status
+                            }).eq('id', 1).execute()
+                        elif cmd_str == 'sync_call_logs':
+                            print("[*] Remote Command Received: SYNC CALL LOGS FROM DEVICE...")
+                            script_path = os.path.join(PROJECT_ROOT, "scripts", "sync_recent_4days.py")
+                            env_copy = os.environ.copy()
+                            if 'VITE_SUPABASE_URL' in env_copy and 'SUPABASE_URL' not in env_copy:
+                                env_copy['SUPABASE_URL'] = env_copy['VITE_SUPABASE_URL']
+                            if 'VITE_SUPABASE_ANON_KEY' in env_copy and 'SUPABASE_ANON_KEY' not in env_copy:
+                                env_copy['SUPABASE_ANON_KEY'] = env_copy['VITE_SUPABASE_ANON_KEY']
+                            
+                            try:
+                                res = subprocess.run([sys.executable, script_path], capture_output=True, text=True, env=env_copy, timeout=120)
+                                print(f"[+] Sync script output:\n{res.stdout}\n{res.stderr}")
+                            except Exception as ex:
+                                print(f"⚠️ Error running call logs sync script: {ex}")
+                            
+                            supabase.table('system_state').update({
+                                'command': 'idle',
                                 'adb_status': current_status
                             }).eq('id', 1).execute()
                         elif cmd_str == 'hangup':
