@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.8.0] - 2026-07-11
+### Added
+- Added Wireless ADB Connection tab card under Setup to connect wirelessly to Android device.
+- Implemented persistent localStorage for the target IP address input.
+- Added background code in Python daemon to run adb tcpip and adb connect to wirelessly bridge Android devices.
+- Implemented auto-fetch IP address functionality from USB-connected device to prefill input.
+
 ## [1.7.9] - 2026-07-11
 ### Added
 - Added "Fetch Call Logs" button to sidebar allowing manual fetching and syncing of call logs from device.
