@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.8] - 2026-07-11
+### Added
+- Added comprehensive console action logging to audit mutations across the platform. Tracks contact insertions/updates (Cold Calling), lead updates/creations (Justdial Leads), templates saving/deletions (WhatsApp), and Excel sheet uploads/clears.
+
 ## [1.7.7] - 2026-07-11
 ### Fixed
 - Fixed Database Bulk Updater query construction by ensuring `.select()` is chained directly after `.update()` (prior to filters) so that Supabase executes the update request and returns the updated rows.
