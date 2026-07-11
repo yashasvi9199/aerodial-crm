@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './lib/supabase'
-import { RefreshCw, CheckCircle2, XCircle, BarChart3, Phone, Users, Sun, Moon, Search, Database, MessageSquare, Settings } from 'lucide-react'
+import { RefreshCw, BarChart3, Phone, Users, Sun, Moon, Search, Database, MessageSquare, Settings } from 'lucide-react'
 import Dashboard from './features/Dashboard/Dashboard'
 import ColdCalling from './features/ColdCalling/ColdCalling'
 import JustdialLeads from './features/JustDial/JustdialLeads'
