@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import { useSetup } from '../hooks/useSetup';
 import TestCallPopup from './TestCallPopup';
-import { Check, X, Shield, Phone, Download, Trash, Mail } from 'lucide-react';
+import { Check, X, Shield, Phone, Download, Trash, Mail, Database } from 'lucide-react';
 
 /**
  * JSDoc: Setup tab component.
@@ -20,8 +21,26 @@ export default function SetupTab() {
     setIsTestPopupOpen,
     handleFailsafeRetry,
     handleTestSuccess,
-    exportLogs
+    exportLogs,
+    connectWirelessAdb
   } = useSetup();
+
+  const [ipInput, setIpInput] = useState(() => localStorage.getItem('adb_wireless_ip') || '');
+
+  const saveAndConnect = () => {
+    if (!ipInput.trim()) return;
+    localStorage.setItem('adb_wireless_ip', ipInput.trim());
+    connectWirelessAdb(ipInput.trim());
+  };
+
+  const autofillIp = () => {
+    if (parsedStatus.device_ip) {
+      setIpInput(parsedStatus.device_ip);
+      localStorage.setItem('adb_wireless_ip', parsedStatus.device_ip);
+    } else {
+      alert("No device IP detected in current connection. Make sure device is USB connected first.");
+    }
+  };
 
   const activeSlot = parsedStatus.default_sim_slot || 0;
   const sims = parsedStatus.sim_cards || [];
@@ -37,6 +56,72 @@ export default function SetupTab() {
       
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', marginBottom: '25px' }}>
         
+        {/* Wireless ADB Connection Card */}
+        <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+          <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '700', color: 'var(--accent)' }}>Wireless ADB Connector</h3>
+          <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)' }}>
+            Connect wirelessly to your Android device. Enter the IP address manually or auto-fetch it from a USB connection.
+          </p>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-muted)' }}>IP ADDRESS (e.g. 192.168.1.100)</label>
+            <input
+              type="text"
+              placeholder="192.168.1.100"
+              value={ipInput}
+              onChange={(e) => setIpInput(e.target.value)}
+              style={{
+                width: '100%',
+                background: 'var(--bg-input)',
+                border: '1px solid var(--border)',
+                color: 'var(--text)',
+                padding: '10px',
+                borderRadius: '6px',
+                fontSize: '13.5px',
+                outline: 'none',
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px', marginTop: '5px' }}>
+            <button
+              onClick={autofillIp}
+              disabled={!parsedStatus.device_ip}
+              style={{
+                flexGrow: 1,
+                background: parsedStatus.device_ip ? 'var(--bg-input)' : 'rgba(255, 255, 255, 0.03)',
+                color: parsedStatus.device_ip ? 'var(--text)' : 'var(--text-muted)',
+                border: '1px solid var(--border)',
+                padding: '10px',
+                borderRadius: '6px',
+                fontWeight: 'bold',
+                cursor: parsedStatus.device_ip ? 'pointer' : 'not-allowed',
+                fontSize: '12.5px'
+              }}
+            >
+              Auto-Fetch IP
+            </button>
+            
+            <button
+              onClick={saveAndConnect}
+              style={{
+                flexGrow: 1,
+                background: 'var(--accent)',
+                color: '#000',
+                border: 'none',
+                padding: '10px',
+                borderRadius: '6px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                fontSize: '12.5px'
+              }}
+            >
+              Connect Wirelessly
+            </button>
+          </div>
+        </div>
+
         {/* Connection Diagnostics Card */}
         <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
           <h3 style={{ margin: '0 0 15px 0', fontSize: '15px', fontWeight: '700', color: 'var(--accent)' }}>System Integrity</h3>
