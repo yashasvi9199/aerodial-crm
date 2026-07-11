@@ -1,5 +1,11 @@
 # Release Notes
 
+## [1.7.7] - 2026-07-11
+### Fixed
+- Fixed Database Bulk Updater query construction to chain `.select()` correctly, ensuring database updates run and return updated records.
+- Added filter type casting to prevent Postgres datatype mismatch errors.
+- Added console logging of executed queries and actual updated counts.
+
 ## [1.7.6] - 2026-07-10
 ### Fixed
 - Fixed module initialization crash on production when environment variables are missing.
