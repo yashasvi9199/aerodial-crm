@@ -15,5 +15,4 @@
 - 2026-07-10 (Truecaller Search Intent Fallback): Enhanced Truecaller name resolver in daemon to launch search query intent on device when direct SQL check fails, enabling background fetching and local caching. Bumped version to 1.7.4.
 - 2026-07-10 (Truecaller DB Schema Fix): Wrapped history, aggregated_contact, and raw_contact sub-queries in distinct try-except blocks to prevent database table omission exceptions from aborting lookup execution. Bumped version to 1.7.5.
 - 2026-07-10 (Production Environment Safety): Handled missing environment variables with placeholder credentials to prevent module initialization crashes on Cloudflare Pages. Documented Cloudflare setup instructions in docs/CLOUDFLARE_SETUP.md. Bumped version to 1.7.6.
-
-
+- 2026-07-11: Fixed Database Bulk Updater query chaining by calling .select() directly on the update builder before filters, casting filter inputs to correct database column types, and adding console logs for debugging. Bumped version to 1.7.7.
