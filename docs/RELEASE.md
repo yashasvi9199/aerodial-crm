@@ -1,5 +1,12 @@
 # Release Notes
 
+## [1.8.0] - 2026-07-11
+### Added
+- Added Wireless ADB Connector interface block to Setup tab.
+- Integrated persistent localStorage state to save entered IP addresses.
+- Added background code to Python daemon to process adb tcpip switching and adb wireless connection calls.
+- Added IP address extraction and transmission from active USB connections to allow Auto-Fetch.
+
 ## [1.7.9] - 2026-07-11
 ### Added
 - Added manual "Fetch Call Logs" button and command triggers to update call counters and timing.
