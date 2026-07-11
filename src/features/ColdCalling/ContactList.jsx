@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Search, Plus } from 'lucide-react'
 import { fuzzyMatch } from '../../lib/utils'
 
@@ -11,6 +12,9 @@ export default function ContactList({
   setActiveTab,
   handleStartNewContact
 }) {
+  const [sortBy, setSortBy] = useState('Time') // 'Time' | 'Name'
+  const [sortOrder, setSortOrder] = useState('desc') // 'asc' | 'desc'
+
   // Filter contacts based on search
   const searchFilteredContacts = contacts.filter(c => {
     const biz = c.business_name || ''
@@ -50,23 +54,23 @@ export default function ContactList({
     'Not Called': searchFilteredContacts.filter(c => c.status_update === 'Not Called').length
   }
 
-  // Sort contacts: Alphabetical for "All" tab, descending by last_call_at for other tabs
+  // Sort contacts
   const sortedContacts = [...filteredContacts].sort((a, b) => {
-    if (activeTab === 'All') {
+    let comparison = 0
+    if (sortBy === 'Time') {
+      const getMs = (item) => {
+        const dateVal = item.last_contact_at || item.last_call_at || item.created_at
+        if (!dateVal) return 0
+        const d = new Date(dateVal)
+        return isNaN(d.getTime()) ? 0 : d.getTime()
+      }
+      comparison = getMs(a) - getMs(b)
+    } else {
       const nameA = (a.business_name || a.poc_name || '').toLowerCase()
       const nameB = (b.business_name || b.poc_name || '').toLowerCase()
-      return nameA.localeCompare(nameB)
-    } else {
-      const parseCustomDate = (str) => {
-        if (!str) return 0;
-        const cleanStr = str.replace('|', '').trim();
-        const d = new Date(cleanStr);
-        return isNaN(d.getTime()) ? 0 : d.getTime();
-      };
-      const timeA = parseCustomDate(a.last_call_at);
-      const timeB = parseCustomDate(b.last_call_at);
-      return timeB - timeA;
+      comparison = nameA.localeCompare(nameB)
     }
+    return sortOrder === 'desc' ? -comparison : comparison
   })
 
   return (
@@ -103,6 +107,75 @@ export default function ContactList({
             {tab === 'Unresponsive' ? 'Missed' : tab} ({tabCounts[tab]})
           </button>
         ))}
+      </div>
+
+      {/* Sorting Controls */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1px solid var(--border)', background: 'var(--bg-input)' }}>
+        <div style={{ display: 'flex', background: 'var(--bg-panel)', padding: '2px', borderRadius: '6px' }}>
+          <button
+            onClick={() => setSortBy('Time')}
+            style={{
+              border: 'none',
+              background: sortBy === 'Time' ? 'var(--bg-input)' : 'transparent',
+              color: sortBy === 'Time' ? 'var(--accent)' : 'var(--text-muted)',
+              padding: '4px 10px',
+              borderRadius: '4px',
+              fontSize: '11px',
+              fontWeight: 'bold',
+              cursor: 'pointer'
+            }}
+          >
+            Time
+          </button>
+          <button
+            onClick={() => setSortBy('Name')}
+            style={{
+              border: 'none',
+              background: sortBy === 'Name' ? 'var(--bg-input)' : 'transparent',
+              color: sortBy === 'Name' ? 'var(--accent)' : 'var(--text-muted)',
+              padding: '4px 10px',
+              borderRadius: '4px',
+              fontSize: '11px',
+              fontWeight: 'bold',
+              cursor: 'pointer'
+            }}
+          >
+            Name
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', background: 'var(--bg-panel)', padding: '2px', borderRadius: '6px' }}>
+          <button
+            onClick={() => setSortOrder('asc')}
+            style={{
+              border: 'none',
+              background: sortOrder === 'asc' ? 'var(--bg-input)' : 'transparent',
+              color: sortOrder === 'asc' ? 'var(--accent)' : 'var(--text-muted)',
+              padding: '4px 10px',
+              borderRadius: '4px',
+              fontSize: '11px',
+              fontWeight: 'bold',
+              cursor: 'pointer'
+            }}
+          >
+            Asc
+          </button>
+          <button
+            onClick={() => setSortOrder('desc')}
+            style={{
+              border: 'none',
+              background: sortOrder === 'desc' ? 'var(--bg-input)' : 'transparent',
+              color: sortOrder === 'desc' ? 'var(--accent)' : 'var(--text-muted)',
+              padding: '4px 10px',
+              borderRadius: '4px',
+              fontSize: '11px',
+              fontWeight: 'bold',
+              cursor: 'pointer'
+            }}
+          >
+            Desc
+          </button>
+        </div>
       </div>
 
       {/* Contacts listing */}
