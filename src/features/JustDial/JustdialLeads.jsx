@@ -150,9 +150,11 @@ export default function JustdialLeads() {
         .update(payload)
         .eq('id', selectedLead.id)
       if (error) {
+        console.error(`[JustdialLeads] Failed to update lead ID ${selectedLead.id}:`, error)
         alert(`Update Error: ${error.message}`)
         return
       }
+      console.info(`[JustdialLeads] Successfully updated lead ID ${selectedLead.id}: "${payload.name}" (${payload.phone})`)
       alert('Lead details updated successfully!')
       clearForm()
       setIsAdding(false)
@@ -172,18 +174,22 @@ export default function JustdialLeads() {
           .update(payload)
           .eq('id', existing.id)
         if (error) {
+          console.error(`[JustdialLeads] Failed to update existing lead ID ${existing.id}:`, error)
           alert(`Update Error: ${error.message}`)
           return
         }
+        console.info(`[JustdialLeads] Successfully updated existing lead ID ${existing.id} for phone ${formattedPhone}: "${payload.name}"`)
         alert('Lead details updated for existing number!')
       } else {
         const { error } = await supabase
           .from('justdial_leads')
           .insert([payload])
         if (error) {
+          console.error('[JustdialLeads] Failed to create new lead:', error)
           alert(`Create Error: ${error.message}`)
           return
         }
+        console.info(`[JustdialLeads] Successfully created new lead: "${payload.name}" (${payload.phone})`)
         alert('New lead created successfully!')
       }
 
