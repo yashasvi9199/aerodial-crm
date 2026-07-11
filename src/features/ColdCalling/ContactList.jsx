@@ -56,20 +56,15 @@ export default function ContactList({
 
   // Sort contacts
   const sortedContacts = [...filteredContacts].sort((a, b) => {
-    let comparison = 0
-    if (sortBy === 'Time') {
-      const getMs = (item) => {
-        const dateVal = item.last_contact_at || item.last_call_at || item.created_at
-        if (!dateVal) return 0
-        const d = new Date(dateVal)
-        return isNaN(d.getTime()) ? 0 : d.getTime()
-      }
-      comparison = getMs(a) - getMs(b)
-    } else {
-      const nameA = (a.business_name || a.poc_name || '').toLowerCase()
-      const nameB = (b.business_name || b.poc_name || '').toLowerCase()
-      comparison = nameA.localeCompare(nameB)
+    const getMs = (item) => {
+      const dateVal = item.last_contact_at || item.last_call_at || item.created_at
+      if (!dateVal) return 0
+      const d = new Date(dateVal)
+      return isNaN(d.getTime()) ? 0 : d.getTime()
     }
+    const comparison = sortBy === 'Time'
+      ? getMs(a) - getMs(b)
+      : (a.business_name || a.poc_name || '').toLowerCase().localeCompare((b.business_name || b.poc_name || '').toLowerCase())
     return sortOrder === 'desc' ? -comparison : comparison
   })
 
