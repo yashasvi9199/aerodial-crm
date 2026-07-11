@@ -248,3 +248,13 @@
 -- Notes: Add whatsapp_sent column to contacts table.
 
 ALTER TABLE public.contacts ADD COLUMN IF NOT EXISTS whatsapp_sent text DEFAULT 'No';
+
+--------------------------------------------------------------------------------------
+
+-- Date: 2026-07-11 11:30:00
+-- Feature: Contact and Lead Last Contact Made Timestamp
+-- Type: SCHEMA
+-- Notes: Add last_contact_at timestamp column to contacts and justdial_leads.
+
+ALTER TABLE public.contacts ADD COLUMN IF NOT EXISTS last_contact_at timestamp with time zone;
+ALTER TABLE public.justdial_leads ADD COLUMN IF NOT EXISTS last_contact_at timestamp with time zone;
