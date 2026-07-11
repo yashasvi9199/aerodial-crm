@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.7] - 2026-07-11
+### Fixed
+- Fixed Database Bulk Updater query construction by ensuring `.select()` is chained directly after `.update()` (prior to filters) so that Supabase executes the update request and returns the updated rows.
+- Cast filters to match column types (e.g. string to number) to prevent Postgres type mismatch errors on execution.
+- Added verbose logging to output query filters, target tables, and counts of updated rows.
+
 ## [1.7.6] - 2026-07-10
 ### Fixed
 - Prevented module initialization crash on production when environment variables are unset, by using placeholder credentials.
