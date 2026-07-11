@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.9] - 2026-07-11
+### Added
+- Added "Fetch Call Logs" button to sidebar allowing manual fetching and syncing of call logs from device.
+- Added database schema column `last_contact_at` (timestamp with time zone) on contacts and leads to track when they were last contacted.
+- Implemented sorting controls (sortBy: Time/Name, sortOrder: Asc/Desc) on All Contacts, Cold Calling (ContactList), and Justdial Leads (LeadList).
+- Stabilized the real-time Supabase state sync connection by throttling heartbeats from 0.4s to 3.0s (unless state status payload changes), reducing API rates and preventing drops.
+- Removed connection status banner ("Core Bridged" / "Link Terminated") from top header.
+
 ## [1.7.8] - 2026-07-11
 ### Added
 - Added comprehensive console action logging to audit mutations across the platform. Tracks contact insertions/updates (Cold Calling), lead updates/creations (Justdial Leads), templates saving/deletions (WhatsApp), and Excel sheet uploads/clears.
