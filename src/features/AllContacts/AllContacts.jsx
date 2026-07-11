@@ -8,6 +8,8 @@ export default function AllContacts() {
   const [contacts, setContacts] = useState([])
   const [leads, setLeads] = useState([])
   const [loading, setLoading] = useState(true)
+  const [sortBy, setSortBy] = useState('Time') // 'Time' | 'Name'
+  const [sortOrder, setSortOrder] = useState('desc') // 'asc' | 'desc'
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState('All') // 'All' | 'Cold' | 'Justdial'
 
@@ -47,13 +49,15 @@ export default function AllContacts() {
   const normalizedContacts = contacts.map(c => ({
     ...c,
     platform: 'cold_call',
-    sortDate: c.last_call_at || c.created_at
+    sortDate: c.last_contact_at || c.last_call_at || c.created_at,
+    displayName: c.business_name || c.poc_name || ''
   }))
 
   const normalizedLeads = leads.map(l => ({
-    ...l, // copy fields
+    ...l,
     platform: 'justdial',
-    sortDate: l.updated_at || l.created_at
+    sortDate: l.last_contact_at || l.updated_at || l.created_at,
+    displayName: l.name || l.lead_name || ''
   }))
 
   const mergedList = [...normalizedContacts, ...normalizedLeads]
@@ -88,11 +92,19 @@ export default function AllContacts() {
            fuzzyMatch(profession, debouncedSearch)
   })
 
-  // Sort list: default to newest activity first
+  // Sort list
   const sortedList = filteredList.sort((a, b) => {
-    const timeA = a.sortDate ? new Date(a.sortDate).getTime() : 0
-    const timeB = b.sortDate ? new Date(b.sortDate).getTime() : 0
-    return timeB - timeA
+    let comparison = 0
+    if (sortBy === 'Time') {
+      const timeA = a.sortDate ? new Date(a.sortDate).getTime() : 0
+      const timeB = b.sortDate ? new Date(b.sortDate).getTime() : 0
+      comparison = timeA - timeB
+    } else {
+      const nameA = String(a.displayName).toLowerCase()
+      const nameB = String(b.displayName).toLowerCase()
+      comparison = nameA.localeCompare(nameB)
+    }
+    return sortOrder === 'desc' ? -comparison : comparison
   })
 
   return (
@@ -133,26 +145,98 @@ export default function AllContacts() {
         </div>
       </div>
 
-      {/* Search Bar Input */}
-      <div style={{ position: 'relative', maxWidth: '500px' }}>
-        <Search size={18} style={{ position: 'absolute', left: '12px', top: '13px', color: 'var(--text-muted)' }} />
-        <input
-          type="text"
-          placeholder="Search by name, phone, brand, location, profession..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{
-            width: '100%',
-            background: 'var(--bg-panel)',
-            border: '1px solid var(--border)',
-            color: 'var(--text)',
-            padding: '12px 14px 12px 42px',
-            borderRadius: '8px',
-            fontSize: '14px',
-            outline: 'none',
-            boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
-          }}
-        />
+      {/* Search & Sort Row */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '15px', flexWrap: 'wrap' }}>
+        {/* Search Bar Input */}
+        <div style={{ position: 'relative', flexGrow: 1, maxWidth: '500px' }}>
+          <Search size={18} style={{ position: 'absolute', left: '12px', top: '13px', color: 'var(--text-muted)' }} />
+          <input
+            type="text"
+            placeholder="Search by name, phone, brand, location, profession..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{
+              width: '100%',
+              background: 'var(--bg-panel)',
+              border: '1px solid var(--border)',
+              color: 'var(--text)',
+              padding: '12px 14px 12px 42px',
+              borderRadius: '8px',
+              fontSize: '14px',
+              outline: 'none',
+              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+            }}
+          />
+        </div>
+
+        {/* Two-part Sort Controls */}
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', background: 'var(--bg-input)', padding: '3px', borderRadius: '8px' }}>
+            <button
+              onClick={() => setSortBy('Time')}
+              style={{
+                border: 'none',
+                background: sortBy === 'Time' ? 'var(--bg-panel)' : 'transparent',
+                color: sortBy === 'Time' ? 'var(--accent)' : 'var(--text-muted)',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                cursor: 'pointer'
+              }}
+            >
+              Time
+            </button>
+            <button
+              onClick={() => setSortBy('Name')}
+              style={{
+                border: 'none',
+                background: sortBy === 'Name' ? 'var(--bg-panel)' : 'transparent',
+                color: sortBy === 'Name' ? 'var(--accent)' : 'var(--text-muted)',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                cursor: 'pointer'
+              }}
+            >
+              Name
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', background: 'var(--bg-input)', padding: '3px', borderRadius: '8px' }}>
+            <button
+              onClick={() => setSortOrder('asc')}
+              style={{
+                border: 'none',
+                background: sortOrder === 'asc' ? 'var(--bg-panel)' : 'transparent',
+                color: sortOrder === 'asc' ? 'var(--accent)' : 'var(--text-muted)',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                cursor: 'pointer'
+              }}
+            >
+              Asc
+            </button>
+            <button
+              onClick={() => setSortOrder('desc')}
+              style={{
+                border: 'none',
+                background: sortOrder === 'desc' ? 'var(--bg-panel)' : 'transparent',
+                color: sortOrder === 'desc' ? 'var(--accent)' : 'var(--text-muted)',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                cursor: 'pointer'
+              }}
+            >
+              Desc
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Results grid */}
