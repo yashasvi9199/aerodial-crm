@@ -220,6 +220,7 @@ def main():
         supabase.table('contacts').update({
             'call_count': count,
             'last_call_at': latest_date,
+            'last_contact_at': latest_date,
             'call_duration': f"{latest_dur}s",
             'status_update': latest_status
         }).eq('id', c_id).execute()
@@ -236,6 +237,7 @@ def main():
         supabase.table('justdial_leads').update({
             'call_count': count,
             'updated_at': latest_date,
+            'last_contact_at': latest_date,
             'contact_state': latest_status,
             'contacted': 'Yes' if latest_dur > 0 else 'No'
         }).eq('id', l_id).execute()
