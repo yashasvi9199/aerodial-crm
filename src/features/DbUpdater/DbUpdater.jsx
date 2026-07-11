@@ -66,6 +66,7 @@ export default function DbUpdater() {
     if (queries.length === 0) return
     setIsRunning(true)
     let successCount = 0
+    let totalUpdatedRows = 0
     let failMessages = []
 
     try {
@@ -78,20 +79,33 @@ export default function DbUpdater() {
           if (isNaN(castValue)) castValue = 0
         }
 
-        let dbQuery = supabase.from(q.table).update({ [q.field]: castValue })
-
-        if (q.operator === 'eq') {
-          dbQuery = dbQuery.eq(q.filterField, q.filterValue)
-        } else if (q.operator === 'neq') {
-          dbQuery = dbQuery.neq(q.filterField, q.filterValue)
-        } else if (q.operator === 'like') {
-          dbQuery = dbQuery.like(q.filterField, `%${q.filterValue}%`)
+        let castFilterValue = q.filterValue
+        const filterFieldMeta = FIELDS[q.table].find(f => f.value === q.filterField)
+        if (filterFieldMeta && filterFieldMeta.type === 'number') {
+          castFilterValue = parseInt(q.filterValue, 10)
+          if (isNaN(castFilterValue)) castFilterValue = 0
         }
 
-        const { error } = await dbQuery.select('*')
+        console.info(`[DbUpdater] Executing query Q#${q.id} on table "${q.table}": SET "${q.field}" = ${castValue} WHERE "${q.filterField}" ${q.operator} "${castFilterValue}"`)
+
+        let dbQuery = supabase.from(q.table).update({ [q.field]: castValue }).select()
+
+        if (q.operator === 'eq') {
+          dbQuery = dbQuery.eq(q.filterField, castFilterValue)
+        } else if (q.operator === 'neq') {
+          dbQuery = dbQuery.neq(q.filterField, castFilterValue)
+        } else if (q.operator === 'like') {
+          dbQuery = dbQuery.like(q.filterField, `%${castFilterValue}%`)
+        }
+
+        const { data, error } = await dbQuery
         if (error) {
+          console.error(`[DbUpdater] Query Q#${q.id} failed:`, error)
           failMessages.push(`Query #${q.id}: ${error.message}`)
         } else {
+          const updatedCount = data ? data.length : 0
+          totalUpdatedRows += updatedCount
+          console.info(`[DbUpdater] Query Q#${q.id} succeeded. Updated ${updatedCount} rows.`, data)
           successCount++
         }
       })
@@ -99,12 +113,12 @@ export default function DbUpdater() {
       await Promise.all(promises)
 
       if (failMessages.length > 0) {
-        alert(`Finished: ${successCount} successful updates. ${failMessages.length} errors:\n${failMessages.join('\n')}`)
+        alert(`Finished: ${successCount} successful updates (${totalUpdatedRows} rows updated). ${failMessages.length} errors:\n${failMessages.join('\n')}`)
       } else {
-        alert(`Success! Successfully executed all ${successCount} database update queries in parallel.`)
+        alert(`Success! Successfully executed all ${successCount} database update queries in parallel. Total rows updated: ${totalUpdatedRows}`)
       }
     } catch (err) {
-      console.error(err)
+      console.error('[DbUpdater] Unexpected execution error:', err)
       alert(`Execution Error: ${err.message}`)
     } finally {
       setIsRunning(false)
