@@ -46,20 +46,15 @@ export default function LeadList({
 
   // Sort leads
   const sortedLeads = [...filteredLeads].sort((a, b) => {
-    let comparison = 0
-    if (sortBy === 'Time') {
-      const getMs = (item) => {
-        const dateVal = item.last_contact_at || item.updated_at || item.created_at
-        if (!dateVal) return 0
-        const d = new Date(dateVal)
-        return isNaN(d.getTime()) ? 0 : d.getTime()
-      }
-      comparison = getMs(a) - getMs(b)
-    } else {
-      const nameA = (a.name || a.lead_name || '').toLowerCase()
-      const nameB = (b.name || b.lead_name || '').toLowerCase()
-      comparison = nameA.localeCompare(nameB)
+    const getMs = (item) => {
+      const dateVal = item.last_contact_at || item.updated_at || item.created_at
+      if (!dateVal) return 0
+      const d = new Date(dateVal)
+      return isNaN(d.getTime()) ? 0 : d.getTime()
     }
+    const comparison = sortBy === 'Time'
+      ? getMs(a) - getMs(b)
+      : (a.name || a.lead_name || '').toLowerCase().localeCompare((b.name || b.lead_name || '').toLowerCase())
     return sortOrder === 'desc' ? -comparison : comparison
   })
 
