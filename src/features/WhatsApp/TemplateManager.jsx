@@ -42,10 +42,12 @@ export default function TemplateManager() {
           file_name: ''
         }])
       if (error) throw error
+      console.info(`[TemplateManager] Saved new WhatsApp template: "${name.trim()}"`)
       setName('')
       setText('')
       alert('Template saved successfully!')
     } catch (err) {
+      console.error('[TemplateManager] Failed to save template:', err)
       alert(`Failed to save template: ${err.message}`)
     } finally {
       setLoading(false)
@@ -57,7 +59,9 @@ export default function TemplateManager() {
     try {
       const { error } = await supabase.from('whatsapp_templates').delete().eq('id', id)
       if (error) throw error
+      console.info(`[TemplateManager] Deleted WhatsApp template ID ${id}.`)
     } catch (err) {
+      console.error(`[TemplateManager] Failed to delete template ID ${id}:`, err)
       alert(`Delete failed: ${err.message}`)
     }
   }
