@@ -88,7 +88,8 @@ export default function ColdCalling() {
 
   const handleDial = async (num) => {
     if (!num) return
-    await supabase.from('call_queue').insert([{ number: String(num).trim(), status: 'dialing' }])
+    const method = localStorage.getItem('aerodial_calling_method') || 'default'
+    await supabase.from('call_queue').insert([{ number: `${String(num).trim()}#${method}`, status: 'dialing' }])
   }
 
   const handleHangup = async () => {
