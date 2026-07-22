@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.12.1] - 2026-07-22
+### Fixed
+- Fixed connection state and package detection parsing in the main WhatsApp Hub composer to support the new JSON adbStatus payload.
+
 ## [1.12.0] - 2026-07-22
 ### Added
 - Added full Media Library management panel (uploading, listing with previews, and deleting) inside the main WhatsApp Business Hub workspace interface (sidebar tab).
