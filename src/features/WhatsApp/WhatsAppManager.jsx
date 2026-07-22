@@ -275,6 +275,124 @@ export default function WhatsAppManager() {
         </form>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* WhatsApp Media Library Panel */}
+          <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', padding: '20px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '750', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <FileText size={16} style={{ color: 'var(--accent)' }} /> WhatsApp Media Library
+              </h3>
+              <label style={{
+                background: isConnected ? 'var(--accent)' : 'var(--border)',
+                color: '#000000',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                fontWeight: 'bold',
+                fontSize: '11px',
+                cursor: isConnected ? 'pointer' : 'not-allowed',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}>
+                <Upload size={12} /> Upload File
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.webp,.gif"
+                  onChange={handleFileChange}
+                  disabled={!isConnected}
+                  style={{ display: 'none' }}
+                />
+              </label>
+            </div>
+            
+            <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)' }}>
+              Upload files directly to the device. These will be available to select as attachments in the composer.
+            </p>
+
+            {mediaFiles.length === 0 ? (
+              <div style={{ padding: '20px 10px', borderRadius: '8px', background: 'var(--bg-dark)', border: '1px dashed var(--border)', textAlign: 'center', color: 'var(--text-muted)', fontSize: '12.5px' }}>
+                No media files found on the device.
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '10px' }}>
+                {mediaFiles.map((file, idx) => (
+                  <div 
+                    key={idx} 
+                    style={{
+                      background: 'var(--bg-input)',
+                      border: '1px solid var(--border)',
+                      borderRadius: '8px',
+                      padding: '8px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      position: 'relative',
+                      overflow: 'hidden'
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => deleteMedia(file.filename)}
+                      style={{
+                        position: 'absolute',
+                        top: '4px',
+                        right: '4px',
+                        background: 'rgba(239, 68, 68, 0.85)',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '3px',
+                        width: '18px',
+                        height: '18px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        zIndex: 10
+                      }}
+                      title="Remove from device"
+                    >
+                      <Trash size={10} />
+                    </button>
+
+                    <div style={{
+                      width: '100%',
+                      height: '60px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: 'var(--bg-dark)',
+                      borderRadius: '4px',
+                      marginBottom: '6px',
+                      overflow: 'hidden'
+                    }}>
+                      {file.thumbnail ? (
+                        <img 
+                          src={file.thumbnail} 
+                          alt={file.filename} 
+                          style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                        />
+                      ) : (
+                        <FileText size={24} style={{ color: file.mime_type === 'application/pdf' ? '#ef4444' : 'var(--text-muted)' }} />
+                      )}
+                    </div>
+
+                    <div style={{
+                      width: '100%',
+                      fontSize: '10px',
+                      fontWeight: '600',
+                      color: 'var(--text)',
+                      textAlign: 'center',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
+                    }} title={file.filename}>
+                      {file.filename}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <TemplateManager />
           {isWhatsappBusinessInstalled && (
             <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', padding: '20px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
