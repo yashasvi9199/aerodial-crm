@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.0] - 2026-07-22
+### Added
+- Added automated SIM defaults backup and restore feature. Auto-detects original default SIM settings on rooted device connection and saves them in local storage.
+- Auto-detects call disconnection to automatically switch back to the saved original default SIM card, reverting permanent slot overrides.
+- Implemented a 5-second verification loop to restore SIM settings if the outgoing call fails to connect or starts and exits immediately.
+- Saved ADB Telecom and Settings research in `docs/telecom_adb_reference.md` and mapped it as a customized agent skill.
+
 ## [1.8.0] - 2026-07-11
 ### Added
 - Added Wireless ADB Connection tab card under Setup to connect wirelessly to Android device.
