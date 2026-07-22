@@ -51,6 +51,22 @@ if not SUPABASE_URL or not SUPABASE_KEY:
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+def get_image_thumbnail_base64(file_path):
+    try:
+        from PIL import Image
+        import io
+        import base64
+        with Image.open(file_path) as img:
+            img.thumbnail((120, 120))
+            buffered = io.BytesIO()
+            if img.mode in ("RGBA", "P"):
+                img = img.convert("RGB")
+            img.save(buffered, format="JPEG", quality=60)
+            return "data:image/jpeg;base64," + base64.b64encode(buffered.getvalue()).decode('utf-8')
+    except Exception as e:
+        print(f"⚠️ Thumbnail generation failed for {file_path}: {e}")
+        return ""
+
 def update_queue_status(qid, status):
     """
     Updates the call queue record status in database.
