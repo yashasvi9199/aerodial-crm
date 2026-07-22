@@ -22,7 +22,8 @@ export default function ContactCard({ item, onUpdateSuccess }) {
   const handleDial = async () => {
     const num = isColdCall ? item.phone_number : item.phone
     if (!num) return
-    await supabase.from('call_queue').insert([{ number: String(num).trim(), status: 'dialing' }])
+    const method = localStorage.getItem('aerodial_calling_method') || 'default'
+    await supabase.from('call_queue').insert([{ number: `${String(num).trim()}#${method}`, status: 'dialing' }])
   }
 
   const handleSave = async () => {
