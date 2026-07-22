@@ -21,6 +21,8 @@ dist-ssr/
 *.db
 daemon/*.db
 daemon/downloads/
+daemon/device_defaults.json
+daemon/media_cache/
 
 # Python Cache
 __pycache__/
