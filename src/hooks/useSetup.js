@@ -203,6 +203,40 @@ export function useSetup() {
     }
   }, []);
 
+  const uploadMedia = useCallback(async (file) => {
+    if (!file) return;
+    try {
+      writeLog('INFO', `Uploading media file to device: ${file.name}`);
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64Data = reader.result;
+        const command = JSON.stringify({
+          action: 'upload_media',
+          filename: file.name,
+          file_base64: base64Data
+        });
+        await supabase.from('system_state').update({ command }).eq('id', 1);
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      writeLog('ERROR', `Failed to upload media: ${err.message}`);
+    }
+  }, []);
+
+  const deleteMedia = useCallback(async (filename) => {
+    if (!filename) return;
+    try {
+      writeLog('INFO', `Requesting media file deletion: ${filename}`);
+      const command = JSON.stringify({
+        action: 'delete_media',
+        filename
+      });
+      await supabase.from('system_state').update({ command }).eq('id', 1);
+    } catch (err) {
+      writeLog('ERROR', `Failed to delete media: ${err.message}`);
+    }
+  }, []);
+
   return {
     parsedStatus,
     isPythonRunning,
@@ -219,6 +253,8 @@ export function useSetup() {
     installTruecaller,
     connectWirelessAdb,
     callingMethod,
-    updateCallingMethod
+    updateCallingMethod,
+    uploadMedia,
+    deleteMedia
   };
 }
