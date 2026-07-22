@@ -1,5 +1,11 @@
 # Release Notes
 
+## [1.10.0] - 2026-07-22
+### Added
+- Added Outbound Calling Method selection dropdown in the Setup Tab.
+- Integrated browser `localStorage` persistence (`aerodial_calling_method`) to save and restore the user's calling method choice.
+- Configured all contact dial triggers (Cold Calling, JustDial leads, Contacts cards, and 197 test triggers) to append the chosen calling method suffix automatically.
+
 ## [1.9.0] - 2026-07-22
 ### Added
 - Added automated SIM defaults backup and restore feature. Auto-detects original default SIM settings on rooted device connection and saves them in local storage.
