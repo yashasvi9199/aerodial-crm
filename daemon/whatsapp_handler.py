@@ -110,17 +110,31 @@ def handle_whatsapp(device, command, run_cmd):
 def handle_whatsapp_json(device, data, run_cmd):
     phone = data.get('phone', '')
     message = data.get('message', '')
-    _execute_whatsapp(device, phone, message, run_cmd)
+    media_filename = data.get('media_filename')
+    _execute_whatsapp(device, phone, message, run_cmd, media_filename)
 
-def _execute_whatsapp(device, phone, message, run_cmd):
+def _execute_whatsapp(device, phone, message, run_cmd, media_filename=None):
     try:
         clean_num = re.sub(r'\D', '', phone)
         if not clean_num.startswith('91') and len(clean_num) == 10:
             clean_num = '91' + clean_num
             
-        print(f"[*] WhatsApp text. Prefilling chat: {clean_num}...")
-        url = f"https://api.whatsapp.com/send?phone={clean_num}&text={urllib.parse.quote(message)}"
-        run_cmd(f"adb -s {device} shell \"am start -a android.intent.action.VIEW -d '{url}' com.whatsapp.w4b\"")
+        pkg = "com.whatsapp"
+        pkg_check = run_cmd(f"adb -s {device} shell \"pm list packages | grep com.whatsapp.w4b\"")
+        if "com.whatsapp.w4b" in pkg_check:
+            pkg = "com.whatsapp.w4b"
+            
+        if media_filename:
+            print(f"[*] WhatsApp media dispatch. File: {media_filename} -> {clean_num}...")
+            ext = os.path.splitext(media_filename)[1].lower()
+            mime_type = "application/pdf" if ext == ".pdf" else "image/*"
+            extra_text = f"-e android.intent.extra.TEXT \"{message}\"" if message else ""
+            cmd = f"adb -s {device} shell \"am start -a android.intent.action.SEND -t {mime_type} -e jid {clean_num}@s.whatsapp.net --eu android.intent.extra.STREAM file:///data/local/tmp/aerodial_media/\\\"{media_filename}\\\" {extra_text} -p {pkg}\""
+            run_cmd(cmd)
+        else:
+            print(f"[*] WhatsApp text. Prefilling chat: {clean_num}...")
+            url = f"https://api.whatsapp.com/send?phone={clean_num}&text={urllib.parse.quote(message)}"
+            run_cmd(f"adb -s {device} shell \"am start -a android.intent.action.VIEW -d '{url}' {pkg}\"")
         
         # Wait for WhatsApp and keyboard to fully load, polling for send button
         send_btn_coords = None
