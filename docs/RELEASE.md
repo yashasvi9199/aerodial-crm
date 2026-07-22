@@ -1,5 +1,10 @@
 # Release Notes
 
+## [1.12.0] - 2026-07-22
+### Added
+- Added full Media Library management panel (uploading, listing with previews, and deleting) inside the main WhatsApp Business Hub workspace interface (sidebar tab).
+- Linked the `useSetup` hook media callbacks and Lucide icons directly in the hub layout.
+
 ## [1.11.0] - 2026-07-22
 ### Added
 - Added WhatsApp Media Library panel under the Setup Tab.
