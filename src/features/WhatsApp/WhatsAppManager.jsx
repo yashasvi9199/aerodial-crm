@@ -31,14 +31,16 @@ export default function WhatsAppManager() {
   let isWhatsappBusinessInstalled = false
   let mediaFiles = []
   try {
-    if (adbStatus && adbStatus.startsWith('{')) {
-      const parsed = JSON.parse(adbStatus)
-      isConnected = parsed.status === 'connected'
-      isWhatsappBusinessInstalled = !!parsed.whatsapp
-      mediaFiles = parsed.media_files || []
-    } else {
-      isConnected = adbStatus.startsWith('connected')
-      isWhatsappBusinessInstalled = adbStatus.includes('whatsapp:1')
+    if (adbStatus && typeof adbStatus === 'string') {
+      if (adbStatus.startsWith('{')) {
+        const parsed = JSON.parse(adbStatus)
+        isConnected = parsed.status === 'connected'
+        isWhatsappBusinessInstalled = !!parsed.whatsapp
+        mediaFiles = parsed.media_files || []
+      } else {
+        isConnected = adbStatus.startsWith('connected')
+        isWhatsappBusinessInstalled = adbStatus.includes('whatsapp:1')
+      }
     }
   } catch (e) {
     console.error(e)
