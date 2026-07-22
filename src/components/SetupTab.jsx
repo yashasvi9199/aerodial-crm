@@ -307,6 +307,132 @@ export default function SetupTab() {
         </div>
       </div>
 
+      {/* WhatsApp Media Library Section */}
+      <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px', marginBottom: '25px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '700', color: 'var(--accent)' }}>WhatsApp Media Library</h3>
+            <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: 'var(--text-muted)' }}>
+              Upload and manage images or PDF attachments to send in WhatsApp messages. Only one file is attached at a time.
+            </p>
+          </div>
+          <div>
+            <label style={{
+              background: isDeviceConnected ? 'var(--accent)' : 'var(--border)',
+              color: '#000000',
+              padding: '8px 14px',
+              borderRadius: '6px',
+              fontWeight: 'bold',
+              fontSize: '12.5px',
+              cursor: isDeviceConnected ? 'pointer' : 'not-allowed',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}>
+              <Upload size={14} /> Upload File
+              <input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png,.webp,.gif"
+                onChange={handleFileChange}
+                disabled={!isDeviceConnected}
+                style={{ display: 'none' }}
+              />
+            </label>
+          </div>
+        </div>
+
+        {(!parsedStatus.media_files || parsedStatus.media_files.length === 0) ? (
+          <div style={{ padding: '30px 10px', borderRadius: '8px', background: 'var(--bg-dark)', border: '1px dashed var(--border)', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
+            No media files found on the device. Upload a file above.
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '15px' }}>
+            {parsedStatus.media_files.map((file, idx) => (
+              <div 
+                key={idx} 
+                style={{
+                  background: 'var(--bg-input)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '8px',
+                  padding: '10px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}
+              >
+                {/* Delete Button */}
+                <button
+                  onClick={() => deleteMedia(file.filename)}
+                  style={{
+                    position: 'absolute',
+                    top: '5px',
+                    right: '5px',
+                    background: 'rgba(239, 68, 68, 0.85)',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '4px',
+                    width: '22px',
+                    height: '22px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    zIndex: 10
+                  }}
+                  title="Remove from device"
+                >
+                  <Trash size={12} />
+                </button>
+
+                {/* Preview Frame */}
+                <div style={{
+                  width: '100%',
+                  height: '80px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'var(--bg-dark)',
+                  borderRadius: '6px',
+                  marginBottom: '8px',
+                  overflow: 'hidden'
+                }}>
+                  {file.thumbnail ? (
+                    <img 
+                      src={file.thumbnail} 
+                      alt={file.filename} 
+                      style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                    />
+                  ) : (
+                    <FileText size={32} style={{ color: file.mime_type === 'application/pdf' ? '#ef4444' : 'var(--text-muted)' }} />
+                  )}
+                </div>
+
+                {/* Filename */}
+                <div style={{
+                  width: '100%',
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  color: 'var(--text)',
+                  textAlign: 'center',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }} title={file.filename}>
+                  {file.filename}
+                </div>
+                
+                {/* MIME Type Label */}
+                <div style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                  {file.mime_type === 'application/pdf' ? 'PDF Document' : 'Image'}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Diagnostics Logs Section */}
       <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
