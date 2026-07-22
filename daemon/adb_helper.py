@@ -225,3 +225,128 @@ def get_dialer_intent_extras(skin_name, sim_slot):
     elif "harmony" in skin:
         extras += f" --ei subscription {sim_slot}"
     return extras
+
+def get_default_outgoing_phone_account(device, is_root=False):
+    """
+    Retrieves the current default outgoing phone account details (component and sub_id).
+    """
+    import re
+    cmd_prefix = "su -c " if is_root else ""
+    telecom_default = None
+    try:
+        out = run_cmd(f"adb -s {device} shell \"{cmd_prefix}dumpsys telecom\"")
+        for line in out.splitlines():
+            if "UserSelectedOutgoingPhoneAccount" in line or "mUserSelectedOutgoingPhoneAccount" in line:
+                if "null" in line.lower():
+                    telecom_default = "ask_every_time"
+                    break
+                comp_match = re.search(r'ComponentInfo\s*\{\s*([^}]+)\s*\}', line)
+                id_match = re.search(r'ComponentInfo\s*\{\s*[^}]+\s*\}\s*,\s*([^,\s\]\)\}]+)', line)
+                if comp_match and id_match:
+                    telecom_default = {
+                        "component": comp_match.group(1).strip(),
+                        "id": id_match.group(1).strip()
+                    }
+                    break
+                parts = re.split(r'PhoneAccountHandle\s*\[\s*ComponentInfo\s*\{\s*', line)
+                if len(parts) > 1:
+                    subparts = parts[1].split('}')
+                    comp = subparts[0].strip()
+                    rest = subparts[1].lstrip(',').strip()
+                    acc_id = rest.split(',')[0].strip()
+                    telecom_default = {"component": comp, "id": acc_id}
+                    break
+    except Exception as e:
+        print(f"⚠️ Error parsing dumpsys telecom: {e}")
+
+    multi_sim_val = None
+    try:
+        multi_sim_val = run_cmd(f"adb -s {device} shell \"{cmd_prefix}settings get global multi_sim_voice_call\"").strip()
+        if not multi_sim_val or "null" in multi_sim_val.lower():
+            multi_sim_val = "-1"
+    except Exception:
+        pass
+
+    multi_sim_sub_val = None
+    try:
+        multi_sim_sub_val = run_cmd(f"adb -s {device} shell \"{cmd_prefix}settings get global multi_sim_voice_call_subscription\"").strip()
+        if not multi_sim_sub_val or "null" in multi_sim_sub_val.lower():
+            multi_sim_sub_val = "-1"
+    except Exception:
+        pass
+
+    return {
+        "telecom_default": telecom_default,
+        "multi_sim_voice_call": multi_sim_val,
+        "multi_sim_voice_call_subscription": multi_sim_sub_val
+    }
+
+import os
+DEFAULTS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "device_defaults.json")
+
+def save_device_defaults(device_serial, defaults_dict):
+    """
+    Saves the device defaults dict to local storage (JSON file).
+    """
+    import json
+    data = {}
+    if os.path.exists(DEFAULTS_FILE):
+        try:
+            with open(DEFAULTS_FILE, "r") as f:
+                data = json.load(f)
+        except Exception:
+            pass
+    data[device_serial] = defaults_dict
+    try:
+        with open(DEFAULTS_FILE, "w") as f:
+            json.dump(data, f, indent=4)
+        print(f"[+] Saved device defaults for {device_serial}: {defaults_dict}")
+    except Exception as e:
+        print(f"⚠️ Error saving device defaults: {e}")
+
+def get_saved_device_default(device_serial):
+    """
+    Reads the saved device defaults for a device serial.
+    """
+    import json
+    if os.path.exists(DEFAULTS_FILE):
+        try:
+            with open(DEFAULTS_FILE, "r") as f:
+                data = json.load(f)
+                return data.get(device_serial)
+        except Exception:
+            pass
+    return None
+
+def restore_device_defaults(device, is_root=False):
+    """
+    Restores the saved device default SIM settings if they exist.
+    """
+    defaults = get_saved_device_default(device)
+    if not defaults:
+        print(f"⚠️ No saved defaults found for {device}. Cannot restore.")
+        return False
+
+    cmd_prefix = "su -c " if is_root else ""
+    telecom_default = defaults.get("telecom_default")
+    multi_sim_val = defaults.get("multi_sim_voice_call")
+    multi_sim_sub_val = defaults.get("multi_sim_voice_call_subscription")
+
+    print(f"[*] Restoring SIM defaults for {device}: {defaults}")
+
+    if multi_sim_val:
+        run_cmd(f"adb -s {device} shell \"{cmd_prefix}settings put global multi_sim_voice_call {multi_sim_val}\"")
+    if multi_sim_sub_val:
+        run_cmd(f"adb -s {device} shell \"{cmd_prefix}settings put global multi_sim_voice_call_subscription {multi_sim_sub_val}\"")
+
+    if telecom_default:
+        if telecom_default == "ask_every_time":
+            comp = "com.android.phone/com.android.services.telephony.TelephonyConnectionService"
+            run_cmd(f"adb -s {device} shell \"{cmd_prefix}telecom set-user-selected-outgoing-phone-account {comp} -1 0\"")
+        elif isinstance(telecom_default, dict):
+            comp = telecom_default.get("component")
+            acc_id = telecom_default.get("id")
+            if comp and acc_id:
+                run_cmd(f"adb -s {device} shell \"{cmd_prefix}telecom set-user-selected-outgoing-phone-account {comp} {acc_id} 0\"")
+    return True
+
