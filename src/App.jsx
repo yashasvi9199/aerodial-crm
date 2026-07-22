@@ -40,27 +40,29 @@ export default function App() {
   let incomingCall = null
 
   try {
-    if (adbStatus && adbStatus.startsWith('{')) {
-      const parsed = JSON.parse(adbStatus)
-      isConnected = parsed.status === 'connected' && isHeartbeatValid
-      isRooted = parsed.is_root
-      isTruecallerInstalled = parsed.truecaller
-      isWhatsappBusinessInstalled = parsed.whatsapp
-      deviceBrand = parsed.brand
-      deviceModel = parsed.model
-      deviceOS = parsed.os_name
-      incomingCall = parsed.incoming_call
-    } else {
-      isConnected = adbStatus.startsWith('connected') && isHeartbeatValid
-      isRooted = adbStatus.includes('root:1')
-      isTruecallerInstalled = adbStatus.includes('truecaller:1')
-      isWhatsappBusinessInstalled = adbStatus.includes('whatsapp:1')
-      const brandMatch = adbStatus.match(/brand:([^|]+)/)
-      deviceBrand = brandMatch ? brandMatch[1] : ''
-      const osMatch = adbStatus.match(/os:([^|]+)/)
-      deviceOS = osMatch ? osMatch[1] : ''
-      const modelMatch = adbStatus.match(/model:([^|]+)/)
-      deviceModel = modelMatch ? modelMatch[1] : ''
+    if (adbStatus && typeof adbStatus === 'string') {
+      if (adbStatus.startsWith('{')) {
+        const parsed = JSON.parse(adbStatus)
+        isConnected = parsed.status === 'connected' && isHeartbeatValid
+        isRooted = parsed.is_root
+        isTruecallerInstalled = parsed.truecaller
+        isWhatsappBusinessInstalled = parsed.whatsapp
+        deviceBrand = parsed.brand
+        deviceModel = parsed.model
+        deviceOS = parsed.os_name
+        incomingCall = parsed.incoming_call
+      } else {
+        isConnected = adbStatus.startsWith('connected') && isHeartbeatValid
+        isRooted = adbStatus.includes('root:1')
+        isTruecallerInstalled = adbStatus.includes('truecaller:1')
+        isWhatsappBusinessInstalled = adbStatus.includes('whatsapp:1')
+        const brandMatch = adbStatus.match(/brand:([^|]+)/)
+        deviceBrand = brandMatch ? brandMatch[1] : ''
+        const osMatch = adbStatus.match(/os:([^|]+)/)
+        deviceOS = osMatch ? osMatch[1] : ''
+        const modelMatch = adbStatus.match(/model:([^|]+)/)
+        deviceModel = modelMatch ? modelMatch[1] : ''
+      }
     }
   } catch (err) {
     console.error('Failed to parse adbStatus JSON', err)
