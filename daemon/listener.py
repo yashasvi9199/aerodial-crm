@@ -338,6 +338,38 @@ def main():
                                 from whatsapp_handler import handle_whatsapp_json
                                 handle_whatsapp_json(device, cmd_data, run_cmd)
                                 supabase.table('system_state').update({'command': 'idle'}).eq('id', 1).execute()
+                            elif action == 'upload_media':
+                                filename = cmd_data.get('filename')
+                                file_base64 = cmd_data.get('file_base64')
+                                if filename and file_base64:
+                                    import base64
+                                    cache_dir = os.path.join(PROJECT_ROOT, "daemon", "media_cache")
+                                    os.makedirs(cache_dir, exist_ok=True)
+                                    local_path = os.path.join(cache_dir, filename)
+                                    if "," in file_base64:
+                                        file_base64 = file_base64.split(",", 1)[1]
+                                    try:
+                                        with open(local_path, "wb") as f:
+                                            f.write(base64.b64decode(file_base64))
+                                        print(f"[*] Staged uploaded file locally: {filename}. Pushing to phone...")
+                                        run_cmd(f"adb -s {device} push \"{local_path}\" \"/data/local/tmp/aerodial_media/{filename}\"")
+                                        run_cmd(f"adb -s {device} shell \"chmod 666 /data/local/tmp/aerodial_media/{filename}\"")
+                                    except Exception as ex:
+                                        print(f"⚠️ Error uploading media file: {ex}")
+                                supabase.table('system_state').update({'command': 'idle'}).eq('id', 1).execute()
+                            elif action == 'delete_media':
+                                filename = cmd_data.get('filename')
+                                if filename:
+                                    try:
+                                        print(f"[*] Deleting media file: {filename} from phone and cache...")
+                                        run_cmd(f"adb -s {device} shell \"rm \\\"/data/local/tmp/aerodial_media/{filename}\\\"\"")
+                                        cache_dir = os.path.join(PROJECT_ROOT, "daemon", "media_cache")
+                                        local_path = os.path.join(cache_dir, filename)
+                                        if os.path.exists(local_path):
+                                            os.remove(local_path)
+                                    except Exception as ex:
+                                        print(f"⚠️ Error deleting media file: {ex}")
+                                supabase.table('system_state').update({'command': 'idle'}).eq('id', 1).execute()
                             elif action == 'truecaller_lookup':
                                 from truecaller_handler import handle_truecaller_json
                                 handle_truecaller_json(device, cmd_data, run_cmd, supabase)
