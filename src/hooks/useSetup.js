@@ -207,22 +207,33 @@ export function useSetup() {
 
   const uploadMedia = useCallback(async (file) => {
     if (!file) return;
-    try {
-      writeLog('INFO', `Uploading media file to device: ${file.name}`);
-      const reader = new FileReader();
-      reader.onload = async () => {
+    writeLog('INFO', `Uploading media file to device: ${file.name}`);
+    const reader = new FileReader();
+    reader.onerror = () => {
+      writeLog('ERROR', `Failed to read file: ${file.name}`);
+    };
+    reader.onload = async () => {
+      try {
         const base64Data = reader.result;
+        console.log(`[uploadMedia] Dispatching upload_media command for: ${file.name}, base64 length: ${base64Data.length}`);
         const command = JSON.stringify({
           action: 'upload_media',
           filename: file.name,
           file_base64: base64Data
         });
-        await supabase.from('system_state').update({ command }).eq('id', 1);
-      };
-      reader.readAsDataURL(file);
-    } catch (err) {
-      writeLog('ERROR', `Failed to upload media: ${err.message}`);
-    }
+        const { error } = await supabase.from('system_state').update({ command }).eq('id', 1);
+        if (error) {
+          writeLog('ERROR', `Supabase update failed for upload_media: ${error.message}`);
+          console.error('[uploadMedia] Supabase error:', error);
+        } else {
+          writeLog('INFO', `Upload command dispatched for: ${file.name}`);
+        }
+      } catch (err) {
+        writeLog('ERROR', `Failed to upload media: ${err.message}`);
+        console.error('[uploadMedia] Exception:', err);
+      }
+    };
+    reader.readAsDataURL(file);
   }, []);
 
   const deleteMedia = useCallback(async (filename) => {
