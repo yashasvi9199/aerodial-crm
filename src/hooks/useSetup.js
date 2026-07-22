@@ -73,31 +73,33 @@ export function useSetup() {
   // Decode JSON status
   let parsedStatus = { status: 'disconnected', sim_cards: [] };
   try {
-    if (adbStatus && adbStatus.startsWith('{')) {
-      parsedStatus = JSON.parse(adbStatus);
-    } else if (adbStatus === 'disconnected') {
-      parsedStatus = { status: 'disconnected', sim_cards: [] };
-    } else {
-      // Legacy compatibility format parsing
-      const isRoot = adbStatus.includes('root:1');
-      const isTruecaller = adbStatus.includes('truecaller:1');
-      const isWhatsapp = adbStatus.includes('whatsapp:1');
-      const brandMatch = adbStatus.match(/brand:([^|]+)/);
-      const osMatch = adbStatus.match(/os:([^|]+)/);
-      const modelMatch = adbStatus.match(/model:([^|]+)/);
-      parsedStatus = {
-        status: adbStatus.startsWith('connected') ? 'connected' : 'disconnected',
-        is_root: isRoot,
-        truecaller: isTruecaller,
-        whatsapp: isWhatsapp,
-        brand: brandMatch ? brandMatch[1] : 'Unknown',
-        model: modelMatch ? modelMatch[1] : '',
-        os_name: osMatch ? osMatch[1] : 'Android',
-        dialer_details: 'Standard Dialer',
-        phone_support: 'Fully Supported',
-        sim_cards: [],
-        default_sim_slot: 0
-      };
+    if (adbStatus && typeof adbStatus === 'string') {
+      if (adbStatus.startsWith('{')) {
+        parsedStatus = JSON.parse(adbStatus);
+      } else if (adbStatus === 'disconnected') {
+        parsedStatus = { status: 'disconnected', sim_cards: [] };
+      } else {
+        // Legacy compatibility format parsing
+        const isRoot = adbStatus.includes('root:1');
+        const isTruecaller = adbStatus.includes('truecaller:1');
+        const isWhatsapp = adbStatus.includes('whatsapp:1');
+        const brandMatch = adbStatus.match(/brand:([^|]+)/);
+        const osMatch = adbStatus.match(/os:([^|]+)/);
+        const modelMatch = adbStatus.match(/model:([^|]+)/);
+        parsedStatus = {
+          status: adbStatus.startsWith('connected') ? 'connected' : 'disconnected',
+          is_root: isRoot,
+          truecaller: isTruecaller,
+          whatsapp: isWhatsapp,
+          brand: brandMatch ? brandMatch[1] : 'Unknown',
+          model: modelMatch ? modelMatch[1] : '',
+          os_name: osMatch ? osMatch[1] : 'Android',
+          dialer_details: 'Standard Dialer',
+          phone_support: 'Fully Supported',
+          sim_cards: [],
+          default_sim_slot: 0
+        };
+      }
     }
   } catch (e) {
     console.error('Error decoding adbStatus JSON:', e);
