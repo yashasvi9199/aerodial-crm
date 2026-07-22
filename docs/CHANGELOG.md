@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.11.0] - 2026-07-22
+### Added
+- Added WhatsApp Media Library panel under the Setup Tab.
+- Integrated upload and delete commands to copy images/PDF files from the browser directly to the device directory `/data/local/tmp/aerodial_media/`.
+- Implemented real-time synchronization of device media files to cache directories and generated compressed image base64 thumbnails using Pillow.
+- Enhanced the WhatsApp modal to allow selecting an image or PDF attachment from the synced library, passing the correct `media_filename` in dispatcher payloads.
+
 ## [1.10.0] - 2026-07-22
 ### Added
 - Added Outbound Calling Method selection dropdown in the Setup Tab.
