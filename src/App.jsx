@@ -152,8 +152,9 @@ export default function App() {
   }
   const triggerTestCall = async () => {
     try {
-      await supabase.from('call_queue').insert([{ number: '197', status: 'dialing' }])
-      alert('Test call on 197 queued! Verify dialing on your phone.')
+      const method = localStorage.getItem('aerodial_calling_method') || 'default'
+      await supabase.from('call_queue').insert([{ number: `197#${method}`, status: 'dialing' }])
+      alert(`Test call on 197 (${method}) queued! Verify dialing on your phone.`)
     } catch (err) {
       console.error('Error triggering test call:', err)
     }
