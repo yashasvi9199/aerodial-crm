@@ -18,6 +18,7 @@ export function useSetup() {
   const [failsafeIndex, setFailsafeIndex] = useState(0);
   const [localSimSlot, setLocalSimSlot] = useState(null);
   const [callingMethod, setCallingMethod] = useState(() => localStorage.getItem('aerodial_calling_method') || 'default');
+  const [uploadProgress, setUploadProgress] = useState(null);
 
   // Keep nowTime updated for heartbeat check
   useEffect(() => {
@@ -207,24 +208,36 @@ export function useSetup() {
 
   const uploadMedia = useCallback(async (file) => {
     if (!file) return;
+    setUploadProgress({ filename: file.name, percent: 0, status: 'reading' });
     writeLog('INFO', `Uploading media file to device: ${file.name}`);
     const reader = new FileReader();
+    reader.onprogress = (evt) => {
+      if (evt.lengthComputable) {
+        const readPercent = Math.round((evt.loaded / evt.total) * 40);
+        setUploadProgress(prev => prev ? { ...prev, percent: readPercent } : null);
+      }
+    };
     reader.onerror = () => {
       writeLog('ERROR', `Failed to read file: ${file.name}`);
+      setUploadProgress(prev => prev ? { ...prev, percent: 0, status: 'error' } : null);
+      setTimeout(() => setUploadProgress(null), 3000);
     };
     reader.onload = async () => {
       try {
         const base64Data = reader.result;
-        // Step 1: Insert file data into media_queue (no realtime sub, avoids payload limit)
+        setUploadProgress(prev => prev ? { ...prev, percent: 45, status: 'uploading' } : null);
+        // Step 1: Insert file data into media_queue
         const { error: insertError } = await supabase
           .from('media_queue')
           .insert([{ filename: file.name, file_base64: base64Data }]);
         if (insertError) {
           writeLog('ERROR', `Failed to queue media file: ${insertError.message}`);
-          console.error('[uploadMedia] media_queue insert error:', insertError);
+          setUploadProgress(prev => prev ? { ...prev, percent: 0, status: 'error' } : null);
+          setTimeout(() => setUploadProgress(null), 3000);
           return;
         }
-        // Step 2: Send a small command pointer (no base64 in this payload)
+        setUploadProgress(prev => prev ? { ...prev, percent: 80, status: 'dispatching' } : null);
+        // Step 2: Send a small command pointer
         const command = JSON.stringify({
           action: 'upload_media',
           filename: file.name
@@ -235,12 +248,16 @@ export function useSetup() {
           .eq('id', 1);
         if (cmdError) {
           writeLog('ERROR', `Supabase command update failed: ${cmdError.message}`);
+          setUploadProgress(prev => prev ? { ...prev, status: 'error' } : null);
         } else {
           writeLog('INFO', `Upload command dispatched for: ${file.name}`);
+          setUploadProgress(prev => prev ? { ...prev, percent: 100, status: 'done' } : null);
         }
+        setTimeout(() => setUploadProgress(null), 3000);
       } catch (err) {
         writeLog('ERROR', `Failed to upload media: ${err.message}`);
-        console.error('[uploadMedia] Exception:', err);
+        setUploadProgress(prev => prev ? { ...prev, percent: 0, status: 'error' } : null);
+        setTimeout(() => setUploadProgress(null), 3000);
       }
     };
     reader.readAsDataURL(file);
@@ -278,6 +295,7 @@ export function useSetup() {
     callingMethod,
     updateCallingMethod,
     uploadMedia,
-    deleteMedia
+    deleteMedia,
+    uploadProgress
   };
 }
