@@ -258,3 +258,22 @@ ALTER TABLE public.contacts ADD COLUMN IF NOT EXISTS whatsapp_sent text DEFAULT 
 
 ALTER TABLE public.contacts ADD COLUMN IF NOT EXISTS last_contact_at timestamp with time zone;
 ALTER TABLE public.justdial_leads ADD COLUMN IF NOT EXISTS last_contact_at timestamp with time zone;
+
+--------------------------------------------------------------------------------------
+
+-- Date: 2026-07-22 19:10:00
+-- Feature: WhatsApp Media Upload Queue
+-- Type: SCHEMA
+-- Notes: Staging table for media file uploads. Base64 file data is stored here
+--         instead of the system_state.command column to avoid Supabase Realtime
+--         payload size limits that were killing WebSocket connections.
+
+CREATE TABLE IF NOT EXISTS public.media_queue (
+  id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  filename text NOT NULL,
+  file_base64 text NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
+
+ALTER TABLE public.media_queue ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all for anon" ON public.media_queue FOR ALL USING (true) WITH CHECK (true);
