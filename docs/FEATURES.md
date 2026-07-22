@@ -2,11 +2,12 @@
 
 ## 1. Outbound Dialing Engine
 - **Rooted SIM Routing**: Programmatically binds outgoing voice calls to Airtel (SIM 2) subscription using root-level Android shell commands (`telecom set-user-selected-outgoing-phone-account`).
-- **SIM Preference Restoration**: Automatically restores calling preferences to "Ask every time" upon call completion.
+- **SIM Preference Restoration**: Automatically backs up original default SIM configurations (telecom account and settings DB values) on connection, and restores them after call completion or dialing timeouts.
 - **Short-Code Routing**: Native support for carrier short codes (like `197` or `121`) by avoiding dialing format prepends.
 
 ## 2. Local Bridge Daemon
 - **Real-Time Call Queueing**: Monitors Supabase `call_queue` changes via real-time hooks to trigger outgoing calls automatically.
+- **SIM Preference Backup**: Local JSON-based storage of device default SIM configurations for persistence across daemon restarts.
 - **ADB Telemetry Logging**: Queries the device call log database after each call to retrieve talk duration, which is mapped back to contacts or leads. Fully supports multi-SIM devices by aggregating states across all slots.
 - **Active Call Controls**: Remotely hang up active calls using `input keyevent 6` triggered from the web interface.
 - **Environment Security Isolation**: Strict isolation of credentials with zero hardcoded API endpoints or tokens in code files, relying solely on runtime environment configurations.
