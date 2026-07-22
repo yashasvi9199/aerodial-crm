@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.12.2] - 2026-07-22
+### Fixed
+- Fixed command processing order in the Python daemon to ensure `upload_media` and `delete_media` are parsed before the `is_connected` block is matched.
+- Wrapped adb push/chmod/rm target paths in double quotes to support filenames with spaces.
+- Added a visual progress bar indicating reading, uploading, and dispatching progress on file uploads.
+- Configured Supabase postgrest client timeout to prevent network drop hangs.
+
 ## [1.12.1] - 2026-07-22
 ### Fixed
 - Fixed connection state and package detection parsing in the main WhatsApp Hub composer to support the new JSON adbStatus payload.
