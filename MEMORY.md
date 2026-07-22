@@ -1,10 +1,10 @@
 # MEMORY.md
 
 ## Short-term Memory
-- Initializing repository-wide compliance memory (SOUL.md, MEMORY.md, USER.md, sync-state.md).
-- Implementing desktop icon launcher and background runner script for multiple Android skins.
-- Implementing Truecaller check, WhatsApp Business package presence verification, and +91 test dispatch.
-- Remodeling directory hierarchy.
+- Implementing automated SIM settings backup and restore feature.
+- Auto-saving default outgoing phone account and global Settings DB voice SIM properties to `device_defaults.json` local storage.
+- Auto-restoring default SIM configurations on call end and call dialing timeouts.
+- Saving ADB Telecom research and mapping it to workspace customizations root.
 
 ## Long-term Memory
 - Project is a React/Vite web application connecting with a python backend daemon to automate adb tasks on devices.
