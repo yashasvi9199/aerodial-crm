@@ -1,9 +1,10 @@
 # MEMORY.md
 
 ## Short-term Memory
-- Added Calling Method selection dropdown in Setup Tab.
-- Persisted selected calling method in browser `localStorage`.
-- Automatically appended calling method suffix to all dials (Cold Calling, JustDial leads, Contact cards, and 197 test dispatches).
+- Added WhatsApp Media Library panel under the Setup Tab.
+- Integrated file uploads/deletions directly to and from `/data/local/tmp/aerodial_media/` on the device.
+- Generated compressed JPEG thumbnails using Pillow for browser media previews.
+- Modified WhatsApp Modal to allow selecting and attaching single PDF or image files to outgoing messages.
 - Verified build and ran lint tests successfully.
 
 ## Long-term Memory
