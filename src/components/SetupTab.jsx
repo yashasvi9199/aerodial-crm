@@ -24,8 +24,17 @@ export default function SetupTab() {
     exportLogs,
     connectWirelessAdb,
     callingMethod,
-    updateCallingMethod
+    updateCallingMethod,
+    uploadMedia,
+    deleteMedia
   } = useSetup();
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      uploadMedia(file);
+    }
+  };
 
   const [ipInput, setIpInput] = useState(() => localStorage.getItem('adb_wireless_ip') || '');
 
