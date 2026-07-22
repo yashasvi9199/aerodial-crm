@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
-import { X, Send, AlertCircle, Check, CheckCheck } from 'lucide-react'
+import { X, Send, AlertCircle, Check, CheckCheck, FileText } from 'lucide-react'
 import TemplateSelector from './TemplateSelector'
 import { formatWhatsappText, insertFormattingTag } from '../lib/whatsappUtils'
 import TruecallerSection from './TruecallerSection'
@@ -12,6 +12,8 @@ export default function WhatsappModal({ isOpen, onClose, phone, contactName }) {
   const [activeTemplateId, setActiveTemplateId] = useState(null)
   const [isSending, setIsSending] = useState(false)
   const [chatHistory, setChatHistory] = useState([])
+  const [mediaFiles, setMediaFiles] = useState([])
+  const [selectedMedia, setSelectedMedia] = useState('')
   const textareaRef = useRef(null)
 
   /* eslint-disable react-hooks/set-state-in-effect */
@@ -22,9 +24,26 @@ export default function WhatsappModal({ isOpen, onClose, phone, contactName }) {
       setMessage('')
       setActiveTemplateId(null)
       setChatHistory([])
+      setSelectedMedia('')
     }
   }, [phone, contactName, isOpen])
   /* eslint-enable react-hooks/set-state-in-effect */
+
+  useEffect(() => {
+    if (!isOpen) return
+    const fetchMedia = async () => {
+      try {
+        const { data } = await supabase.from('system_state').select('adb_status').eq('id', 1).single()
+        if (data && data.adb_status) {
+          const parsed = JSON.parse(data.adb_status)
+          setMediaFiles(parsed.media_files || [])
+        }
+      } catch (err) {
+        console.error('Error fetching media files for WhatsApp:', err)
+      }
+    }
+    fetchMedia()
+  }, [isOpen])
 
   useEffect(() => {
     if (!isOpen || !phone) return
@@ -66,15 +85,26 @@ export default function WhatsappModal({ isOpen, onClose, phone, contactName }) {
     }
     setIsSending(true)
     try {
-      const command = JSON.stringify({ action: 'whatsapp', phone: editablePhone.trim(), message: message.trim(), file_url: '', file_name: '' })
+      const command = JSON.stringify({ 
+        action: 'whatsapp', 
+        phone: editablePhone.trim(), 
+        message: message.trim(), 
+        media_filename: selectedMedia || undefined
+      })
       const { error: cmdError } = await supabase.from('system_state').update({ command }).eq('id', 1)
       if (cmdError) throw cmdError
 
-      const { error: logError } = await supabase.from('whatsapp_logs').insert([{ phone_number: editablePhone.trim(), contact_name: editableName.trim() || null, message_text: message.trim() || null, file_name: null }])
+      const { error: logError } = await supabase.from('whatsapp_logs').insert([{ 
+        phone_number: editablePhone.trim(), 
+        contact_name: editableName.trim() || null, 
+        message_text: message.trim() || null, 
+        file_name: selectedMedia || null 
+      }])
       if (logError) throw logError
 
       setMessage('')
       setActiveTemplateId(null)
+      setSelectedMedia('')
       alert('WhatsApp Business message dispatched!')
       onClose()
     } catch (err) {
@@ -155,6 +185,55 @@ export default function WhatsappModal({ isOpen, onClose, phone, contactName }) {
               <TemplateSelector onSelect={handleSelectTemplate} contactName={editableName} activeTemplateId={activeTemplateId} />
             </div>
 
+             <div>
+              <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '5px', fontWeight: 'bold' }}>ATTACH FILE (OPTIONAL)</label>
+              <select
+                value={selectedMedia}
+                onChange={(e) => setSelectedMedia(e.target.value)}
+                style={{
+                  width: '100%',
+                  background: 'var(--bg-input)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text)',
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  fontSize: '13px',
+                  outline: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value="">No Attachment</option>
+                {mediaFiles.map((file, idx) => (
+                  <option key={idx} value={file.filename}>
+                    {file.filename} ({file.mime_type === 'application/pdf' ? 'PDF' : 'Image'})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {selectedMedia && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--bg-input)', border: '1px solid var(--border)', padding: '10px', borderRadius: '6px', marginTop: '5px' }}>
+                {(() => {
+                  const file = mediaFiles.find(f => f.filename === selectedMedia)
+                  if (!file) return null
+                  return (
+                    <>
+                      <div style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-dark)', borderRadius: '4px', overflow: 'hidden' }}>
+                        {file.thumbnail ? (
+                          <img src={file.thumbnail} alt="Preview" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                        ) : (
+                          <FileText size={20} style={{ color: file.mime_type === 'application/pdf' ? '#ef4444' : 'var(--text-muted)' }} />
+                        )}
+                      </div>
+                      <div style={{ flexGrow: 1, fontSize: '12px', fontWeight: '600' }}>
+                        {file.filename}
+                      </div>
+                    </>
+                  )
+                })()}
+              </div>
+            )}
+
             <div>
               <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: 'bold' }}>MESSAGE TEXT</label>
               
@@ -191,7 +270,7 @@ export default function WhatsappModal({ isOpen, onClose, phone, contactName }) {
         {/* Footer */}
         <div style={{ padding: '12px 20px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: '10px', background: 'var(--bg-input)' }}>
           <button onClick={onClose} style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text)', padding: '8px 16px', borderRadius: '6px', fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer' }}>Cancel</button>
-          <button onClick={handleSend} disabled={isSending || !message.trim()} style={{ background: '#25d366', border: 'none', color: '#fff', padding: '8px 16px', borderRadius: '6px', fontSize: '12.5px', fontWeight: 'bold', cursor: (isSending || !message.trim()) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', opacity: (isSending || !message.trim()) ? 0.6 : 1 }}>
+          <button onClick={handleSend} disabled={isSending || (!message.trim() && !selectedMedia)} style={{ background: '#25d366', border: 'none', color: '#fff', padding: '8px 16px', borderRadius: '6px', fontSize: '12.5px', fontWeight: 'bold', cursor: (isSending || (!message.trim() && !selectedMedia)) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px', opacity: (isSending || (!message.trim() && !selectedMedia)) ? 0.6 : 1 }}>
             <Send size={13} />
             {isSending ? 'Sending...' : 'Send via WhatsApp'}
           </button>
