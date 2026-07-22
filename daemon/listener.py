@@ -172,6 +172,51 @@ def main():
                     save_device_defaults(device, defaults)
                     saved_devices_in_session.add(device)
 
+                # --- WhatsApp Media Library Sync ---
+                media_files = []
+                try:
+                    # 1. Ensure phone media directory exists
+                    run_cmd(f"adb -s {device} shell \"mkdir -p /data/local/tmp/aerodial_media/ && chmod 777 /data/local/tmp/aerodial_media/\"")
+                    # 2. Get list of files on phone
+                    files_out = run_cmd(f"adb -s {device} shell \"ls -p /data/local/tmp/aerodial_media/ | grep -v /\"")
+                    phone_files = [f.strip() for f in files_out.splitlines() if f.strip() and not f.startswith("ls:")]
+                    
+                    # 3. Ensure local cache directory exists
+                    cache_dir = os.path.join(PROJECT_ROOT, "daemon", "media_cache")
+                    os.makedirs(cache_dir, exist_ok=True)
+                    
+                    # 4. Pull new files from phone to host cache
+                    for filename in phone_files:
+                        local_path = os.path.join(cache_dir, filename)
+                        if not os.path.exists(local_path):
+                            print(f"[*] Syncing new media file from phone: {filename}")
+                            run_cmd(f"adb -s {device} pull \"/data/local/tmp/aerodial_media/{filename}\" \"{local_path}\"")
+                        
+                        mime_type = "application/octet-stream"
+                        ext = os.path.splitext(filename)[1].lower()
+                        thumbnail = ""
+                        if ext in (".jpg", ".jpeg", ".png", ".webp", ".gif"):
+                            mime_type = f"image/{ext[1:]}" if ext != ".jpg" else "image/jpeg"
+                            thumbnail = get_image_thumbnail_base64(local_path)
+                        elif ext == ".pdf":
+                            mime_type = "application/pdf"
+                            
+                        media_files.append({
+                            "filename": filename,
+                            "mime_type": mime_type,
+                            "thumbnail": thumbnail
+                        })
+                    
+                    # 5. Clean up stale local cache files
+                    for f in os.listdir(cache_dir):
+                        if f not in phone_files:
+                            try:
+                                os.remove(os.path.join(cache_dir, f))
+                            except Exception:
+                                pass
+                except Exception as m_ex:
+                    print(f"⚠️ Error syncing media library: {m_ex}")
+
                 incoming_number = None
                 incoming_caller_name = None
                 if call_state == 1:  # RINGING
@@ -210,7 +255,8 @@ def main():
                     "incoming_call": {
                         "number": incoming_number,
                         "name": incoming_caller_name or "Unknown Caller"
-                    } if incoming_number else None
+                    } if incoming_number else None,
+                    "media_files": media_files
                 }
                 current_status = json.dumps(status_payload)
             else:
