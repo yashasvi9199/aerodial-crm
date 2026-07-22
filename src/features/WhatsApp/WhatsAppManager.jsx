@@ -27,18 +27,22 @@ export default function WhatsAppManager() {
   const [selectedMedia, setSelectedMedia] = useState('')
   const textareaRef = useRef(null)
 
+  let isConnected = false
+  let isWhatsappBusinessInstalled = false
   let mediaFiles = []
   try {
     if (adbStatus && adbStatus.startsWith('{')) {
       const parsed = JSON.parse(adbStatus)
+      isConnected = parsed.status === 'connected'
+      isWhatsappBusinessInstalled = !!parsed.whatsapp
       mediaFiles = parsed.media_files || []
+    } else {
+      isConnected = adbStatus.startsWith('connected')
+      isWhatsappBusinessInstalled = adbStatus.includes('whatsapp:1')
     }
   } catch (e) {
     console.error(e)
   }
-
-  const isConnected = adbStatus.startsWith('connected')
-  const isWhatsappBusinessInstalled = adbStatus.includes('whatsapp:1')
 
   const fetchLogs = async () => {
     try {
