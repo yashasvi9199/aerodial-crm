@@ -327,9 +327,9 @@ def main():
                                             f.write(raw_bytes)
                                         print(f"[*] Staged file locally: {local_path} ({len(raw_bytes)} bytes)")
                                         run_cmd(f'adb -s {target_dev} shell "mkdir -p /data/local/tmp/aerodial_media && chmod 777 /data/local/tmp/aerodial_media"')
-                                        push_result = run_cmd(f'adb -s {target_dev} push {local_path} /data/local/tmp/aerodial_media/{filename}', timeout=60)
+                                        push_result = run_cmd(f'adb -s {target_dev} push "{local_path}" "/data/local/tmp/aerodial_media/{filename}"', timeout=60)
                                         print(f"[*] adb push result: {push_result}")
-                                        run_cmd(f'adb -s {target_dev} shell "chmod 666 /data/local/tmp/aerodial_media/{filename}"')
+                                        run_cmd(f'adb -s {target_dev} shell "chmod 666 \\"/data/local/tmp/aerodial_media/{filename}\\""')
                                         supabase.table('media_queue').delete().eq('id', row['id']).execute()
                                         print(f"[✓] Media file uploaded and pushed to device: {filename}")
                                 except Exception as ex:
@@ -346,7 +346,7 @@ def main():
                             if filename and target_dev:
                                 try:
                                     print(f"[*] Deleting media file: {filename} from phone and cache...")
-                                    run_cmd(f'adb -s {target_dev} shell "rm /data/local/tmp/aerodial_media/{filename}"')
+                                    run_cmd(f'adb -s {target_dev} shell "rm \\"/data/local/tmp/aerodial_media/{filename}\\""')
                                     cache_dir = os.path.join(PROJECT_ROOT, "daemon", "media_cache")
                                     local_path = os.path.join(cache_dir, filename)
                                     if os.path.exists(local_path):
