@@ -215,16 +215,26 @@ export function useSetup() {
     reader.onload = async () => {
       try {
         const base64Data = reader.result;
-        console.log(`[uploadMedia] Dispatching upload_media command for: ${file.name}, base64 length: ${base64Data.length}`);
+        // Step 1: Insert file data into media_queue (no realtime sub, avoids payload limit)
+        const { error: insertError } = await supabase
+          .from('media_queue')
+          .insert([{ filename: file.name, file_base64: base64Data }]);
+        if (insertError) {
+          writeLog('ERROR', `Failed to queue media file: ${insertError.message}`);
+          console.error('[uploadMedia] media_queue insert error:', insertError);
+          return;
+        }
+        // Step 2: Send a small command pointer (no base64 in this payload)
         const command = JSON.stringify({
           action: 'upload_media',
-          filename: file.name,
-          file_base64: base64Data
+          filename: file.name
         });
-        const { error } = await supabase.from('system_state').update({ command }).eq('id', 1);
-        if (error) {
-          writeLog('ERROR', `Supabase update failed for upload_media: ${error.message}`);
-          console.error('[uploadMedia] Supabase error:', error);
+        const { error: cmdError } = await supabase
+          .from('system_state')
+          .update({ command })
+          .eq('id', 1);
+        if (cmdError) {
+          writeLog('ERROR', `Supabase command update failed: ${cmdError.message}`);
         } else {
           writeLog('INFO', `Upload command dispatched for: ${file.name}`);
         }
