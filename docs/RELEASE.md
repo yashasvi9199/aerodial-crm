@@ -1,5 +1,12 @@
 # Release Notes
 
+## [1.12.2] - 2026-07-22
+### Fixed
+- Fixed command processing order in the Python daemon to ensure `upload_media` and `delete_media` are parsed before the `is_connected` block is matched.
+- Wrapped adb push/chmod/rm target paths in double quotes to support filenames with spaces.
+- Added a visual progress bar indicating reading, uploading, and dispatching progress on file uploads.
+- Configured Supabase postgrest client timeout to prevent network drop hangs.
+
 ## [1.12.0] - 2026-07-22
 ### Added
 - Added full Media Library management panel (uploading, listing with previews, and deleting) inside the main WhatsApp Business Hub workspace interface (sidebar tab).
