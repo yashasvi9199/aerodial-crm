@@ -8,6 +8,15 @@ import { formatWhatsappText, insertFormattingTag } from '../../lib/whatsappUtils
 import TruecallerSection from '../../components/TruecallerSection'
 
 export default function WhatsAppManager() {
+  const { uploadMedia, deleteMedia } = useSetup();
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      uploadMedia(file);
+    }
+  };
+
   const [phone, setPhone] = useState('')
   const [contactName, setContactName] = useState('')
   const [message, setMessage] = useState('')
