@@ -190,7 +190,7 @@ def main():
                         local_path = os.path.join(cache_dir, filename)
                         if not os.path.exists(local_path):
                             print(f"[*] Syncing new media file from phone: {filename}")
-                            run_cmd(f"adb -s {device} pull \"/data/local/tmp/aerodial_media/{filename}\" \"{local_path}\"")
+                            run_cmd(f'adb -s {device} pull /data/local/tmp/aerodial_media/{filename} {local_path}')
                         
                         mime_type = "application/octet-stream"
                         ext = os.path.splitext(filename)[1].lower()
@@ -341,6 +341,7 @@ def main():
                             elif action == 'upload_media':
                                 filename = cmd_data.get('filename')
                                 file_base64 = cmd_data.get('file_base64')
+                                print(f"[*] upload_media received. filename={filename}, has_base64={bool(file_base64)}, base64_len={len(file_base64) if file_base64 else 0}")
                                 if filename and file_base64:
                                     import base64
                                     cache_dir = os.path.join(PROJECT_ROOT, "daemon", "media_cache")
@@ -349,20 +350,30 @@ def main():
                                     if "," in file_base64:
                                         file_base64 = file_base64.split(",", 1)[1]
                                     try:
+                                        raw_bytes = base64.b64decode(file_base64)
                                         with open(local_path, "wb") as f:
-                                            f.write(base64.b64decode(file_base64))
-                                        print(f"[*] Staged uploaded file locally: {filename}. Pushing to phone...")
-                                        run_cmd(f"adb -s {device} push \"{local_path}\" \"/data/local/tmp/aerodial_media/{filename}\"")
-                                        run_cmd(f"adb -s {device} shell \"chmod 666 /data/local/tmp/aerodial_media/{filename}\"")
+                                            f.write(raw_bytes)
+                                        print(f"[*] Staged file locally: {local_path} ({len(raw_bytes)} bytes)")
+                                        # Ensure device directory exists
+                                        run_cmd(f'adb -s {device} shell "mkdir -p /data/local/tmp/aerodial_media && chmod 777 /data/local/tmp/aerodial_media"')
+                                        # Push file to device (adb push takes direct paths, no shell quoting needed)
+                                        push_result = run_cmd(f'adb -s {device} push {local_path} /data/local/tmp/aerodial_media/{filename}', timeout=30)
+                                        print(f"[*] adb push result: {push_result}")
+                                        chmod_result = run_cmd(f'adb -s {device} shell "chmod 666 /data/local/tmp/aerodial_media/{filename}"')
+                                        print(f"[*] chmod result: {chmod_result}")
                                     except Exception as ex:
                                         print(f"⚠️ Error uploading media file: {ex}")
+                                        import traceback
+                                        traceback.print_exc()
+                                else:
+                                    print(f"⚠️ upload_media: missing filename or file_base64")
                                 supabase.table('system_state').update({'command': 'idle'}).eq('id', 1).execute()
                             elif action == 'delete_media':
                                 filename = cmd_data.get('filename')
                                 if filename:
                                     try:
                                         print(f"[*] Deleting media file: {filename} from phone and cache...")
-                                        run_cmd(f"adb -s {device} shell \"rm \\\"/data/local/tmp/aerodial_media/{filename}\\\"\"")
+                                        run_cmd(f'adb -s {device} shell "rm /data/local/tmp/aerodial_media/{filename}"')
                                         cache_dir = os.path.join(PROJECT_ROOT, "daemon", "media_cache")
                                         local_path = os.path.join(cache_dir, filename)
                                         if os.path.exists(local_path):
