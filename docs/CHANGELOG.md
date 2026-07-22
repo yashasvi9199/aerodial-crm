@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.11.1] - 2026-07-22
+### Added
+- Extended the WhatsApp Media Library attachment selector and preview frame to the main WhatsApp Business Hub composer page.
+
 ## [1.11.0] - 2026-07-22
 ### Added
 - Added WhatsApp Media Library panel under the Setup Tab.
