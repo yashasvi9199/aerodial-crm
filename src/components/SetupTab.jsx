@@ -22,7 +22,9 @@ export default function SetupTab() {
     handleFailsafeRetry,
     handleTestSuccess,
     exportLogs,
-    connectWirelessAdb
+    connectWirelessAdb,
+    callingMethod,
+    updateCallingMethod
   } = useSetup();
 
   const [ipInput, setIpInput] = useState(() => localStorage.getItem('adb_wireless_ip') || '');
@@ -246,8 +248,33 @@ export default function SetupTab() {
             </div>
           )}
 
+          <div style={{ marginTop: '20px', borderTop: '1px solid var(--border)', paddingTop: '15px' }}>
+            <h4 style={{ margin: '0 0 10px 0', fontSize: '13.5px', fontWeight: '700', color: 'var(--text)' }}>Default Outbound calling method</h4>
+            <select
+              value={callingMethod}
+              onChange={(e) => updateCallingMethod(e.target.value)}
+              style={{
+                width: '100%',
+                background: 'var(--bg-input)',
+                border: '1px solid var(--border)',
+                color: 'var(--text)',
+                padding: '10px',
+                borderRadius: '6px',
+                fontSize: '13.5px',
+                outline: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="default">System Default (Backup & Auto-Restore SIM)</option>
+              <option value="slot0">SIM Slot 1 Override (Auto-Restore SIM)</option>
+              <option value="slot1">SIM Slot 2 Override (Auto-Restore SIM)</option>
+              <option value="generic">Generic Dialer (No Override)</option>
+              <option value="root_service">Root Service Override (Direct dial)</option>
+            </select>
+          </div>
+
           <button
-            onClick={() => triggerTestCall(0)}
+            onClick={() => triggerTestCall()}
             disabled={!isDeviceConnected}
             style={{
               marginTop: '15px',
