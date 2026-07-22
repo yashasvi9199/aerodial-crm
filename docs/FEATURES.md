@@ -8,6 +8,7 @@
 
 ## 2. Local Bridge Daemon
 - **Real-Time Call Queueing**: Monitors Supabase `call_queue` changes via real-time hooks to trigger outgoing calls automatically.
+- **WhatsApp Media Attachments**: Synchronizes files between phone directory `/data/local/tmp/aerodial_media/` and local host cache. Supports uploading new images/PDFs from the browser, generating compressed JPEG base64 thumbnails, and sending them using `am start` SEND intents.
 - **SIM Preference Backup**: Local JSON-based storage of device default SIM configurations for persistence across daemon restarts.
 - **ADB Telemetry Logging**: Queries the device call log database after each call to retrieve talk duration, which is mapped back to contacts or leads. Fully supports multi-SIM devices by aggregating states across all slots.
 - **Active Call Controls**: Remotely hang up active calls using `input keyevent 6` triggered from the web interface.
