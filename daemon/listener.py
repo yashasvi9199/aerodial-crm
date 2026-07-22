@@ -338,56 +338,96 @@ def main():
                                 from whatsapp_handler import handle_whatsapp_json
                                 handle_whatsapp_json(device, cmd_data, run_cmd)
                                 supabase.table('system_state').update({'command': 'idle'}).eq('id', 1).execute()
-                            elif action == 'upload_media':
-                                filename = cmd_data.get('filename')
-                                print(f"[*] upload_media received for: {filename}")
-                                if filename:
-                                    try:
-                                        # Fetch base64 data from media_queue table (not from command payload)
-                                        queue_resp = supabase.table('media_queue').select('id,file_base64').eq('filename', filename).order('created_at', desc=True).limit(1).execute()
-                                        queue_rows = queue_resp.data or []
-                                        if not queue_rows:
-                                            print(f"⚠️ No media_queue row found for: {filename}")
-                                        else:
-                                            row = queue_rows[0]
-                                            file_base64 = row['file_base64']
-                                            import base64 as b64mod
-                                            cache_dir = os.path.join(PROJECT_ROOT, "daemon", "media_cache")
-                                            os.makedirs(cache_dir, exist_ok=True)
-                                            local_path = os.path.join(cache_dir, filename)
-                                            if "," in file_base64:
-                                                file_base64 = file_base64.split(",", 1)[1]
-                                            raw_bytes = b64mod.b64decode(file_base64)
-                                            with open(local_path, "wb") as f:
-                                                f.write(raw_bytes)
-                                            print(f"[*] Staged file locally: {local_path} ({len(raw_bytes)} bytes)")
-                                            # Ensure device directory exists
-                                            run_cmd(f'adb -s {device} shell "mkdir -p /data/local/tmp/aerodial_media && chmod 777 /data/local/tmp/aerodial_media"')
-                                            # Push file to device
-                                            push_result = run_cmd(f'adb -s {device} push {local_path} /data/local/tmp/aerodial_media/{filename}', timeout=30)
-                                            print(f"[*] adb push result: {push_result}")
-                                            chmod_result = run_cmd(f'adb -s {device} shell "chmod 666 /data/local/tmp/aerodial_media/{filename}"')
-                                            print(f"[*] chmod result: {chmod_result}")
-                                            # Clean up queue row
-                                            supabase.table('media_queue').delete().eq('id', row['id']).execute()
-                                            print(f"[*] Cleaned up media_queue row for: {filename}")
-                                    except Exception as ex:
-                                        print(f"⚠️ Error uploading media file: {ex}")
-                                        import traceback
-                                        traceback.print_exc()
-                                supabase.table('system_state').update({'command': 'idle'}).eq('id', 1).execute()
-                            elif action == 'delete_media':
-                                filename = cmd_data.get('filename')
-                                if filename:
-                                    try:
-                                        print(f"[*] Deleting media file: {filename} from phone and cache...")
-                                        run_cmd(f'adb -s {device} shell "rm /data/local/tmp/aerodial_media/{filename}"')
+
+                        # 2. Media commands (work with any available device, don't need heartbeat)
+                        elif action == 'upload_media':
+                            filename = cmd_data.get('filename')
+                            print(f"[*] upload_media received for: {filename}")
+                            target_dev = device if is_connected else (get_connected_devices() or [None])[0]
+                            if filename and target_dev:
+                                try:
+                                    queue_resp = supabase.table('media_queue').select('id,file_base64').eq('filename', filename).order('created_at', desc=True).limit(1).execute()
+                                    queue_rows = queue_resp.data or []
+                                    if not queue_rows:
+                                        print(f"⚠️ No media_queue row found for: {filename}")
+                                    else:
+                                        row = queue_rows[0]
+                                        file_base64 = row['file_base64']
+                                        import base64 as b64mod
                                         cache_dir = os.path.join(PROJECT_ROOT, "daemon", "media_cache")
+                                        os.makedirs(cache_dir, exist_ok=True)
                                         local_path = os.path.join(cache_dir, filename)
-                                        if os.path.exists(local_path):
-                                            os.remove(local_path)
-                                    except Exception as ex:
-                                        print(f"⚠️ Error deleting media file: {ex}")
+                                        if "," in file_base64:
+                                            file_base64 = file_base64.split(",", 1)[1]
+                                        raw_bytes = b64mod.b64decode(file_base64)
+                                        with open(local_path, "wb") as f:
+                                            f.write(raw_bytes)
+                                        print(f"[*] Staged file locally: {local_path} ({len(raw_bytes)} bytes)")
+                                        run_cmd(f'adb -s {target_dev} shell "mkdir -p /data/local/tmp/aerodial_media && chmod 777 /data/local/tmp/aerodial_media"')
+                                        push_result = run_cmd(f'adb -s {target_dev} push {local_path} /data/local/tmp/aerodial_media/{filename}', timeout=60)
+                                        print(f"[*] adb push result: {push_result}")
+                                        run_cmd(f'adb -s {target_dev} shell "chmod 666 /data/local/tmp/aerodial_media/{filename}"')
+                                        supabase.table('media_queue').delete().eq('id', row['id']).execute()
+                                        print(f"[✓] Media file uploaded and pushed to device: {filename}")
+                                except Exception as ex:
+                                    print(f"⚠️ Error uploading media file: {ex}")
+                                    import traceback
+                                    traceback.print_exc()
+                            elif not target_dev:
+                                print(f"⚠️ upload_media: no device available")
+                            supabase.table('system_state').update({'command': 'idle'}).eq('id', 1).execute()
+
+                        elif action == 'delete_media':
+                            filename = cmd_data.get('filename')
+                            target_dev = device if is_connected else (get_connected_devices() or [None])[0]
+                            if filename and target_dev:
+                                try:
+                                    print(f"[*] Deleting media file: {filename} from phone and cache...")
+                                    run_cmd(f'adb -s {target_dev} shell "rm /data/local/tmp/aerodial_media/{filename}"')
+                                    cache_dir = os.path.join(PROJECT_ROOT, "daemon", "media_cache")
+                                    local_path = os.path.join(cache_dir, filename)
+                                    if os.path.exists(local_path):
+                                        os.remove(local_path)
+                                except Exception as ex:
+                                    print(f"⚠️ Error deleting media file: {ex}")
+                            supabase.table('system_state').update({'command': 'idle'}).eq('id', 1).execute()
+
+                        # 3. Commands that require an active connection
+                        elif is_connected:
+                            if cmd_str == 'run_sync':
+                                success = perform_usb_sync(device)
+                                supabase.table('system_state').update({
+                                    'command': 'idle', 
+                                    'adb_status': current_status
+                                }).eq('id', 1).execute()
+                            elif cmd_str == 'sync_call_logs':
+                                print("[*] Remote Command Received: SYNC CALL LOGS FROM DEVICE...")
+                                script_path = os.path.join(PROJECT_ROOT, "scripts", "sync_recent_4days.py")
+                                env_copy = os.environ.copy()
+                                if 'VITE_SUPABASE_URL' in env_copy and 'SUPABASE_URL' not in env_copy:
+                                    env_copy['SUPABASE_URL'] = env_copy['VITE_SUPABASE_URL']
+                                if 'VITE_SUPABASE_ANON_KEY' in env_copy and 'SUPABASE_ANON_KEY' not in env_copy:
+                                    env_copy['SUPABASE_ANON_KEY'] = env_copy['VITE_SUPABASE_ANON_KEY']
+                                
+                                try:
+                                    res = subprocess.run([sys.executable, script_path], capture_output=True, text=True, env=env_copy, timeout=120)
+                                    print(f"[+] Sync script output:\n{res.stdout}\n{res.stderr}")
+                                except Exception as ex:
+                                    print(f"⚠️ Error running call logs sync script: {ex}")
+                                
+                                supabase.table('system_state').update({
+                                    'command': 'idle',
+                                    'adb_status': current_status
+                                }).eq('id', 1).execute()
+                            elif cmd_str == 'hangup':
+                                print("[*] Remote Command Received: HANGUP ALL ACTIVE CALLS...")
+                                for d in devices:
+                                    cmd_prefix = "su -c " if is_root else ""
+                                    run_cmd(f"adb -s {d} shell \"{cmd_prefix}input keyevent 6\"")
+                                supabase.table('system_state').update({'command': 'idle'}).eq('id', 1).execute()
+                            elif action == 'whatsapp':
+                                from whatsapp_handler import handle_whatsapp_json
+                                handle_whatsapp_json(device, cmd_data, run_cmd)
                                 supabase.table('system_state').update({'command': 'idle'}).eq('id', 1).execute()
                             elif action == 'truecaller_lookup':
                                 from truecaller_handler import handle_truecaller_json
