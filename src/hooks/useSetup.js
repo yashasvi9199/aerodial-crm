@@ -17,6 +17,7 @@ export function useSetup() {
   const [isTestPopupOpen, setIsTestPopupOpen] = useState(false);
   const [failsafeIndex, setFailsafeIndex] = useState(0);
   const [localSimSlot, setLocalSimSlot] = useState(null);
+  const [callingMethod, setCallingMethod] = useState(() => localStorage.getItem('aerodial_calling_method') || 'default');
 
   // Keep nowTime updated for heartbeat check
   useEffect(() => {
@@ -123,17 +124,24 @@ export function useSetup() {
     }
   }, []);
 
+  const updateCallingMethod = useCallback((method) => {
+    setCallingMethod(method);
+    localStorage.setItem('aerodial_calling_method', method);
+    writeLog('INFO', `User changed default calling method to: ${method}`);
+  }, []);
+
   // Queue a 197 test call utilizing failsafe options
-  const triggerTestCall = useCallback(async (methodIndex = 0) => {
+  const triggerTestCall = useCallback(async (methodIndex = null) => {
     try {
-      const method = FAILSAFE_METHODS[methodIndex];
-      writeLog('INFO', `Triggering 197 test call. Failsafe Method: ${method}`);
+      const activeMethod = methodIndex !== null ? FAILSAFE_METHODS[methodIndex] : (localStorage.getItem('aerodial_calling_method') || 'default');
+      const actualIndex = methodIndex !== null ? methodIndex : FAILSAFE_METHODS.indexOf(activeMethod);
+      writeLog('INFO', `Triggering 197 test call. Failsafe Method: ${activeMethod}`);
       await supabase.from('call_queue').insert([{ 
-        number: `197#${method}`, 
+        number: `197#${activeMethod}`, 
         status: 'dialing' 
       }]);
       setIsTestPopupOpen(true);
-      setFailsafeIndex(methodIndex);
+      setFailsafeIndex(actualIndex >= 0 ? actualIndex : 0);
     } catch (err) {
       writeLog('ERROR', `Failed to queue test call: ${err.message}`);
     }
@@ -209,6 +217,8 @@ export function useSetup() {
     handleTestSuccess,
     exportLogs,
     installTruecaller,
-    connectWirelessAdb
+    connectWirelessAdb,
+    callingMethod,
+    updateCallingMethod
   };
 }
