@@ -13,7 +13,7 @@ if os.path.exists(venv_python) and sys.executable != venv_python:
 # Add current folder to path to resolve local imports correctly
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from supabase import create_client
+from supabase import create_client, ClientOptions
 
 from adb_helper import (
     run_cmd,
@@ -49,7 +49,8 @@ if not SUPABASE_URL or not SUPABASE_KEY:
     print("❌ Error: Missing Supabase Environment Variables.")
     exit(1)
 
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+options = ClientOptions(postgrest_client_timeout=10)
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY, options=options)
 
 def get_image_thumbnail_base64(file_path):
     try:
