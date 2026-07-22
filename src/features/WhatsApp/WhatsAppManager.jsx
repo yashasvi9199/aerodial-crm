@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
-import { Send, MessageSquare, History, Phone, User } from 'lucide-react'
+import { Send, MessageSquare, History, Phone, User, FileText } from 'lucide-react'
 import TemplateSelector from '../../components/TemplateSelector'
 import TemplateManager from './TemplateManager'
 import { formatWhatsappText, insertFormattingTag } from '../../lib/whatsappUtils'
@@ -14,7 +14,18 @@ export default function WhatsAppManager() {
   const [isSending, setIsSending] = useState(false)
   const [logs, setLogs] = useState([])
   const [adbStatus, setAdbStatus] = useState('disconnected')
+  const [selectedMedia, setSelectedMedia] = useState('')
   const textareaRef = useRef(null)
+
+  let mediaFiles = []
+  try {
+    if (adbStatus && adbStatus.startsWith('{')) {
+      const parsed = JSON.parse(adbStatus)
+      mediaFiles = parsed.media_files || []
+    }
+  } catch (e) {
+    console.error(e)
+  }
 
   const isConnected = adbStatus.startsWith('connected')
   const isWhatsappBusinessInstalled = adbStatus.includes('whatsapp:1')
@@ -82,11 +93,21 @@ export default function WhatsAppManager() {
     setIsSending(true)
 
     try {
-      const command = JSON.stringify({ action: 'whatsapp', phone: phone.trim(), message: message.trim(), file_url: '', file_name: '' })
+      const command = JSON.stringify({ 
+        action: 'whatsapp', 
+        phone: phone.trim(), 
+        message: message.trim(), 
+        media_filename: selectedMedia || undefined
+      })
       const { error: cmdError } = await supabase.from('system_state').update({ command }).eq('id', 1)
       if (cmdError) throw cmdError
 
-      const { error: logError } = await supabase.from('whatsapp_logs').insert([{ phone_number: phone.trim(), contact_name: contactName.trim() || null, message_text: message.trim() || null, file_name: null }])
+      const { error: logError } = await supabase.from('whatsapp_logs').insert([{ 
+        phone_number: phone.trim(), 
+        contact_name: contactName.trim() || null, 
+        message_text: message.trim() || null, 
+        file_name: selectedMedia || null 
+      }])
       if (logError) throw logError
 
       alert('Message dispatch command sent!')
@@ -94,6 +115,7 @@ export default function WhatsAppManager() {
       setContactName('')
       setMessage('')
       setActiveTemplateId(null)
+      setSelectedMedia('')
     } catch (err) {
       console.error(err)
       alert(`Send failed: ${err.message}`)
@@ -159,6 +181,55 @@ export default function WhatsAppManager() {
           </div>
 
           <div>
+            <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '5px', fontWeight: 'bold' }}>ATTACH FILE (OPTIONAL)</label>
+            <select
+              value={selectedMedia}
+              onChange={(e) => setSelectedMedia(e.target.value)}
+              style={{
+                width: '100%',
+                background: 'var(--bg-input)',
+                border: '1px solid var(--border)',
+                color: 'var(--text)',
+                padding: '10px 12px',
+                borderRadius: '6px',
+                fontSize: '13.5px',
+                outline: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="">No Attachment</option>
+              {mediaFiles.map((file, idx) => (
+                <option key={idx} value={file.filename}>
+                  {file.filename} ({file.mime_type === 'application/pdf' ? 'PDF' : 'Image'})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {selectedMedia && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--bg-input)', border: '1px solid var(--border)', padding: '10px', borderRadius: '6px', marginTop: '5px' }}>
+              {(() => {
+                const file = mediaFiles.find(f => f.filename === selectedMedia)
+                if (!file) return null
+                return (
+                  <>
+                    <div style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-dark)', borderRadius: '4px', overflow: 'hidden' }}>
+                      {file.thumbnail ? (
+                        <img src={file.thumbnail} alt="Preview" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                      ) : (
+                        <FileText size={20} style={{ color: file.mime_type === 'application/pdf' ? '#ef4444' : 'var(--text-muted)' }} />
+                      )}
+                    </div>
+                    <div style={{ flexGrow: 1, fontSize: '12px', fontWeight: '600' }}>
+                      {file.filename}
+                    </div>
+                  </>
+                )
+              })()}
+            </div>
+          )}
+
+          <div>
             <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '5px', fontWeight: 'bold' }}>MESSAGE TEXT</label>
             
             {/* Formatting Toolbar */}
@@ -185,8 +256,8 @@ export default function WhatsAppManager() {
 
           <button
             type="submit"
-            disabled={isSending || !message.trim()}
-            style={{ background: '#25d366', color: '#fff', border: 'none', padding: '10px', borderRadius: '6px', fontSize: '13.5px', fontWeight: 'bold', cursor: (isSending || !message.trim()) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', opacity: (isSending || !message.trim()) ? 0.6 : 1, width: '100%', marginTop: '5px' }}
+            disabled={isSending || (!message.trim() && !selectedMedia)}
+            style={{ background: '#25d366', color: '#fff', border: 'none', padding: '10px', borderRadius: '6px', fontSize: '13.5px', fontWeight: 'bold', cursor: (isSending || (!message.trim() && !selectedMedia)) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', opacity: (isSending || (!message.trim() && !selectedMedia)) ? 0.6 : 1, width: '100%', marginTop: '5px' }}
           >
             <Send size={15} />
             {isSending ? 'Sending...' : 'Send Message'}
