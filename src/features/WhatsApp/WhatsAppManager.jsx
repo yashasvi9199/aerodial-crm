@@ -8,7 +8,7 @@ import { formatWhatsappText, insertFormattingTag } from '../../lib/whatsappUtils
 import TruecallerSection from '../../components/TruecallerSection'
 
 export default function WhatsAppManager() {
-  const { uploadMedia, deleteMedia } = useSetup();
+  const { uploadMedia, deleteMedia, uploadProgress } = useSetup();
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
@@ -313,6 +313,37 @@ export default function WhatsAppManager() {
             <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)' }}>
               Upload files directly to the device. These will be available to select as attachments in the composer.
             </p>
+
+            {uploadProgress && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px' }}>
+                  <span style={{ color: 'var(--text)', fontWeight: '600' }}>
+                    {uploadProgress.status === 'reading' && '📖 Reading file...'}
+                    {uploadProgress.status === 'uploading' && '☁️ Uploading to cloud...'}
+                    {uploadProgress.status === 'dispatching' && '📲 Pushing to device...'}
+                    {uploadProgress.status === 'done' && '✅ Upload complete!'}
+                    {uploadProgress.status === 'error' && '❌ Upload failed'}
+                  </span>
+                  <span style={{ color: 'var(--text-muted)' }}>{uploadProgress.percent}%</span>
+                </div>
+                <div style={{
+                  width: '100%',
+                  height: '6px',
+                  background: 'var(--bg-dark)',
+                  borderRadius: '3px',
+                  overflow: 'hidden'
+                }}>
+                  <div style={{
+                    width: `${uploadProgress.percent}%`,
+                    height: '100%',
+                    background: uploadProgress.status === 'error' ? '#ef4444' :
+                      uploadProgress.status === 'done' ? '#22c55e' : 'var(--accent)',
+                    borderRadius: '3px',
+                    transition: 'width 0.3s ease'
+                  }} />
+                </div>
+              </div>
+            )}
 
             {mediaFiles.length === 0 ? (
               <div style={{ padding: '20px 10px', borderRadius: '8px', background: 'var(--bg-dark)', border: '1px dashed var(--border)', textAlign: 'center', color: 'var(--text-muted)', fontSize: '12.5px' }}>
