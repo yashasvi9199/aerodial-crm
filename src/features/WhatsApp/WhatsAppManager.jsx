@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
-import { Send, MessageSquare, History, Phone, User, FileText } from 'lucide-react'
+import { Send, MessageSquare, History, Phone, User, FileText, Upload, Trash } from 'lucide-react'
+import { useSetup } from '../../hooks/useSetup'
 import TemplateSelector from '../../components/TemplateSelector'
 import TemplateManager from './TemplateManager'
 import { formatWhatsappText, insertFormattingTag } from '../../lib/whatsappUtils'
