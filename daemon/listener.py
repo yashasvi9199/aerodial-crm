@@ -302,44 +302,6 @@ def main():
                                 print(f"[+] ADB connect output: {connect_res}")
                             supabase.table('system_state').update({'command': 'idle'}).eq('id', 1).execute()
                         
-                        # 2. Commands that require an active connection
-                        elif is_connected:
-                            if cmd_str == 'run_sync':
-                                success = perform_usb_sync(device)
-                                supabase.table('system_state').update({
-                                    'command': 'idle', 
-                                    'adb_status': current_status
-                                }).eq('id', 1).execute()
-                            elif cmd_str == 'sync_call_logs':
-                                print("[*] Remote Command Received: SYNC CALL LOGS FROM DEVICE...")
-                                script_path = os.path.join(PROJECT_ROOT, "scripts", "sync_recent_4days.py")
-                                env_copy = os.environ.copy()
-                                if 'VITE_SUPABASE_URL' in env_copy and 'SUPABASE_URL' not in env_copy:
-                                    env_copy['SUPABASE_URL'] = env_copy['VITE_SUPABASE_URL']
-                                if 'VITE_SUPABASE_ANON_KEY' in env_copy and 'SUPABASE_ANON_KEY' not in env_copy:
-                                    env_copy['SUPABASE_ANON_KEY'] = env_copy['VITE_SUPABASE_ANON_KEY']
-                                
-                                try:
-                                    res = subprocess.run([sys.executable, script_path], capture_output=True, text=True, env=env_copy, timeout=120)
-                                    print(f"[+] Sync script output:\n{res.stdout}\n{res.stderr}")
-                                except Exception as ex:
-                                    print(f"⚠️ Error running call logs sync script: {ex}")
-                                
-                                supabase.table('system_state').update({
-                                    'command': 'idle',
-                                    'adb_status': current_status
-                                }).eq('id', 1).execute()
-                            elif cmd_str == 'hangup':
-                                print("[*] Remote Command Received: HANGUP ALL ACTIVE CALLS...")
-                                for d in devices:
-                                    cmd_prefix = "su -c " if is_root else ""
-                                    run_cmd(f"adb -s {d} shell \"{cmd_prefix}input keyevent 6\"")
-                                supabase.table('system_state').update({'command': 'idle'}).eq('id', 1).execute()
-                            elif action == 'whatsapp':
-                                from whatsapp_handler import handle_whatsapp_json
-                                handle_whatsapp_json(device, cmd_data, run_cmd)
-                                supabase.table('system_state').update({'command': 'idle'}).eq('id', 1).execute()
-
                         # 2. Media commands (work with any available device, don't need heartbeat)
                         elif action == 'upload_media':
                             filename = cmd_data.get('filename')
