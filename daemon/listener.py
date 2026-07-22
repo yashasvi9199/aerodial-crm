@@ -24,7 +24,10 @@ from adb_helper import (
     perform_usb_sync,
     get_sim_cards,
     get_dialer_intent_extras,
-    get_device_ip
+    get_device_ip,
+    get_default_outgoing_phone_account,
+    save_device_defaults,
+    restore_device_defaults
 )
 
 # --- SETUP SUPABASE ---
@@ -119,6 +122,7 @@ def main():
     active_call_task_id = None
     last_device_check, last_state_check, last_queue_check, last_whatsapp_sync = 0.0, 0.0, 0.0, 0.0
     last_status_sent = None
+    saved_devices_in_session = set()
 
     while True:
         try:
@@ -145,6 +149,13 @@ def main():
                 
                 # Detect incoming call details
                 call_state = get_call_state(device)
+                
+                # Auto-save defaults if connection is made using root and call is idle
+                if is_root and call_state == 0 and device not in saved_devices_in_session:
+                    defaults = get_default_outgoing_phone_account(device, is_root)
+                    save_device_defaults(device, defaults)
+                    saved_devices_in_session.add(device)
+
                 incoming_number = None
                 incoming_caller_name = None
                 if call_state == 1:  # RINGING
@@ -187,6 +198,7 @@ def main():
                 }
                 current_status = json.dumps(status_payload)
             else:
+                saved_devices_in_session.clear()
                 current_status = json.dumps({"status": "disconnected"})
             
             status_changed = (current_status != last_status_sent)
@@ -317,6 +329,8 @@ def main():
                     call_end_time = time.time()
                     duration = int(call_end_time - call_start_time)
                     print(f"[*] Call ended. Local duration: {duration}s. Syncing...")
+                    if is_root:
+                        restore_device_defaults(device, is_root)
                     time.sleep(1.5)
                     
                     latest_log = None
@@ -464,6 +478,19 @@ def main():
                         
                         run_cmd(f"adb -s {device} shell \"{cmd_prefix}am start -a android.intent.action.CALL -d tel:{clean_num}{intent_extras}\"")
                         time.sleep(1.5)
+                        
+                        # Verify if the call became active within 5 seconds; if not, restore defaults immediately
+                        call_detected = False
+                        for _ in range(10):  # 10 * 0.5s = 5s
+                            if get_call_state(device) != 0:
+                                call_detected = True
+                                break
+                            time.sleep(0.5)
+
+                        if not call_detected:
+                            print("⚠️ Outgoing call did not connect or start. Restoring SIM defaults.")
+                            if is_root:
+                                restore_device_defaults(device, is_root)
                         
             elif not is_connected and now - last_queue_check >= 1.0:
                 last_queue_check = now
