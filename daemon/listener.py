@@ -405,7 +405,7 @@ def main():
                                 supabase.table('system_state').update({'command': 'idle'}).eq('id', 1).execute()
                             elif action == 'whatsapp':
                                 from whatsapp_handler import handle_whatsapp_json
-                                handle_whatsapp_json(device, cmd_data, run_cmd)
+                                handle_whatsapp_json(device, cmd_data, run_cmd, supabase)
                                 supabase.table('system_state').update({'command': 'idle'}).eq('id', 1).execute()
                             elif action == 'truecaller_lookup':
                                 from truecaller_handler import handle_truecaller_json
