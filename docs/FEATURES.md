@@ -85,4 +85,6 @@
 - **Obfuscation & Meta Bot Bypass**: Automatically adds random spacing (at message start or newline boundaries) and italicizes a random character using WhatsApp formatting (`_ _`) to prevent spam/ban detection.
 - **Dynamic Greetings Replacement**: Auto-replaces the `{greetings}` tag in message templates with a random choice from a customizable greetings database, cycling through them one-by-one.
 - **Strict Execution Constraints**: Restricts sending to a maximum of 20 contacts per batch, 80 messages per day, and enforces a 60-minute gap between executions of batches within the same contact group.
+- **Chunked Media Upload Assembly**: Slices files in browser (1MB chunks) and uploads to temporary chunks table, allowing local python daemon to assemble large files (e.g. 40MB PDF) to device cache without Postgrest payload issues.
+- **Campaign Error Pausing**: dispatches that fail automatically pause batch campaigns, log reasons, and show pretty popups in general English to let users resolve issues and resume.
 - **Contacts View Status Synchronization**: Displays a "WA Sent" badge on contact cards within the unified "All Contacts" search directory, linking to batch, group, and dispatch timestamp info.
