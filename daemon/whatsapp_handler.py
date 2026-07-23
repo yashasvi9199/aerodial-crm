@@ -114,6 +114,11 @@ def handle_whatsapp_json(device, data, run_cmd, supabase=None):
     _execute_whatsapp(device, phone, message, run_cmd, media_filename, supabase)
 
 def _execute_whatsapp(device, phone, message, run_cmd, media_filename=None, supabase=None):
+    """
+    Why: Core WhatsApp ADB dispatch. Uses api.whatsapp.com deeplink for text-only
+    or ACTION_SEND for media. Polls uiautomator XML for send button, then taps.
+    Reports progress milestones to system_state.whatsapp_progress for the frontend.
+    """
     def report(status):
         if supabase:
             try:
@@ -123,43 +128,58 @@ def _execute_whatsapp(device, phone, message, run_cmd, media_filename=None, supa
 
     try:
         report("ran_script")
+
+        if not phone or not phone.strip():
+            raise ValueError("Phone number is empty or missing")
+
         clean_num = re.sub(r'\D', '', phone)
+        if not clean_num:
+            raise ValueError(f"Phone number '{phone}' contains no digits")
         if not clean_num.startswith('91') and len(clean_num) == 10:
             clean_num = '91' + clean_num
-            
+
+        # Detect installed WhatsApp package
         pkg = "com.whatsapp"
         pkg_check = run_cmd(f"adb -s {device} shell \"pm list packages com.whatsapp.w4b\"")
         if "com.whatsapp.w4b" in pkg_check:
             pkg = "com.whatsapp.w4b"
-            
+        
+        print(f"[*] Using WhatsApp package: {pkg}")
+
         if media_filename:
             print(f"[*] WhatsApp media dispatch. File: {media_filename} -> {clean_num}...")
             ext = os.path.splitext(media_filename)[1].lower()
             mime_type = "application/pdf" if ext == ".pdf" else "image/*"
             extra_text = f"-e android.intent.extra.TEXT \"{message}\"" if message else ""
             cmd = f"adb -s {device} shell \"am start -a android.intent.action.SEND -t {mime_type} -e jid {clean_num}@s.whatsapp.net --eu android.intent.extra.STREAM file:///data/local/tmp/aerodial_media/\\\"{media_filename}\\\" {extra_text} -p {pkg}\""
-            run_cmd(cmd)
+            result = run_cmd(cmd)
+            print(f"[*] am start (media) result: {result}")
         else:
             print(f"[*] WhatsApp text. Prefilling chat: {clean_num}...")
             url = f"https://api.whatsapp.com/send?phone={clean_num}&text={urllib.parse.quote(message)}"
-            run_cmd(f"adb -s {device} shell \"am start -a android.intent.action.VIEW -d '{url}' -p {pkg}\"")
-        
+            result = run_cmd(f"adb -s {device} shell \"am start -a android.intent.action.VIEW -d '{url}' {pkg}\"")
+            print(f"[*] am start (text) result: {result}")
+
+        if result and "Error" in result:
+            raise RuntimeError(f"am start failed: {result}")
+
         report("opened_whatsapp")
-        time.sleep(1.5)
+        time.sleep(2.0)
         report("types_draft")
-        
-        # Wait for WhatsApp and keyboard to fully load, polling for send button
+
+        # Poll for send button in WhatsApp UI
         send_btn_coords = None
-        for attempt in range(5):
-            time.sleep(1.0)
-            print(f"[*] Polling for send button (attempt {attempt + 1}/5)...")
-            
-            run_cmd(f"adb -s {device} shell uiautomator dump /sdcard/w_dump.xml", timeout=6)
-            
-            temp_path = "daemon/w_dump.xml"
-            run_cmd(f"adb -s {device} pull /sdcard/w_dump.xml {temp_path}", timeout=6)
+        last_xml = ""
+        for attempt in range(6):
+            time.sleep(1.2)
+            print(f"[*] Polling for send button (attempt {attempt + 1}/6)...")
+
+            run_cmd(f"adb -s {device} shell uiautomator dump /sdcard/w_dump.xml", timeout=8)
+
+            temp_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "w_dump.xml")
+            run_cmd(f"adb -s {device} pull /sdcard/w_dump.xml {temp_path}", timeout=8)
             run_cmd(f"adb -s {device} shell rm /sdcard/w_dump.xml", timeout=4)
-            
+
             xml = ""
             if os.path.exists(temp_path):
                 try:
@@ -168,14 +188,16 @@ def _execute_whatsapp(device, phone, message, run_cmd, media_filename=None, supa
                     os.remove(temp_path)
                 except Exception as file_ex:
                     print(f"⚠️ Error reading pulled XML dump: {file_ex}")
-            
-            # Check for send button
+
+            last_xml = xml
+
+            # Check for send button by resource-id
             m = re.search(r'resource-id="[^"]*id/send"[^>]*bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', xml)
             if m:
                 x1, y1, x2, y2 = int(m.group(1)), int(m.group(2)), int(m.group(3)), int(m.group(4))
                 send_btn_coords = ((x1 + x2) // 2, (y1 + y2) // 2)
                 break
-        
+
         if send_btn_coords:
             cx, cy = send_btn_coords
             print(f"[*] Send button found at ({cx}, {cy}). Tapping EXACTLY ONCE...")
@@ -184,6 +206,10 @@ def _execute_whatsapp(device, phone, message, run_cmd, media_filename=None, supa
             time.sleep(1.5)
             report("verified")
         else:
+            # Check if WhatsApp even opened by looking for its package in the XML
+            if pkg not in last_xml and "whatsapp" not in last_xml.lower():
+                raise RuntimeError(f"WhatsApp ({pkg}) did not open. Check device screen and ADB connection.")
+
             print("⚠️ Send button not detected in UI dump. Attempting fallback tap / keyevent...")
             report("sent")
             size_out = run_cmd(f"adb -s {device} shell wm size")
@@ -203,3 +229,4 @@ def _execute_whatsapp(device, phone, message, run_cmd, media_filename=None, supa
         print(f"⚠️ WhatsApp error: {ex}")
         report(f"error:{str(ex)}")
         raise ex
+
