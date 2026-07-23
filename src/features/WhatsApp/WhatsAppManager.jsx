@@ -503,6 +503,7 @@ export default function WhatsAppManager() {
             </div>
           )}
         </div>
+      </div>
       )}
 
       {subTab === 'groups' && (
