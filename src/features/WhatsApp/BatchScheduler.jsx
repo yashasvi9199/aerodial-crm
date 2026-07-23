@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { Calendar, Plus, Play, Trash, Loader2, AlertCircle } from 'lucide-react'
+import { Calendar, Plus, Play, Trash, Loader2 } from 'lucide-react'
 import { validateBatchSchedulingGap } from './bulkValidation'
 
 export default function BatchScheduler({ selectedGroupId, mediaFiles }) {
@@ -54,6 +54,7 @@ export default function BatchScheduler({ selectedGroupId, mediaFiles }) {
     }
   }
 
+  /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
   useEffect(() => {
     if (selectedGroupId) {
       fetchBatches()
@@ -73,6 +74,7 @@ export default function BatchScheduler({ selectedGroupId, mediaFiles }) {
     const autoSelect = availableContacts.slice(0, 20).map(c => c.phone_number)
     setSelectedContactPhones(autoSelect)
   }, [groupContacts, alreadyBatchPhones])
+  /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 
   const handleSchedule = async (e) => {
     e.preventDefault()
