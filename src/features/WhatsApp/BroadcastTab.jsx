@@ -19,6 +19,7 @@ export default function BroadcastTab() {
   // Error Popup Modal State
   const [activeError, setActiveError] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [uiDebug, setUiDebug] = useState(false)
 
   const fetchGroups = async () => {
     try {
@@ -124,7 +125,8 @@ export default function BroadcastTab() {
         .update({
           scheduled_at: scheduledAtIso,
           status: 'pending',
-          next_send_at: scheduledAtIso
+          next_send_at: scheduledAtIso,
+          ui_debug: uiDebug
         })
         .in('id', selectedBatchIds)
 
@@ -276,6 +278,20 @@ export default function BroadcastTab() {
           />
         </div>
 
+        {/* UI Debug Mode */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: '6px' }}>
+          <input
+            type="checkbox"
+            id="broadcastUiDebugCheckbox"
+            checked={uiDebug}
+            onChange={(e) => setUiDebug(e.target.checked)}
+            style={{ cursor: 'pointer' }}
+          />
+          <label htmlFor="broadcastUiDebugCheckbox" style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text)', cursor: 'pointer' }}>
+            🐛 Enable UI Debug Mode (Step Confirmation)
+          </label>
+        </div>
+
         <button
           type="submit"
           disabled={loading || !selectedGroupId || selectedBatchIds.length === 0 || !dateVal || !timeVal}
@@ -333,6 +349,108 @@ export default function BroadcastTab() {
         </div>
       )}
 
+      {/* Broadcast UI Debug confirmation modal overlay */}
+      {(() => {
+        // Find if any campaign has ui_debug=true and any contacts have whatsapp_progress as a blocked step status in system_state
+        const activeProcessingCampaign = campaigns.find(c => c.status === 'processing' && c.ui_debug)
+        if (!activeProcessingCampaign) return null
+
+        // Check if global system_state indicates we are waiting for a step confirmation
+        return (
+          <CampaignDebugOverlay activeCampaign={activeProcessingCampaign} />
+        )
+      })()}
+
+    </div>
+  )
+}
+
+function CampaignDebugOverlay({ activeCampaign }) {
+  const [systemState, setSystemState] = useState(null)
+
+  useEffect(() => {
+    const fetchState = async () => {
+      const { data } = await supabase.from('system_state').select('*').eq('id', 1).single()
+      if (data) setSystemState(data)
+    }
+    fetchState()
+
+    const channel = supabase.channel('broadcast_ui_debug_listener').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'system_state' }, (payload) => {
+      setSystemState(payload.new)
+    }).subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [])
+
+  if (!systemState) return null
+
+  const steps = ['ran_script', 'opened_whatsapp', 'types_draft', 'sent', 'verified']
+  const waitingStep = steps.find(s => systemState[`confirm_${s}`] === 'waiting')
+  if (!waitingStep) return null
+
+  const stepLabels = {
+    ran_script: 'Run Script',
+    opened_whatsapp: 'Open WhatsApp',
+    types_draft: 'Type Draft message',
+    sent: 'Send Message Click',
+    verified: 'Verification check'
+  }
+
+  // Find currently processing contact
+  const currentContact = activeCampaign.whatsapp_bulk_batch_contacts?.find(con => con.status === 'pending') || { name: 'Unknown Contact', phone_number: 'N/A' }
+
+  return (
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3000, padding: '16px' }}>
+      <div style={{ background: 'var(--bg-panel)', border: '2px solid var(--accent)', borderRadius: '12px', width: '100%', maxWidth: '460px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--accent)' }}>
+          <AlertTriangle size={24} />
+          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '800' }}>Broadcast UI Debug: {activeCampaign.name}</h3>
+        </div>
+
+        <div style={{ fontSize: '13px', color: 'var(--text)', lineHeight: '1.5' }}>
+          <p style={{ margin: '0 0 10px 0' }}>
+            Currently sending message to: <strong>{currentContact.name} ({currentContact.phone_number})</strong>
+          </p>
+          <div style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', padding: '12px', borderRadius: '6px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 'bold' }}>WAITING STEP:</span>
+            <strong style={{ color: 'var(--accent)', fontSize: '14px' }}>{stepLabels[waitingStep]}</strong>
+          </div>
+          <p style={{ marginTop: '12px', marginBottom: 0, fontSize: '12.5px', color: 'var(--text-muted)' }}>
+            Please check the physical device screen. Did the current step execute successfully?
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', gap: '10px', marginTop: '4px' }}>
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                await supabase.from('system_state').update({ [`confirm_${waitingStep}`]: 'success' }).eq('id', 1)
+              } catch (e) {
+                alert('Confirmation failed: ' + e.message)
+              }
+            }}
+            style={{ flex: 1, background: '#22c55e', color: '#000', border: 'none', padding: '10px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}
+          >
+            ✅ Success (Proceed)
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                await supabase.from('system_state').update({ [`confirm_${waitingStep}`]: 'failure' }).eq('id', 1)
+              } catch (e) {
+                alert('Rejection failed: ' + e.message)
+              }
+            }}
+            style={{ flex: 1, background: '#ef4444', color: '#fff', border: 'none', padding: '10px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}
+          >
+            ❌ Fail Step (Pause)
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

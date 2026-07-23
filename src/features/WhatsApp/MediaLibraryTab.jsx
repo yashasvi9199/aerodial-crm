@@ -1,4 +1,5 @@
 import { FileText, Upload, Trash, Image as ImageIcon } from 'lucide-react'
+import { supabase } from '../../lib/supabase'
 
 export default function MediaLibraryTab({ mediaFiles, isConnected, uploadMedia, deleteMedia, uploadProgress }) {
   const handleFileChange = (e) => {
@@ -30,28 +31,55 @@ export default function MediaLibraryTab({ mediaFiles, isConnected, uploadMedia, 
             Upload files to the local device cache. Slices files into 1MB chunks to bypass size limits.
           </p>
         </div>
-        <label style={{
-          background: isConnected ? 'var(--accent)' : 'var(--border)',
-          color: '#000000',
-          padding: '8px 16px',
-          borderRadius: '6px',
-          fontWeight: 'bold',
-          fontSize: '12px',
-          cursor: isConnected ? 'pointer' : 'not-allowed',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          opacity: isConnected ? 1 : 0.6
-        }}>
-          <Upload size={14} /> Upload File (Images / PDF)
-          <input
-            type="file"
-            accept=".pdf,.jpg,.jpeg,.png,.webp,.gif"
-            onChange={handleFileChange}
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            onClick={async () => {
+              try {
+                const command = JSON.stringify({ action: 'sync_media' })
+                await supabase.from('system_state').update({ command }).eq('id', 1)
+                alert('Media refresh command queued! Reloading cache list...')
+              } catch (e) {
+                alert('Sync trigger failed: ' + e.message)
+              }
+            }}
             disabled={!isConnected}
-            style={{ display: 'none' }}
-          />
-        </label>
+            style={{
+              background: 'var(--bg-input)',
+              border: '1px solid var(--border)',
+              color: 'var(--text)',
+              padding: '8px 16px',
+              borderRadius: '6px',
+              fontWeight: 'bold',
+              fontSize: '12px',
+              cursor: isConnected ? 'pointer' : 'not-allowed',
+              opacity: isConnected ? 1 : 0.6
+            }}
+          >
+            🔄 Refresh Cache
+          </button>
+          <label style={{
+            background: isConnected ? 'var(--accent)' : 'var(--border)',
+            color: '#000000',
+            padding: '8px 16px',
+            borderRadius: '6px',
+            fontWeight: 'bold',
+            fontSize: '12px',
+            cursor: isConnected ? 'pointer' : 'not-allowed',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            opacity: isConnected ? 1 : 0.6
+          }}>
+            <Upload size={14} /> Upload File (Images / PDF)
+            <input
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png,.webp,.gif"
+              onChange={handleFileChange}
+              disabled={!isConnected}
+              style={{ display: 'none' }}
+            />
+          </label>
+        </div>
       </div>
 
       {/* Progress Indicator */}

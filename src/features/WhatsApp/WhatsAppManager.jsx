@@ -26,6 +26,10 @@ export default function WhatsAppManager() {
   const [selectedGroupId, setSelectedGroupId] = useState('')
   const [progressStatus, setProgressStatus] = useState(null)
   const [progressError, setProgressError] = useState(null)
+  const [systemState, setSystemState] = useState(null)
+  const [debugMode, setDebugMode] = useState(() => {
+    return localStorage.getItem('whatsapp_ui_debug_mode') === 'true'
+  })
   const textareaRef = useRef(null)
 
   let isConnected = false
@@ -70,8 +74,11 @@ export default function WhatsAppManager() {
     }
     const loadState = async () => {
       try {
-        const { data } = await supabase.from('system_state').select('adb_status').eq('id', 1).single()
-        if (data && active) setAdbStatus(data.adb_status)
+        const { data } = await supabase.from('system_state').select('*').eq('id', 1).single()
+        if (data && active) {
+          setAdbStatus(data.adb_status)
+          setSystemState(data)
+        }
       } catch (err) {
         console.error('Error fetching adbStatus:', err)
       }
@@ -83,6 +90,7 @@ export default function WhatsAppManager() {
     const stateSub = supabase.channel('whatsapp_state_mgr').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'system_state' }, (p) => {
       if (active) {
         setAdbStatus(p.new.adb_status)
+        setSystemState(p.new)
         if (p.new.whatsapp_progress) {
           if (p.new.whatsapp_progress.startsWith('error:')) {
             setProgressError(p.new.whatsapp_progress.replace('error:', ''))
@@ -139,7 +147,8 @@ export default function WhatsAppManager() {
         action: 'whatsapp', 
         phone: phone.trim(), 
         message: finalMessage, 
-        media_filename: selectedMedia || undefined
+        media_filename: selectedMedia || undefined,
+        ui_debug: debugMode
       })
       const { error: cmdError } = await supabase.from('system_state').update({ 
         command,
@@ -376,6 +385,24 @@ export default function WhatsAppManager() {
                 </div>
               </div>
             )}
+            {/* UI Debug Mode toggle option */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: '6px' }}>
+              <input
+                type="checkbox"
+                id="uiDebugModeCheckbox"
+                checked={debugMode}
+                onChange={(e) => {
+                  const val = e.target.checked
+                  setDebugMode(val)
+                  localStorage.setItem('whatsapp_ui_debug_mode', String(val))
+                }}
+                style={{ cursor: 'pointer' }}
+              />
+              <label htmlFor="uiDebugModeCheckbox" style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text)', cursor: 'pointer' }}>
+                🐛 Enable UI Debug Mode (Step-by-Step Confirmation)
+              </label>
+            </div>
+
             {progressStatus && (
               <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', padding: '20px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -419,6 +446,53 @@ export default function WhatsAppManager() {
                     )
                   })}
                 </div>
+
+                {/* Step Confirmation Overlay for UI Debugging */}
+                {debugMode && systemState && ['ran_script', 'opened_whatsapp', 'types_draft', 'sent', 'verified'].some(s => systemState[`confirm_${s}`] === 'waiting') && (() => {
+                  const waitingStep = ['ran_script', 'opened_whatsapp', 'types_draft', 'sent', 'verified'].find(s => systemState[`confirm_${s}`] === 'waiting')
+                  const stepLabels = {
+                    ran_script: 'Run Script',
+                    opened_whatsapp: 'Open WhatsApp',
+                    types_draft: 'Type Draft message',
+                    sent: 'Send Message Click',
+                    verified: 'Verification check'
+                  }
+                  return (
+                    <div style={{ marginTop: '10px', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid var(--accent)', padding: '12px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <span style={{ fontSize: '11.5px', fontWeight: 'bold', color: 'var(--accent)' }}>
+                        ⚠️ UI DEBUG: Did the step [{stepLabels[waitingStep]}] succeed on device?
+                      </span>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              await supabase.from('system_state').update({ [`confirm_${waitingStep}`]: 'success' }).eq('id', 1)
+                            } catch (e) {
+                              alert('Failed to send confirmation: ' + e.message)
+                            }
+                          }}
+                          style={{ flex: 1, background: '#22c55e', color: '#000', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '11.5px', fontWeight: 'bold', cursor: 'pointer' }}
+                        >
+                          ✅ Yes, Success
+                        </button>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              await supabase.from('system_state').update({ [`confirm_${waitingStep}`]: 'failure' }).eq('id', 1)
+                            } catch (e) {
+                              alert('Failed to send rejection: ' + e.message)
+                            }
+                          }}
+                          style={{ flex: 1, background: '#ef4444', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '11.5px', fontWeight: 'bold', cursor: 'pointer' }}
+                        >
+                          ❌ No, Fail Step
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })()}
               </div>
             )}
           </div>

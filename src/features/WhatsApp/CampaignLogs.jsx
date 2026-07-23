@@ -54,6 +54,66 @@ export default function CampaignLogs({ campaigns, handleResume, handleCancel }) 
                   </div>
                 </div>
 
+                {/* Per Contact Split Progress Step-by-Step for Campaigns */}
+                {contacts.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px', borderTop: '1px solid var(--border)', paddingTop: '8px' }}>
+                    <span style={{ fontSize: '10px', fontWeight: 'bold', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Recipient Dispatch Steps:</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '160px', overflowY: 'auto' }}>
+                      {contacts.map(con => {
+                        const steps = [
+                          { id: 'ran_script', label: 'Start' },
+                          { id: 'opened_whatsapp', label: 'Open' },
+                          { id: 'types_draft', label: 'Draft' },
+                          { id: 'sent', label: 'Send' },
+                          { id: 'verified', label: 'Verified' }
+                        ]
+                        const currentStatus = con.whatsapp_progress || (con.status === 'sent' ? 'verified' : con.status === 'failed' ? 'error' : null)
+                        const activeSteps = ['ran_script', 'opened_whatsapp', 'types_draft', 'sent', 'verified']
+                        const currentIdx = activeSteps.indexOf(currentStatus)
+
+                        return (
+                          <div key={con.id} style={{ background: 'var(--bg-dark)', borderRadius: '6px', padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '10.5px' }}>
+                              <span style={{ fontWeight: '600', color: 'var(--text)' }}>{con.name || con.phone_number}</span>
+                              <span style={{ 
+                                fontSize: '9px', 
+                                fontWeight: 'bold', 
+                                color: con.status === 'sent' ? '#22c55e' : con.status === 'failed' ? '#ef4444' : 'var(--text-muted)'
+                              }}>
+                                {con.status.toUpperCase()}
+                              </span>
+                            </div>
+                            {con.status !== 'sent' && con.status !== 'failed' && currentStatus && (
+                              <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%', marginTop: '2px' }}>
+                                {steps.map((st, idx) => {
+                                  const isDone = idx <= currentIdx
+                                  return (
+                                    <div key={st.id} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                      <div style={{ 
+                                        height: '3px', 
+                                        background: isDone ? '#25d366' : 'var(--bg-input)', 
+                                        borderRadius: '2px' 
+                                      }} />
+                                      <span style={{ fontSize: '8px', color: isDone ? '#25d366' : 'var(--text-muted)', textAlign: 'center' }}>
+                                        {st.label}
+                                      </span>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            )}
+                            {con.status === 'failed' && con.error_message && (
+                              <span style={{ fontSize: '9px', color: '#ef4444', fontFamily: 'monospace' }}>
+                                Error: {con.error_message}
+                              </span>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {/* Control Actions */}
                 <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
                   {c.status === 'paused' && handleResume && (
