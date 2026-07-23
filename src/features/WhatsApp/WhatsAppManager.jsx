@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
-import { Send, MessageSquare, History, Phone, User } from 'lucide-react'
+import { Send, MessageSquare, History, Phone, User, AlertTriangle } from 'lucide-react'
 import { useSetup } from '../../hooks/useSetup'
 import TemplateSelector from '../../components/TemplateSelector'
 import TemplateManager from './TemplateManager'
@@ -24,6 +24,8 @@ export default function WhatsAppManager() {
   const [selectedMedia, setSelectedMedia] = useState('')
   const [subTab, setSubTab] = useState('composer') // 'composer' | 'media' | 'templates' | 'groups' | 'greetings' | 'broadcast'
   const [selectedGroupId, setSelectedGroupId] = useState('')
+  const [progressStatus, setProgressStatus] = useState(null)
+  const [progressError, setProgressError] = useState(null)
   const textareaRef = useRef(null)
 
   let isConnected = false
@@ -79,7 +81,22 @@ export default function WhatsAppManager() {
     
     const channel = supabase.channel('whatsapp_logs_realtime').on('postgres_changes', { event: '*', schema: 'public', table: 'whatsapp_logs' }, () => { fetchLogs() }).subscribe()
     const stateSub = supabase.channel('whatsapp_state_mgr').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'system_state' }, (p) => {
-      if (active) setAdbStatus(p.new.adb_status)
+      if (active) {
+        setAdbStatus(p.new.adb_status)
+        if (p.new.whatsapp_progress) {
+          if (p.new.whatsapp_progress.startsWith('error:')) {
+            setProgressError(p.new.whatsapp_progress.replace('error:', ''))
+            setProgressStatus(null)
+          } else {
+            setProgressStatus(p.new.whatsapp_progress)
+            if (p.new.whatsapp_progress === 'verified') {
+              setTimeout(() => {
+                setProgressStatus(null)
+              }, 4000)
+            }
+          }
+        }
+      }
     }).subscribe()
 
     return () => {
@@ -106,6 +123,8 @@ export default function WhatsAppManager() {
       return
     }
     setIsSending(true)
+    setProgressStatus('starting')
+    setProgressError(null)
 
     try {
       const command = JSON.stringify({ 
@@ -114,7 +133,10 @@ export default function WhatsAppManager() {
         message: message.trim(), 
         media_filename: selectedMedia || undefined
       })
-      const { error: cmdError } = await supabase.from('system_state').update({ command }).eq('id', 1)
+      const { error: cmdError } = await supabase.from('system_state').update({ 
+        command,
+        whatsapp_progress: 'ran_script'
+      }).eq('id', 1)
       if (cmdError) throw cmdError
 
       const { error: logError } = await supabase.from('whatsapp_logs').insert([{ 
@@ -125,7 +147,6 @@ export default function WhatsAppManager() {
       }])
       if (logError) throw logError
 
-      alert('Message dispatch command sent!')
       setPhone('')
       setContactName('')
       setMessage('')
@@ -133,7 +154,8 @@ export default function WhatsAppManager() {
       setSelectedMedia('')
     } catch (err) {
       console.error(err)
-      alert(`Send failed: ${err.message}`)
+      setProgressError(err.message)
+      setProgressStatus(null)
     } finally {
       setIsSending(false)
     }
@@ -337,7 +359,84 @@ export default function WhatsAppManager() {
                 </div>
               </div>
             )}
+            {progressStatus && (
+              <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', padding: '20px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text)' }}>
+                    📲 Dispatch Message Progress
+                  </span>
+                  <span style={{ fontSize: '10px', color: 'var(--accent)', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                    {progressStatus.replace('_', ' ')}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', gap: '4px', alignItems: 'center', width: '100%' }}>
+                  {[
+                    { id: 'ran_script', label: 'Ran Script' },
+                    { id: 'opened_whatsapp', label: 'Opened WA' },
+                    { id: 'types_draft', label: 'Typed Draft' },
+                    { id: 'sent', label: 'Sent' },
+                    { id: 'verified', label: 'Verified' }
+                  ].map((step, idx) => {
+                    const activeSteps = ['ran_script', 'opened_whatsapp', 'types_draft', 'sent', 'verified']
+                    const currentIdx = activeSteps.indexOf(progressStatus)
+                    const isDone = idx <= currentIdx
+                    
+                    return (
+                      <div key={step.id} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <div style={{ 
+                          height: '5px', 
+                          background: isDone ? '#25d366' : 'var(--bg-dark)', 
+                          borderRadius: '3px',
+                          transition: 'all 0.4s ease'
+                        }} />
+                        <span style={{ 
+                          fontSize: '9.5px', 
+                          fontWeight: isDone ? 'bold' : 'normal', 
+                          color: isDone ? '#25d366' : 'var(--text-muted)',
+                          textAlign: 'center'
+                        }}>
+                          {step.label}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
           </div>
+
+          {progressError && (
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: '16px' }}>
+              <div style={{ background: 'var(--bg-panel)', border: '2px solid #ef4444', borderRadius: '12px', width: '100%', maxWidth: '440px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#ef4444' }}>
+                  <AlertTriangle size={24} />
+                  <h3 style={{ margin: 0, fontSize: '17px', fontWeight: '800' }}>Direct Message Error</h3>
+                </div>
+
+                <div style={{ fontSize: '13.5px', color: 'var(--text)', lineHeight: '1.5' }}>
+                  <p style={{ margin: '0 0 12px 0' }}>
+                    We encountered an issue attempting to send your WhatsApp message:
+                  </p>
+                  <div style={{ background: 'var(--bg-dark)', border: '1px solid var(--border)', color: '#ef4444', padding: '10px', borderRadius: '6px', fontSize: '12px', fontFamily: 'monospace', overflowX: 'auto', whiteSpace: 'pre-wrap', marginBottom: '14px' }}>
+                    {progressError}
+                  </div>
+                  <p style={{ margin: 0, fontSize: '12.5px', color: 'var(--text-muted)' }}>
+                    Please make sure the physical device is connected, root su permissions are active, and WhatsApp is open, then try sending again.
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', justify: 'flex-end', marginTop: '4px' }}>
+                  <button
+                    onClick={() => setProgressError(null)}
+                    style={{ background: 'var(--accent)', color: '#000', border: 'none', padding: '8px 20px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}
+                  >
+                    Dismiss Error
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
         </div>
       )}
