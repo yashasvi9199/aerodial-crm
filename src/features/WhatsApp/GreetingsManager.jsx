@@ -47,6 +47,7 @@ export default function GreetingsManager() {
         .insert([{ text: newText.trim() }])
       if (error) throw error
       setNewText('')
+      fetchGreetings()
     } catch (err) {
       alert(`Failed to add greeting: ${err.message}`)
     } finally {
@@ -65,6 +66,7 @@ export default function GreetingsManager() {
       if (error) throw error
       setEditingId(null)
       setEditingText('')
+      fetchGreetings()
     } catch (err) {
       alert(`Failed to update greeting: ${err.message}`)
     } finally {
@@ -81,6 +83,7 @@ export default function GreetingsManager() {
         .delete()
         .eq('id', id)
       if (error) throw error
+      fetchGreetings()
     } catch (err) {
       alert(`Failed to delete greeting: ${err.message}`)
     } finally {
