@@ -128,6 +128,7 @@ export default function WhatsAppManager() {
     setProgressStatus('starting')
     setProgressError(null)
 
+    try {
       // Replace {name} placeholder if present in message
       let finalMessage = message.trim()
       if (contactName.trim()) {
