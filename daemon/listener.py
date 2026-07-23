@@ -137,7 +137,7 @@ def main():
     devices = []
     is_connected = False
     active_call_task_id = None
-    last_device_check, last_state_check, last_queue_check, last_whatsapp_sync = 0.0, 0.0, 0.0, 0.0
+    last_device_check, last_state_check, last_queue_check, last_whatsapp_sync, last_bulk_check = 0.0, 0.0, 0.0, 0.0, 0.0
     last_status_sent = None
     saved_devices_in_session = set()
 
@@ -420,6 +420,14 @@ def main():
                         sync_whatsapp_history(device, run_cmd, supabase)
                     except Exception as sync_ex:
                         print(f"⚠️ WhatsApp background sync error: {sync_ex}")
+
+                if now - last_bulk_check >= 5.0:
+                    last_bulk_check = now
+                    try:
+                        from whatsapp_bulk_handler import process_bulk_messaging
+                        process_bulk_messaging(device, run_cmd, supabase)
+                    except Exception as bulk_ex:
+                        print(f"⚠️ WhatsApp bulk messaging error: {bulk_ex}")
 
                 call_state = get_call_state(device)
                 if call_state != 0:
