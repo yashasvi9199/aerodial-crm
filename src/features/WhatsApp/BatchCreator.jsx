@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { Plus, Trash, Upload, Users, FileText, Paperclip } from 'lucide-react'
+import { Plus, Trash, Upload, Users, Paperclip } from 'lucide-react'
 import { validateAndNormalizePhone, isDuplicateContact, parseAndValidateCSV } from './bulkValidation'
 import ContactPickerModal from './ContactPickerModal'
 
@@ -23,11 +23,6 @@ export default function BatchCreator({ groupId, onBatchCreated, mediaFiles }) {
   // Modals / states
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [loading, setLoading] = useState(false)
-
-  useEffect(() => {
-    fetchTemplates()
-    fetchSavedPool()
-  }, [])
 
   const fetchTemplates = async () => {
     try {
@@ -53,6 +48,11 @@ export default function BatchCreator({ groupId, onBatchCreated, mediaFiles }) {
       console.error(e)
     }
   }
+
+  useEffect(() => {
+    fetchTemplates()
+    fetchSavedPool()
+  }, [])
 
   const handleTemplateSelect = (e) => {
     const val = e.target.value
