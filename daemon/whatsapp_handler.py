@@ -172,3 +172,4 @@ def _execute_whatsapp(device, phone, message, run_cmd, media_filename=None):
                 run_cmd(f"adb -s {device} shell input keyevent 66")
     except Exception as ex:
         print(f"⚠️ WhatsApp error: {ex}")
+        raise ex
