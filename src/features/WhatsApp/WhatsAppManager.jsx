@@ -6,6 +6,9 @@ import TemplateSelector from '../../components/TemplateSelector'
 import TemplateManager from './TemplateManager'
 import { formatWhatsappText, insertFormattingTag } from '../../lib/whatsappUtils'
 import TruecallerSection from '../../components/TruecallerSection'
+import GroupManager from './GroupManager'
+import BatchScheduler from './BatchScheduler'
+import GreetingsManager from './GreetingsManager'
 
 export default function WhatsAppManager() {
   const { uploadMedia, deleteMedia, uploadProgress } = useSetup();
@@ -25,6 +28,8 @@ export default function WhatsAppManager() {
   const [logs, setLogs] = useState([])
   const [adbStatus, setAdbStatus] = useState('disconnected')
   const [selectedMedia, setSelectedMedia] = useState('')
+  const [subTab, setSubTab] = useState('direct') // 'direct' | 'groups' | 'batches' | 'greetings'
+  const [selectedGroupId, setSelectedGroupId] = useState('')
   const textareaRef = useRef(null)
 
   let isConnected = false
@@ -160,13 +165,43 @@ export default function WhatsAppManager() {
         </div>
       </div>
 
+      {/* Sub tabs navigation */}
+      <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid var(--border)', paddingBottom: '10px' }}>
+        {[
+          { id: 'direct', label: 'Direct Composer' },
+          { id: 'groups', label: 'Bulk Groups' },
+          { id: 'batches', label: 'Batch Scheduler' },
+          { id: 'greetings', label: 'Greetings Library' }
+        ].map(tab => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setSubTab(tab.id)}
+            style={{
+              border: 'none',
+              background: subTab === tab.id ? 'var(--accent)' : 'var(--bg-input)',
+              color: subTab === tab.id ? '#000000' : 'var(--text)',
+              padding: '8px 16px',
+              borderRadius: '6px',
+              fontWeight: 'bold',
+              fontSize: '13px',
+              cursor: 'pointer',
+              transition: 'all 0.15s'
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       {isConnected && !isWhatsappBusinessInstalled && (
         <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '12px 16px', borderRadius: '8px', color: '#ef4444', fontSize: '13.5px', fontWeight: '600' }}>
           ⚠️ WhatsApp Business is not detected on the connected device. Message dispatching may fail or behave unexpectedly.
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', alignItems: 'start' }}>
+      {subTab === 'direct' && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', alignItems: 'start' }}>
         
         <form onSubmit={handleSend} style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', padding: '20px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <h3 style={{ margin: '0 0 5px 0', fontSize: '15px', fontWeight: '750', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -468,8 +503,19 @@ export default function WhatsAppManager() {
             </div>
           )}
         </div>
+      )}
 
-      </div>
+      {subTab === 'groups' && (
+        <GroupManager selectedGroupId={selectedGroupId} onSelectGroup={setSelectedGroupId} />
+      )}
+
+      {subTab === 'batches' && (
+        <BatchScheduler selectedGroupId={selectedGroupId} mediaFiles={mediaFiles} />
+      )}
+
+      {subTab === 'greetings' && (
+        <GreetingsManager />
+      )}
 
       <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', padding: '20px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
         <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '750', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
