@@ -26,4 +26,6 @@
 - 2026-07-22 (JSON Parser Safety): Fixed connection state and package checks in the main WhatsApp Hub to handle JSON format adbStatus payloads. Bumped version to 1.12.1.
 - 2026-07-22 (Media Upload fixes & progress): Restaged upload_media and delete_media to run as connection-independent blocks before is_connected checks to avoid silent discards. Created media_queue Supabase table to stage file base64 data to avoid Supabase Realtime size limit drops. Wrapped paths in double quotes inside daemon shell calls to support spaces in filenames. Added upload progress bar in frontend. Bumped version to 1.12.2.
 - 2026-07-23 (WhatsApp Bulk Messaging Engine): Implemented Groups, Batches, and Greetings managers on UI; added background scheduler in python daemon to process batches with randomized spacing/italics/greetings formatting and gap checks. Bumped version to 1.13.0.
+- 2026-07-23 (WhatsApp Tabs & Bug Fixes): Restructured WhatsApp hub into 6 tabs; implemented chunked uploads (1MB slices) for large files like 40MB PDF; added templates edit; added 4-batch limit; built contact picker modal popup; split date/time picker; added daemon error pausing and frontend pretty warning popup alert. Bumped version to 1.14.0.
+
 
