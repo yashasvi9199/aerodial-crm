@@ -107,20 +107,28 @@ def handle_whatsapp(device, command, run_cmd):
     message = parts[2]
     _execute_whatsapp(device, phone, message, run_cmd)
 
-def handle_whatsapp_json(device, data, run_cmd):
+def handle_whatsapp_json(device, data, run_cmd, supabase=None):
     phone = data.get('phone', '')
     message = data.get('message', '')
     media_filename = data.get('media_filename')
-    _execute_whatsapp(device, phone, message, run_cmd, media_filename)
+    _execute_whatsapp(device, phone, message, run_cmd, media_filename, supabase)
 
-def _execute_whatsapp(device, phone, message, run_cmd, media_filename=None):
+def _execute_whatsapp(device, phone, message, run_cmd, media_filename=None, supabase=None):
+    def report(status):
+        if supabase:
+            try:
+                supabase.table('system_state').update({'whatsapp_progress': status}).eq('id', 1).execute()
+            except Exception as e:
+                print(f"⚠️ Error reporting progress: {e}")
+
     try:
+        report("ran_script")
         clean_num = re.sub(r'\D', '', phone)
         if not clean_num.startswith('91') and len(clean_num) == 10:
             clean_num = '91' + clean_num
             
         pkg = "com.whatsapp"
-        pkg_check = run_cmd(f"adb -s {device} shell \"pm list packages | grep com.whatsapp.w4b\"")
+        pkg_check = run_cmd(f"adb -s {device} shell \"pm list packages com.whatsapp.w4b\"")
         if "com.whatsapp.w4b" in pkg_check:
             pkg = "com.whatsapp.w4b"
             
@@ -134,7 +142,11 @@ def _execute_whatsapp(device, phone, message, run_cmd, media_filename=None):
         else:
             print(f"[*] WhatsApp text. Prefilling chat: {clean_num}...")
             url = f"https://api.whatsapp.com/send?phone={clean_num}&text={urllib.parse.quote(message)}"
-            run_cmd(f"adb -s {device} shell \"am start -a android.intent.action.VIEW -d '{url}' {pkg}\"")
+            run_cmd(f"adb -s {device} shell \"am start -a android.intent.action.VIEW -d '{url}' -p {pkg}\"")
+        
+        report("opened_whatsapp")
+        time.sleep(1.5)
+        report("types_draft")
         
         # Wait for WhatsApp and keyboard to fully load, polling for send button
         send_btn_coords = None
@@ -143,8 +155,19 @@ def _execute_whatsapp(device, phone, message, run_cmd, media_filename=None):
             print(f"[*] Polling for send button (attempt {attempt + 1}/5)...")
             
             run_cmd(f"adb -s {device} shell uiautomator dump /sdcard/w_dump.xml", timeout=6)
-            xml = run_cmd(f"adb -s {device} shell cat /sdcard/w_dump.xml", timeout=6)
+            
+            temp_path = "daemon/w_dump.xml"
+            run_cmd(f"adb -s {device} pull /sdcard/w_dump.xml {temp_path}", timeout=6)
             run_cmd(f"adb -s {device} shell rm /sdcard/w_dump.xml", timeout=4)
+            
+            xml = ""
+            if os.path.exists(temp_path):
+                try:
+                    with open(temp_path, "r", encoding="utf-8", errors="ignore") as f:
+                        xml = f.read()
+                    os.remove(temp_path)
+                except Exception as file_ex:
+                    print(f"⚠️ Error reading pulled XML dump: {file_ex}")
             
             # Check for send button
             m = re.search(r'resource-id="[^"]*id/send"[^>]*bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', xml)
@@ -156,9 +179,13 @@ def _execute_whatsapp(device, phone, message, run_cmd, media_filename=None):
         if send_btn_coords:
             cx, cy = send_btn_coords
             print(f"[*] Send button found at ({cx}, {cy}). Tapping EXACTLY ONCE...")
+            report("sent")
             run_cmd(f"adb -s {device} shell input tap {cx} {cy}")
+            time.sleep(1.5)
+            report("verified")
         else:
             print("⚠️ Send button not detected in UI dump. Attempting fallback tap / keyevent...")
+            report("sent")
             size_out = run_cmd(f"adb -s {device} shell wm size")
             size_match = re.search(r'(\d+)x(\d+)', size_out)
             if size_match:
@@ -170,6 +197,9 @@ def _execute_whatsapp(device, phone, message, run_cmd, media_filename=None):
                 run_cmd(f"adb -s {device} shell input keyevent 22")
                 time.sleep(0.2)
                 run_cmd(f"adb -s {device} shell input keyevent 66")
+            time.sleep(1.5)
+            report("verified")
     except Exception as ex:
         print(f"⚠️ WhatsApp error: {ex}")
+        report(f"error:{str(ex)}")
         raise ex
