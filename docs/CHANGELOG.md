@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.13.0] - 2026-07-23
+### Added
+- Implemented WhatsApp Bulk Messaging scheduler and manager features.
+- Created `GroupManager` UI for creating contact groups, importing saved contacts, uploading CSV files, and staging manual type-in numbers.
+- Created `BatchScheduler` UI for batching contacts (up to 20 per batch), choosing template text with `{greetings}` tags, selecting media attachments, and scheduling sending times.
+- Enforced a 60-minute gap constraint between batch executions in the same group and an 80-message daily rate limit.
+- Created `GreetingsManager` UI for adding, editing, and deleting randomized message greetings.
+- Integrated background scheduler in Python daemon (`whatsapp_bulk_handler.py`) to process pending batches with randomized message formatting (spacing obfuscations, single-character italics).
+- Linked All Contacts search cards to display a "WA Sent" badge detailing recent bulk history details.
+
 ## [1.12.2] - 2026-07-22
 ### Fixed
 - Fixed command processing order in the Python daemon to ensure `upload_media` and `delete_media` are parsed before the `is_connected` block is matched.
