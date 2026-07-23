@@ -324,7 +324,7 @@ CREATE TABLE IF NOT EXISTS public.whatsapp_bulk_batches (
     name text NOT NULL,
     message_template text NOT NULL,
     status text DEFAULT 'pending' NOT NULL, -- 'pending', 'processing', 'completed', 'paused', 'failed'
-    scheduled_at timestamp with time zone NOT NULL,
+    scheduled_at timestamp with time zone,
     next_send_at timestamp with time zone,
     last_sent_index integer DEFAULT 0 NOT NULL,
     media_filename text,
