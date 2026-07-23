@@ -1,24 +1,18 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
-import { Send, MessageSquare, History, Phone, User, FileText, Upload, Trash } from 'lucide-react'
+import { Send, MessageSquare, History, Phone, User } from 'lucide-react'
 import { useSetup } from '../../hooks/useSetup'
 import TemplateSelector from '../../components/TemplateSelector'
 import TemplateManager from './TemplateManager'
+import MediaLibraryTab from './MediaLibraryTab'
+import GroupManager from './GroupManager'
+import GreetingsManager from './GreetingsManager'
+import BroadcastTab from './BroadcastTab'
 import { formatWhatsappText, insertFormattingTag } from '../../lib/whatsappUtils'
 import TruecallerSection from '../../components/TruecallerSection'
-import GroupManager from './GroupManager'
-import BatchScheduler from './BatchScheduler'
-import GreetingsManager from './GreetingsManager'
 
 export default function WhatsAppManager() {
-  const { uploadMedia, deleteMedia, uploadProgress } = useSetup();
-
-  const handleFileChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      uploadMedia(file);
-    }
-  };
+  const { uploadMedia, deleteMedia, uploadProgress } = useSetup()
 
   const [phone, setPhone] = useState('')
   const [contactName, setContactName] = useState('')
@@ -28,7 +22,7 @@ export default function WhatsAppManager() {
   const [logs, setLogs] = useState([])
   const [adbStatus, setAdbStatus] = useState('disconnected')
   const [selectedMedia, setSelectedMedia] = useState('')
-  const [subTab, setSubTab] = useState('direct') // 'direct' | 'groups' | 'batches' | 'greetings'
+  const [subTab, setSubTab] = useState('composer') // 'composer' | 'media' | 'templates' | 'groups' | 'greetings' | 'broadcast'
   const [selectedGroupId, setSelectedGroupId] = useState('')
   const textareaRef = useRef(null)
 
@@ -61,6 +55,7 @@ export default function WhatsAppManager() {
     }
   }
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     let active = true
     const loadLogs = async () => {
@@ -94,6 +89,7 @@ export default function WhatsAppManager() {
       supabase.removeChannel(stateSub)
     }
   }, [])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleSelectTemplate = (tpl) => {
     if (!tpl) {
@@ -161,17 +157,19 @@ export default function WhatsAppManager() {
         <MessageSquare size={24} style={{ color: 'var(--accent)' }} />
         <div>
           <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '700', color: 'var(--text)' }}>WhatsApp Business Hub</h2>
-          <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: 'var(--text-muted)' }}>Compose direct messages, manage templates, and view history.</p>
+          <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: 'var(--text-muted)' }}>Compose direct messages, manage templates, and run bulk campaigns.</p>
         </div>
       </div>
 
       {/* Sub tabs navigation */}
-      <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid var(--border)', paddingBottom: '10px' }}>
+      <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid var(--border)', paddingBottom: '10px', flexWrap: 'wrap' }}>
         {[
-          { id: 'direct', label: 'Direct Composer' },
-          { id: 'groups', label: 'Bulk Groups' },
-          { id: 'batches', label: 'Batch Scheduler' },
-          { id: 'greetings', label: 'Greetings Library' }
+          { id: 'composer', label: 'Composer' },
+          { id: 'media', label: 'Media Library' },
+          { id: 'templates', label: 'Template' },
+          { id: 'groups', label: 'Groups' },
+          { id: 'greetings', label: 'Greetings' },
+          { id: 'broadcast', label: 'Broadcast' }
         ].map(tab => (
           <button
             key={tab.id}
@@ -200,324 +198,183 @@ export default function WhatsAppManager() {
         </div>
       )}
 
-      {subTab === 'direct' && (
+      {/* Tab Contents */}
+      {subTab === 'composer' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', alignItems: 'start' }}>
-        
-        <form onSubmit={handleSend} style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', padding: '20px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <h3 style={{ margin: '0 0 5px 0', fontSize: '15px', fontWeight: '750', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Send size={16} style={{ color: 'var(--accent)' }} /> Direct Message Composer
-          </h3>
+          
+          <form onSubmit={handleSend} style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', padding: '20px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <h3 style={{ margin: '0 0 5px 0', fontSize: '15px', fontWeight: '750', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Send size={16} style={{ color: 'var(--accent)' }} /> Direct Message Composer
+            </h3>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '5px', fontWeight: 'bold' }}>RECIPIENT PHONE *</label>
-              <div style={{ display: 'flex', position: 'relative', alignItems: 'center' }}>
-                <Phone size={14} style={{ position: 'absolute', left: '10px', color: 'var(--text-muted)' }} />
-                <input type="text" required placeholder="e.g. 98280XXXXX" value={phone} onChange={(e) => setPhone(e.target.value)} style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 10px 10px 32px', borderRadius: '6px', fontSize: '13.5px', outline: 'none' }} />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '5px', fontWeight: 'bold' }}>RECIPIENT PHONE *</label>
+                <div style={{ display: 'flex', position: 'relative', alignItems: 'center' }}>
+                  <Phone size={14} style={{ position: 'absolute', left: '10px', color: 'var(--text-muted)' }} />
+                  <input type="text" required placeholder="e.g. 98280XXXXX" value={phone} onChange={(e) => setPhone(e.target.value)} style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 10px 10px 32px', borderRadius: '6px', fontSize: '13.5px', outline: 'none' }} />
+                </div>
+                <TruecallerSection phone={phone} />
               </div>
-              <TruecallerSection phone={phone} />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '5px', fontWeight: 'bold' }}>RECIPIENT NAME</label>
-              <div style={{ display: 'flex', position: 'relative', alignItems: 'center' }}>
-                <User size={14} style={{ position: 'absolute', left: '10px', color: 'var(--text-muted)' }} />
-                <input type="text" placeholder="e.g. John Doe" value={contactName} onChange={(e) => setContactName(e.target.value)} style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 10px 10px 32px', borderRadius: '6px', fontSize: '13.5px', outline: 'none' }} />
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '5px', fontWeight: 'bold' }}>CHOOSE A TEMPLATE</label>
-            <TemplateSelector onSelect={handleSelectTemplate} contactName={contactName} activeTemplateId={activeTemplateId} />
-          </div>
-
-          <div>
-            <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '5px', fontWeight: 'bold' }}>ATTACH FILE (OPTIONAL)</label>
-            <select
-              value={selectedMedia}
-              onChange={(e) => setSelectedMedia(e.target.value)}
-              style={{
-                width: '100%',
-                background: 'var(--bg-input)',
-                border: '1px solid var(--border)',
-                color: 'var(--text)',
-                padding: '10px 12px',
-                borderRadius: '6px',
-                fontSize: '13.5px',
-                outline: 'none',
-                cursor: 'pointer'
-              }}
-            >
-              <option value="">No Attachment</option>
-              {mediaFiles.map((file, idx) => (
-                <option key={idx} value={file.filename}>
-                  {file.filename} ({file.mime_type === 'application/pdf' ? 'PDF' : 'Image'})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {selectedMedia && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--bg-input)', border: '1px solid var(--border)', padding: '10px', borderRadius: '6px', marginTop: '5px' }}>
-              {(() => {
-                const file = mediaFiles.find(f => f.filename === selectedMedia)
-                if (!file) return null
-                return (
-                  <>
-                    <div style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-dark)', borderRadius: '4px', overflow: 'hidden' }}>
-                      {file.thumbnail ? (
-                        <img src={file.thumbnail} alt="Preview" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
-                      ) : (
-                        <FileText size={20} style={{ color: file.mime_type === 'application/pdf' ? '#ef4444' : 'var(--text-muted)' }} />
-                      )}
-                    </div>
-                    <div style={{ flexGrow: 1, fontSize: '12px', fontWeight: '600' }}>
-                      {file.filename}
-                    </div>
-                  </>
-                )
-              })()}
-            </div>
-          )}
-
-          <div>
-            <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '5px', fontWeight: 'bold' }}>MESSAGE TEXT</label>
-            
-            {/* Formatting Toolbar */}
-            <div style={{ display: 'flex', gap: '5px', marginBottom: '6px', flexWrap: 'wrap' }}>
-              {formattingTools.map(tool => (
-                <button key={tool.type} type="button" onClick={() => insertFormattingTag(textareaRef, message, setMessage, tool.type)} style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: '11px', fontWeight: '600', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', transition: 'all 0.15s', ...tool.style }}>{tool.label}</button>
-              ))}
-            </div>
-
-            <textarea ref={textareaRef} placeholder="Type message body here..." value={message} onChange={(e) => setMessage(e.target.value)} style={{ width: '100%', height: '100px', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px', borderRadius: '6px', fontSize: '13px', outline: 'none', resize: 'vertical', fontFamily: 'inherit' }} />
-          </div>
-
-          {/* Live Preview */}
-          {message.trim() && (
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: 'bold' }}>MESSAGE PREVIEW</label>
-              <div style={{ background: 'var(--bg-input)', backgroundImage: 'radial-gradient(var(--border) 0.8px, transparent 0)', backgroundSize: '12px 12px', padding: '12px', borderRadius: '6px', border: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end' }}>
-                <div style={{ backgroundColor: 'rgba(37, 211, 102, 0.15)', color: 'var(--text)', border: '1px solid rgba(37, 211, 102, 0.25)', padding: '6px 10px', borderRadius: '8px', maxWidth: '85%', fontSize: '12.5px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-                  <div dangerouslySetInnerHTML={{ __html: formatWhatsappText(message) }} style={{ wordBreak: 'break-word' }} />
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '5px', fontWeight: 'bold' }}>RECIPIENT NAME (OPTIONAL)</label>
+                <div style={{ display: 'flex', position: 'relative', alignItems: 'center' }}>
+                  <User size={14} style={{ position: 'absolute', left: '10px', color: 'var(--text-muted)' }} />
+                  <input type="text" placeholder="e.g. John Doe" value={contactName} onChange={(e) => setContactName(e.target.value)} style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 10px 10px 32px', borderRadius: '6px', fontSize: '13.5px', outline: 'none' }} />
                 </div>
               </div>
             </div>
-          )}
 
-          <button
-            type="submit"
-            disabled={isSending || (!message.trim() && !selectedMedia)}
-            style={{ background: '#25d366', color: '#fff', border: 'none', padding: '10px', borderRadius: '6px', fontSize: '13.5px', fontWeight: 'bold', cursor: (isSending || (!message.trim() && !selectedMedia)) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', opacity: (isSending || (!message.trim() && !selectedMedia)) ? 0.6 : 1, width: '100%', marginTop: '5px' }}
-          >
-            <Send size={15} />
-            {isSending ? 'Sending...' : 'Send Message'}
-          </button>
-        </form>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {/* WhatsApp Media Library Panel */}
-          <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', padding: '20px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '750', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <FileText size={16} style={{ color: 'var(--accent)' }} /> WhatsApp Media Library
-              </h3>
-              <label style={{
-                background: isConnected ? 'var(--accent)' : 'var(--border)',
-                color: '#000000',
-                padding: '6px 12px',
-                borderRadius: '6px',
-                fontWeight: 'bold',
-                fontSize: '11px',
-                cursor: isConnected ? 'pointer' : 'not-allowed',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px'
-              }}>
-                <Upload size={12} /> Upload File
-                <input
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png,.webp,.gif"
-                  onChange={handleFileChange}
-                  disabled={!isConnected}
-                  style={{ display: 'none' }}
-                />
-              </label>
+            <div>
+              <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '5px', fontWeight: 'bold' }}>APPLY TEMPLATE (OPTIONAL)</label>
+              <TemplateSelector onSelect={handleSelectTemplate} activeTemplateId={activeTemplateId} />
             </div>
-            
-            <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)' }}>
-              Upload files directly to the device. These will be available to select as attachments in the composer.
-            </p>
 
-            {uploadProgress && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px' }}>
-                  <span style={{ color: 'var(--text)', fontWeight: '600' }}>
-                    {uploadProgress.status === 'reading' && '📖 Reading file...'}
-                    {uploadProgress.status === 'uploading' && '☁️ Uploading to cloud...'}
-                    {uploadProgress.status === 'dispatching' && '📲 Pushing to device...'}
-                    {uploadProgress.status === 'done' && '✅ Upload complete!'}
-                    {uploadProgress.status === 'error' && '❌ Upload failed'}
-                  </span>
-                  <span style={{ color: 'var(--text-muted)' }}>{uploadProgress.percent}%</span>
-                </div>
-                <div style={{
-                  width: '100%',
-                  height: '6px',
-                  background: 'var(--bg-dark)',
-                  borderRadius: '3px',
-                  overflow: 'hidden'
-                }}>
-                  <div style={{
-                    width: `${uploadProgress.percent}%`,
-                    height: '100%',
-                    background: uploadProgress.status === 'error' ? '#ef4444' :
-                      uploadProgress.status === 'done' ? '#22c55e' : 'var(--accent)',
-                    borderRadius: '3px',
-                    transition: 'width 0.3s ease'
-                  }} />
-                </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '5px', fontWeight: 'bold' }}>ATTACH MEDIA FILE (OPTIONAL)</label>
+              <select
+                value={selectedMedia}
+                onChange={(e) => setSelectedMedia(e.target.value)}
+                style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: '6px', fontSize: '13.5px', outline: 'none', cursor: 'pointer' }}
+              >
+                <option value="">No Attachment</option>
+                {mediaFiles.map((file, idx) => (
+                  <option key={idx} value={file.filename}>
+                    {file.filename} ({file.mime_type === 'application/pdf' ? 'PDF' : 'Image'})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {selectedMedia && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--bg-input)', border: '1px solid var(--border)', padding: '10px', borderRadius: '6px', marginTop: '5px' }}>
+                {(() => {
+                  const file = mediaFiles.find(f => f.filename === selectedMedia)
+                  if (!file) return null
+                  return (
+                    <>
+                      <div style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-dark)', borderRadius: '4px', overflow: 'hidden' }}>
+                        {file.thumbnail ? (
+                          <img src={file.thumbnail} alt="Preview" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                        ) : (
+                          <User size={20} style={{ color: 'var(--text-muted)' }} />
+                        )}
+                      </div>
+                      <div style={{ flexGrow: 1, fontSize: '12px', fontWeight: '600' }}>
+                        {file.filename}
+                      </div>
+                    </>
+                  )
+                })()}
               </div>
             )}
 
-            {mediaFiles.length === 0 ? (
-              <div style={{ padding: '20px 10px', borderRadius: '8px', background: 'var(--bg-dark)', border: '1px dashed var(--border)', textAlign: 'center', color: 'var(--text-muted)', fontSize: '12.5px' }}>
-                No media files found on the device.
-              </div>
-            ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '10px' }}>
-                {mediaFiles.map((file, idx) => (
-                  <div 
-                    key={idx} 
-                    style={{
-                      background: 'var(--bg-input)',
-                      border: '1px solid var(--border)',
-                      borderRadius: '8px',
-                      padding: '8px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      position: 'relative',
-                      overflow: 'hidden'
-                    }}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => deleteMedia(file.filename)}
-                      style={{
-                        position: 'absolute',
-                        top: '4px',
-                        right: '4px',
-                        background: 'rgba(239, 68, 68, 0.85)',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: '3px',
-                        width: '18px',
-                        height: '18px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer',
-                        zIndex: 10
-                      }}
-                      title="Remove from device"
-                    >
-                      <Trash size={10} />
-                    </button>
-
-                    <div style={{
-                      width: '100%',
-                      height: '60px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      background: 'var(--bg-dark)',
-                      borderRadius: '4px',
-                      marginBottom: '6px',
-                      overflow: 'hidden'
-                    }}>
-                      {file.thumbnail ? (
-                        <img 
-                          src={file.thumbnail} 
-                          alt={file.filename} 
-                          style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
-                        />
-                      ) : (
-                        <FileText size={24} style={{ color: file.mime_type === 'application/pdf' ? '#ef4444' : 'var(--text-muted)' }} />
-                      )}
-                    </div>
-
-                    <div style={{
-                      width: '100%',
-                      fontSize: '10px',
-                      fontWeight: '600',
-                      color: 'var(--text)',
-                      textAlign: 'center',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis'
-                    }} title={file.filename}>
-                      {file.filename}
-                    </div>
-                  </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '5px', fontWeight: 'bold' }}>MESSAGE TEXT</label>
+              <div style={{ display: 'flex', gap: '5px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                {formattingTools.map(tool => (
+                  <button key={tool.type} type="button" onClick={() => insertFormattingTag(textareaRef, message, setMessage, tool.type)} style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: '11px', fontWeight: '600', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', transition: 'all 0.15s', ...tool.style }}>{tool.label}</button>
                 ))}
               </div>
+              <textarea ref={textareaRef} placeholder="Type message body here..." value={message} onChange={(e) => setMessage(e.target.value)} style={{ width: '100%', height: '100px', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px', borderRadius: '6px', fontSize: '13px', outline: 'none', resize: 'vertical', fontFamily: 'inherit' }} />
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSending || (!message.trim() && !selectedMedia)}
+              style={{ background: '#25d366', color: '#fff', border: 'none', padding: '10px', borderRadius: '6px', fontSize: '13.5px', fontWeight: 'bold', cursor: (isSending || (!message.trim() && !selectedMedia)) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', opacity: (isSending || (!message.trim() && !selectedMedia)) ? 0.6 : 1, width: '100%', marginTop: '5px' }}
+            >
+              <Send size={15} />
+              {isSending ? 'Sending...' : 'Send Message'}
+            </button>
+          </form>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {message.trim() && (
+              <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', padding: '20px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: 'bold' }}>MESSAGE PREVIEW</label>
+                <div style={{ background: 'var(--bg-input)', backgroundImage: 'radial-gradient(var(--border) 0.8px, transparent 0)', backgroundSize: '12px 12px', padding: '12px', borderRadius: '6px', border: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end' }}>
+                  <div style={{ backgroundColor: 'rgba(37, 211, 102, 0.15)', color: 'var(--text)', border: '1px solid rgba(37, 211, 102, 0.25)', padding: '6px 10px', borderRadius: '8px', maxWidth: '85%', fontSize: '12.5px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                    <div dangerouslySetInnerHTML={{ __html: formatWhatsappText(message) }} style={{ wordBreak: 'break-word' }} />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {isWhatsappBusinessInstalled && (
+              <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', padding: '20px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <h3 style={{ margin: 0, fontSize: '14px', fontWeight: '750', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Phone size={15} style={{ color: 'var(--accent)' }} /> WhatsApp Connection Tester
+                </h3>
+                <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)' }}>
+                  Send a test ping message to verify device connection status and coordinate clicks.
+                </p>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '5px' }}>
+                  <input 
+                    type="text" 
+                    id="testPhoneInput"
+                    placeholder="Recipient (e.g. +9198280XXXXX)" 
+                    style={{ flexGrow: 1, background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '8px 12px', borderRadius: '6px', fontSize: '13px', outline: 'none' }} 
+                  />
+                  <button 
+                    type="button"
+                    onClick={async () => {
+                      const val = document.getElementById('testPhoneInput').value.trim();
+                      if (!val || !val.startsWith('+91') || val.length !== 13) {
+                        alert('Please enter a valid +91 prefixed 10-digit number (e.g. +9198280XXXXX)');
+                        return;
+                      }
+                      try {
+                        const command = JSON.stringify({ action: 'whatsapp', phone: val, message: 'AeroDial CRM: Test message connection successful! ✅', file_url: '', file_name: '' })
+                        await supabase.from('system_state').update({ command }).eq('id', 1)
+                        alert('Test message queued!');
+                      } catch (e) {
+                        alert('Failed to send test: ' + e.message);
+                      }
+                    }}
+                    style={{ background: 'var(--accent)', color: 'var(--bg-panel)', border: 'none', padding: '8px 16px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}
+                  >
+                    Send Test
+                  </button>
+                </div>
+              </div>
             )}
           </div>
 
-          <TemplateManager />
-          {isWhatsappBusinessInstalled && (
-            <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', padding: '20px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '750', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Send size={16} style={{ color: 'var(--accent)' }} /> WhatsApp Business Tester
-              </h3>
-              <p style={{ margin: 0, fontSize: '12.5px', color: 'var(--text-muted)' }}>Send a test greeting to any phone number (+91 prefixed):</p>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <input 
-                  type="text" 
-                  placeholder="e.g. +9198280XXXXX" 
-                  id="testPhoneInput"
-                  style={{ flexGrow: 1, background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '8px 12px', borderRadius: '6px', fontSize: '13px', outline: 'none' }} 
-                />
-                <button 
-                  type="button"
-                  onClick={async () => {
-                    const val = document.getElementById('testPhoneInput').value.trim();
-                    if (!val || !val.startsWith('+91') || val.length !== 13) {
-                      alert('Please enter a valid +91 prefixed 10-digit number (e.g. +9198280XXXXX)');
-                      return;
-                    }
-                    try {
-                      const command = JSON.stringify({ action: 'whatsapp', phone: val, message: 'AeroDial CRM: Test message connection successful! ✅', file_url: '', file_name: '' })
-                      await supabase.from('system_state').update({ command }).eq('id', 1)
-                      alert('Test message queued!');
-                    } catch (e) {
-                      alert('Failed to send test: ' + e.message);
-                    }
-                  }}
-                  style={{ background: 'var(--accent)', color: 'var(--bg-panel)', border: 'none', padding: '8px 16px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}
-                >
-                  Send Test
-                </button>
-              </div>
-            </div>
-          )}
         </div>
-      </div>
+      )}
+
+      {subTab === 'media' && (
+        <MediaLibraryTab
+          mediaFiles={mediaFiles}
+          isConnected={isConnected}
+          uploadMedia={uploadMedia}
+          deleteMedia={deleteMedia}
+          uploadProgress={uploadProgress}
+        />
+      )}
+
+      {subTab === 'templates' && (
+        <TemplateManager />
       )}
 
       {subTab === 'groups' && (
-        <GroupManager selectedGroupId={selectedGroupId} onSelectGroup={setSelectedGroupId} />
-      )}
-
-      {subTab === 'batches' && (
-        <BatchScheduler selectedGroupId={selectedGroupId} mediaFiles={mediaFiles} />
+        <GroupManager
+          selectedGroupId={selectedGroupId}
+          onSelectGroup={setSelectedGroupId}
+          mediaFiles={mediaFiles}
+        />
       )}
 
       {subTab === 'greetings' && (
         <GreetingsManager />
       )}
 
+      {subTab === 'broadcast' && (
+        <BroadcastTab />
+      )}
+
+      {/* Direct Composer history logs */}
       <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', padding: '20px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
         <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '750', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <History size={16} style={{ color: 'var(--accent)' }} /> Sent Messages History Log
