@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { Calendar, AlertTriangle, RotateCcw, Loader2 } from 'lucide-react'
+import { Calendar, AlertTriangle, RotateCcw } from 'lucide-react'
 import CampaignLogs from './CampaignLogs'
 
 export default function BroadcastTab() {
