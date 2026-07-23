@@ -210,57 +210,74 @@ export function useSetup() {
     if (!file) return;
     setUploadProgress({ filename: file.name, percent: 0, status: 'reading' });
     writeLog('INFO', `Uploading media file to device: ${file.name}`);
-    const reader = new FileReader();
-    reader.onprogress = (evt) => {
-      if (evt.lengthComputable) {
-        const readPercent = Math.round((evt.loaded / evt.total) * 40);
-        setUploadProgress(prev => prev ? { ...prev, percent: readPercent } : null);
-      }
-    };
-    reader.onerror = () => {
-      writeLog('ERROR', `Failed to read file: ${file.name}`);
-      setUploadProgress(prev => prev ? { ...prev, percent: 0, status: 'error' } : null);
-      setTimeout(() => setUploadProgress(null), 3000);
-    };
-    reader.onload = async () => {
-      try {
-        const base64Data = reader.result;
-        setUploadProgress(prev => prev ? { ...prev, percent: 45, status: 'uploading' } : null);
-        // Step 1: Insert file data into media_queue
-        const { error: insertError } = await supabase
-          .from('media_queue')
-          .insert([{ filename: file.name, file_base64: base64Data }]);
-        if (insertError) {
-          writeLog('ERROR', `Failed to queue media file: ${insertError.message}`);
-          setUploadProgress(prev => prev ? { ...prev, percent: 0, status: 'error' } : null);
-          setTimeout(() => setUploadProgress(null), 3000);
-          return;
-        }
-        setUploadProgress(prev => prev ? { ...prev, percent: 80, status: 'dispatching' } : null);
-        // Step 2: Send a small command pointer
-        const command = JSON.stringify({
-          action: 'upload_media',
-          filename: file.name
+
+    try {
+      const CHUNK_SIZE = 1000000; // ~1 MB chunks
+      const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+      setUploadProgress({ filename: file.name, percent: 5, status: 'uploading' });
+
+      for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+        const start = chunkIndex * CHUNK_SIZE;
+        const end = Math.min(start + CHUNK_SIZE, file.size);
+        const slice = file.slice(start, end);
+
+        // Read the slice as DataURL
+        const chunkBase64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            if (typeof reader.result === 'string') {
+              resolve(reader.result);
+            } else {
+              reject(new Error('Failed to read file slice'));
+            }
+          };
+          reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(slice);
         });
-        const { error: cmdError } = await supabase
-          .from('system_state')
-          .update({ command })
-          .eq('id', 1);
-        if (cmdError) {
-          writeLog('ERROR', `Supabase command update failed: ${cmdError.message}`);
-          setUploadProgress(prev => prev ? { ...prev, status: 'error' } : null);
-        } else {
-          writeLog('INFO', `Upload command dispatched for: ${file.name}`);
-          setUploadProgress(prev => prev ? { ...prev, percent: 100, status: 'done' } : null);
+
+        // Insert slice into media_chunks
+        const { error: insertError } = await supabase
+          .from('media_chunks')
+          .insert([{
+            filename: file.name,
+            chunk_index: chunkIndex,
+            total_chunks: totalChunks,
+            data_base64: chunkBase64
+          }]);
+
+        if (insertError) {
+          throw new Error(`Failed to upload chunk ${chunkIndex + 1}/${totalChunks}: ${insertError.message}`);
         }
-        setTimeout(() => setUploadProgress(null), 3000);
-      } catch (err) {
-        writeLog('ERROR', `Failed to upload media: ${err.message}`);
-        setUploadProgress(prev => prev ? { ...prev, percent: 0, status: 'error' } : null);
-        setTimeout(() => setUploadProgress(null), 3000);
+
+        const currentPercent = Math.round(((chunkIndex + 1) / totalChunks) * 85);
+        setUploadProgress({ filename: file.name, percent: currentPercent, status: 'uploading' });
       }
-    };
-    reader.readAsDataURL(file);
+
+      setUploadProgress({ filename: file.name, percent: 90, status: 'dispatching' });
+
+      // Notify daemon
+      const command = JSON.stringify({
+        action: 'upload_media',
+        filename: file.name
+      });
+
+      const { error: cmdError } = await supabase
+        .from('system_state')
+        .update({ command })
+        .eq('id', 1);
+
+      if (cmdError) {
+        throw new Error(`Failed to notify daemon: ${cmdError.message}`);
+      }
+
+      writeLog('INFO', `Upload command dispatched for chunked file: ${file.name}`);
+      setUploadProgress({ filename: file.name, percent: 100, status: 'done' });
+      setTimeout(() => setUploadProgress(null), 3000);
+    } catch (err) {
+      writeLog('ERROR', `Failed to upload media: ${err.message}`);
+      setUploadProgress({ filename: file.name, percent: 0, status: 'error' });
+      setTimeout(() => setUploadProgress(null), 3000);
+    }
   }, []);
 
   const deleteMedia = useCallback(async (filename) => {
