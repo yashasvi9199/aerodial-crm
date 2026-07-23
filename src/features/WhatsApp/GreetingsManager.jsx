@@ -22,7 +22,7 @@ export default function GreetingsManager() {
     }
   }
 
-  /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     fetchGreetings()
     const sub = supabase
@@ -35,7 +35,7 @@ export default function GreetingsManager() {
       supabase.removeChannel(sub)
     }
   }, [])
-  /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleAdd = async (e) => {
     e.preventDefault()

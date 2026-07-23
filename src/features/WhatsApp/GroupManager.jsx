@@ -61,7 +61,7 @@ export default function GroupManager({ selectedGroupId, onSelectGroup }) {
     }
   }
 
-  /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     fetchGroups()
     fetchSavedPool()
@@ -77,7 +77,7 @@ export default function GroupManager({ selectedGroupId, onSelectGroup }) {
     setManualList([])
     setCsvErrors([])
   }, [selectedGroupId])
-  /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleCreateGroup = async (e) => {
     e.preventDefault()
