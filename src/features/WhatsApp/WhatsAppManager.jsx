@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
-import { Send, MessageSquare, History, Phone, User, AlertTriangle } from 'lucide-react'
+import { Send, MessageSquare, History, Phone, User, AlertTriangle, Trash2 } from 'lucide-react'
 import { useSetup } from '../../hooks/useSetup'
 import TemplateSelector from '../../components/TemplateSelector'
 import TemplateManager from './TemplateManager'
@@ -168,7 +168,16 @@ export default function WhatsAppManager() {
       setIsSending(false)
     }
   }
-
+  const handleDeleteLog = async (id) => {
+    if (!confirm('Are you sure you want to delete this log entry?')) return
+    try {
+      const { error } = await supabase.from('whatsapp_logs').delete().eq('id', id)
+      if (error) throw error
+      fetchLogs()
+    } catch (e) {
+      alert('Failed to delete log: ' + e.message)
+    }
+  }
   const formattingTools = [
     { type: 'bold', label: 'B', title: 'Bold (*text*)', style: { fontWeight: 'bold' } },
     { type: 'italic', label: 'I', title: 'Italic (_text_)', style: { fontStyle: 'italic' } },
@@ -496,6 +505,7 @@ export default function WhatsAppManager() {
                   <th style={{ padding: '10px 8px' }}>RECIPIENT PHONE</th>
                   <th style={{ padding: '10px 8px' }}>RECIPIENT NAME</th>
                   <th style={{ padding: '10px 8px' }}>MESSAGE CONTENT</th>
+                  <th style={{ padding: '10px 8px', textAlign: 'right' }}>ACTIONS</th>
                 </tr>
               </thead>
               <tbody>
@@ -506,6 +516,15 @@ export default function WhatsAppManager() {
                     <td style={{ padding: '10px 8px', color: log.contact_name ? 'var(--text)' : 'var(--text-muted)' }}>{log.contact_name || '—'}</td>
                     <td style={{ padding: '10px 8px', maxWidth: '300px' }}>
                       <div dangerouslySetInnerHTML={{ __html: formatWhatsappText(log.message_text) }} style={{ maxHeight: '60px', overflowY: 'auto', wordBreak: 'break-word' }} />
+                    </td>
+                    <td style={{ padding: '10px 8px', textAlign: 'right' }}>
+                      <button 
+                        onClick={() => handleDeleteLog(log.id)}
+                        style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
+                        title="Delete Log"
+                      >
+                        <Trash2 size={15} />
+                      </button>
                     </td>
                   </tr>
                 ))}
