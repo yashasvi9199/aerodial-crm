@@ -144,12 +144,23 @@ def send_next_bulk_message(device, batch, run_cmd, supabase):
 
     print(f"[*] Sending bulk message to {phone} (Batch: '{batch['name']}')")
     try:
-        _execute_whatsapp(device, phone, formatted_msg, run_cmd, media_file, supabase)
+        def contact_reporter(status):
+            try:
+                supabase.table('whatsapp_bulk_batch_contacts').update({
+                    'whatsapp_progress': status
+                }).eq('id', contact['id']).execute()
+            except Exception as e:
+                print(f"⚠️ Error reporting bulk contact progress: {e}")
+
+        ui_debug = batch.get('ui_debug', False)
+        # Execute sharing, passing the contact reporter callback and ui_debug parameter
+        _execute_whatsapp(device, phone, formatted_msg, run_cmd, media_file, supabase, contact_reporter, ui_debug=ui_debug)
         
         now = datetime.datetime.now(datetime.timezone.utc).isoformat()
         # Mark contact as sent
         supabase.table('whatsapp_bulk_batch_contacts').update({
             'status': 'sent',
+            'whatsapp_progress': 'verified',
             'sent_at': now
         }).eq('id', contact['id']).execute()
 

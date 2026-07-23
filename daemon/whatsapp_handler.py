@@ -111,20 +111,58 @@ def handle_whatsapp_json(device, data, run_cmd, supabase=None):
     phone = data.get('phone', '')
     message = data.get('message', '')
     media_filename = data.get('media_filename')
-    _execute_whatsapp(device, phone, message, run_cmd, media_filename, supabase)
+    ui_debug = data.get('ui_debug', False)
+    _execute_whatsapp(device, phone, message, run_cmd, media_filename, supabase, ui_debug=ui_debug)
 
-def _execute_whatsapp(device, phone, message, run_cmd, media_filename=None, supabase=None):
+
+def _execute_whatsapp(device, phone, message, run_cmd, media_filename=None, supabase=None, custom_reporter=None, ui_debug=False):
     """
     Why: Core WhatsApp ADB dispatch. Uses api.whatsapp.com deeplink for text-only
     or ACTION_SEND for media. Polls uiautomator XML for send button, then taps.
     Reports progress milestones to system_state.whatsapp_progress for the frontend.
     """
     def report(status):
+        if custom_reporter:
+            try:
+                custom_reporter(status)
+            except Exception as cr_ex:
+                print(f"⚠️ Custom progress reporter failed: {cr_ex}")
         if supabase:
             try:
                 supabase.table('system_state').update({'whatsapp_progress': status}).eq('id', 1).execute()
             except Exception as e:
                 print(f"⚠️ Error reporting progress: {e}")
+
+        # Wait for user confirmation in database if UI debugging is enabled
+        if ui_debug and status in ('ran_script', 'opened_whatsapp', 'types_draft', 'sent', 'verified'):
+            confirm_field = f"confirm_{status}"
+            print(f"⏰ [UI DEBUG] Step '{status}' completed. Waiting for UI confirmation...")
+            
+            # Reset confirmation field in database state first
+            try:
+                supabase.table('system_state').update({confirm_field: 'waiting'}).eq('id', 1).execute()
+            except Exception as reset_ex:
+                print(f"⚠️ Error resetting confirmation field: {reset_ex}")
+
+            # Poll for user decision
+            confirmed = False
+            for _ in range(600): # 10 minutes timeout max
+                time.sleep(1.0)
+                try:
+                    res = supabase.table('system_state').select(confirm_field).eq('id', 1).execute().data
+                    if res and res[0].get(confirm_field) == 'success':
+                        confirmed = True
+                        print(f"✅ [UI DEBUG] Step '{status}' confirmed successfully by user!")
+                        break
+                    elif res and res[0].get(confirm_field) == 'failure':
+                        raise RuntimeError(f"User rejected step: {status}")
+                except Exception as db_err:
+                    if "rejected" in str(db_err):
+                        raise db_err
+                    print(f"⚠️ Polling confirmation error: {db_err}")
+            
+            if not confirmed:
+                raise RuntimeError(f"UI confirmation timed out for step: {status}")
 
     try:
         report("ran_script")
@@ -208,6 +246,16 @@ def _execute_whatsapp(device, phone, message, run_cmd, media_filename=None, supa
 
         if result and "Error" in result:
             raise RuntimeError(f"am start failed: {result}")
+
+        # Verify WhatsApp package is active in foreground
+        foreground_check = run_cmd(f"adb -s {device} shell \"dumpsys window | grep -E 'mCurrentFocus|mFocusedApp'\"")
+        print(f"[*] Foreground window status: {foreground_check}")
+        if pkg not in foreground_check:
+            # Try a second verify call in case of slight delay
+            time.sleep(1.0)
+            foreground_check = run_cmd(f"adb -s {device} shell \"dumpsys window | grep -E 'mCurrentFocus|mFocusedApp'\"")
+            if pkg not in foreground_check:
+                raise RuntimeError(f"WhatsApp did not open on device. Current focus: {foreground_check.strip()}")
 
         report("opened_whatsapp")
         time.sleep(2.0)
