@@ -79,5 +79,10 @@
 - **Failsafe Dialer Fallbacks**: Enhanced 197 test dialog prompts user on successful call. If "No" is chosen, loops through 5 independent dialing fallback formats (ROM slot intents, AOSP intent, and root direct service dialer overrides) to establish a successful connection.
 - **Diagnostics Event & Error Logger**: Intercepts console logging and user actions, writing an audit list to `localStorage` (capped at 500 lines) with features to export as JSON or email developer.
 
-
-
+## 13. WhatsApp Bulk Messaging Engine
+- **Flexible Contact Selection**: Choose from saved CRM contacts, upload CSV contact sheets, or stage typed numbers manually with automated validation and +91 prefixing.
+- **Background Scheduler (Python Daemon)**: Cron-like message dispatcher running on the local daemon, allowing scheduling and batch execution to continue even if the browser is closed or refreshed.
+- **Obfuscation & Meta Bot Bypass**: Automatically adds random spacing (at message start or newline boundaries) and italicizes a random character using WhatsApp formatting (`_ _`) to prevent spam/ban detection.
+- **Dynamic Greetings Replacement**: Auto-replaces the `{greetings}` tag in message templates with a random choice from a customizable greetings database, cycling through them one-by-one.
+- **Strict Execution Constraints**: Restricts sending to a maximum of 20 contacts per batch, 80 messages per day, and enforces a 60-minute gap between executions of batches within the same contact group.
+- **Contacts View Status Synchronization**: Displays a "WA Sent" badge on contact cards within the unified "All Contacts" search directory, linking to batch, group, and dispatch timestamp info.
