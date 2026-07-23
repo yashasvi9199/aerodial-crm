@@ -1,6 +1,6 @@
-import { CheckCircle2, AlertTriangle, Clock, RotateCcw, Loader2 } from 'lucide-react'
+import { CheckCircle2, AlertTriangle, Clock, RotateCcw, Loader2, XCircle } from 'lucide-react'
 
-export default function CampaignLogs({ campaigns, handleResume }) {
+export default function CampaignLogs({ campaigns, handleResume, handleCancel }) {
   return (
     <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', padding: '20px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
       <div>
@@ -45,7 +45,7 @@ export default function CampaignLogs({ campaigns, handleResume }) {
 
                 {/* Progress bar */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <div style={{ display: 'flex', justify: 'space-between', fontSize: '10px', color: 'var(--text-muted)', fontWeight: 'bold' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--text-muted)', fontWeight: 'bold' }}>
                     <span>PROGRESS: {pct}%</span>
                     <span>{sent} SENT / {failed} FAILED / {total} TOTAL</span>
                   </div>
@@ -54,15 +54,25 @@ export default function CampaignLogs({ campaigns, handleResume }) {
                   </div>
                 </div>
 
-                {/* Show failed info inline if paused */}
-                {c.status === 'paused' && (
-                  <button
-                    onClick={() => handleResume(c.id)}
-                    style={{ marginTop: '4px', background: 'rgba(245, 158, 11, 0.15)', border: '1px solid var(--accent)', color: 'var(--accent)', cursor: 'pointer', padding: '6px', borderRadius: '6px', fontSize: '11.5px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-                  >
-                    <RotateCcw size={12} /> Resume Campaign
-                  </button>
-                )}
+                {/* Control Actions */}
+                <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                  {c.status === 'paused' && handleResume && (
+                    <button
+                      onClick={() => handleResume(c.id)}
+                      style={{ flexGrow: 1, background: 'rgba(245, 158, 11, 0.15)', border: '1px solid var(--accent)', color: 'var(--accent)', cursor: 'pointer', padding: '6px', borderRadius: '6px', fontSize: '11.5px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                    >
+                      <RotateCcw size={12} /> Resume Campaign
+                    </button>
+                  )}
+                  {(c.status === 'pending' || c.status === 'paused') && handleCancel && (
+                    <button
+                      onClick={() => handleCancel(c.id)}
+                      style={{ flexGrow: 1, background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#ef4444', cursor: 'pointer', padding: '6px', borderRadius: '6px', fontSize: '11.5px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                    >
+                      <XCircle size={12} /> Cancel Campaign
+                    </button>
+                  )}
+                </div>
               </div>
             )
           })
