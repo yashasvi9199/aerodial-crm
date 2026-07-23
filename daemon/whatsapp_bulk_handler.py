@@ -173,11 +173,12 @@ def send_next_bulk_message(device, batch, run_cmd, supabase):
             'error_message': str(ex)
         }).eq('id', contact['id']).execute()
         
-        # Don't halt the whole batch; set a short retry delay of 15 seconds
-        next_send = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=15)).isoformat()
+        # Pause the batch and stop execution right here
         supabase.table('whatsapp_bulk_batches').update({
-            'next_send_at': next_send
+            'status': 'paused',
+            'next_send_at': None
         }).eq('id', batch['id']).execute()
+        print(f"⚠️ Batch '{batch['name']}' paused due to error: {ex}")
 
 def process_bulk_messaging(device, run_cmd, supabase):
     """
