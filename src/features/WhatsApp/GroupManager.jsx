@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { Plus, Trash, Users, Play, Loader2 } from 'lucide-react'
+import { Plus, Trash, Users, Loader2 } from 'lucide-react'
 import BatchCreator from './BatchCreator'
 
 export default function GroupManager({ selectedGroupId, onSelectGroup, mediaFiles }) {
