@@ -309,13 +309,23 @@ def main():
                             target_dev = device if is_connected else (get_connected_devices() or [None])[0]
                             if filename and target_dev:
                                 try:
-                                    queue_resp = supabase.table('media_queue').select('id,file_base64').eq('filename', filename).order('created_at', desc=True).limit(1).execute()
-                                    queue_rows = queue_resp.data or []
-                                    if not queue_rows:
-                                        print(f"⚠️ No media_queue row found for: {filename}")
+                                    # Try fetching chunks first
+                                    chunks_resp = supabase.table('media_chunks').select('data_base64').eq('filename', filename).order('chunk_index', desc=False).execute()
+                                    chunks_rows = chunks_resp.data or []
+                                    file_base64 = None
+                                    if chunks_rows:
+                                        print(f"[*] Assembling file from {len(chunks_rows)} chunks...")
+                                        file_base64 = "".join(chunk['data_base64'] for chunk in chunks_rows)
                                     else:
-                                        row = queue_rows[0]
-                                        file_base64 = row['file_base64']
+                                        # Fallback to media_queue
+                                        queue_resp = supabase.table('media_queue').select('id,file_base64').eq('filename', filename).order('created_at', desc=True).limit(1).execute()
+                                        queue_rows = queue_resp.data or []
+                                        if queue_rows:
+                                            file_base64 = queue_rows[0]['file_base64']
+                                        
+                                    if not file_base64:
+                                        print(f"⚠️ No media_queue or media_chunks rows found for: {filename}")
+                                    else:
                                         import base64 as b64mod
                                         cache_dir = os.path.join(PROJECT_ROOT, "daemon", "media_cache")
                                         os.makedirs(cache_dir, exist_ok=True)
@@ -327,10 +337,15 @@ def main():
                                             f.write(raw_bytes)
                                         print(f"[*] Staged file locally: {local_path} ({len(raw_bytes)} bytes)")
                                         run_cmd(f'adb -s {target_dev} shell "mkdir -p /data/local/tmp/aerodial_media && chmod 777 /data/local/tmp/aerodial_media"')
-                                        push_result = run_cmd(f'adb -s {target_dev} push "{local_path}" "/data/local/tmp/aerodial_media/{filename}"', timeout=60)
+                                        push_result = run_cmd(f'adb -s {target_dev} push "{local_path}" "/data/local/tmp/aerodial_media/{filename}"', timeout=180)
                                         print(f"[*] adb push result: {push_result}")
                                         run_cmd(f'adb -s {target_dev} shell "chmod 666 \\"/data/local/tmp/aerodial_media/{filename}\\""')
-                                        supabase.table('media_queue').delete().eq('id', row['id']).execute()
+                                        
+                                        # Clean up database records
+                                        if chunks_rows:
+                                            supabase.table('media_chunks').delete().eq('filename', filename).execute()
+                                        else:
+                                            supabase.table('media_queue').delete().eq('filename', filename).execute()
                                         print(f"[✓] Media file uploaded and pushed to device: {filename}")
                                 except Exception as ex:
                                     print(f"⚠️ Error uploading media file: {ex}")
