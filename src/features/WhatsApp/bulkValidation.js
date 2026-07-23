@@ -6,14 +6,10 @@
  */
 export function validateAndNormalizePhone(phone) {
   if (!phone) return null;
-  // Strip all non-digit characters (except optional leading +)
   let clean = phone.replace(/[^\d+]/g, '');
   
   if (clean.startsWith('+')) {
-    if (clean.startsWith('+91') && clean.length === 13) {
-      return clean;
-    }
-    return null; // Invalid international code or length
+    return clean.length > 1 ? clean : null;
   }
   
   if (clean.length === 10) {
@@ -22,6 +18,10 @@ export function validateAndNormalizePhone(phone) {
   
   if (clean.length === 12 && clean.startsWith('91')) {
     return '+' + clean;
+  }
+  
+  if (clean.length > 0) {
+    return '+91' + clean;
   }
   
   return null;
