@@ -49,10 +49,12 @@ export default function BatchCreator({ groupId, onBatchCreated, mediaFiles }) {
     }
   }
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     fetchTemplates()
     fetchSavedPool()
   }, [])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleTemplateSelect = (e) => {
     const val = e.target.value
