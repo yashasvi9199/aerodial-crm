@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.14.1] - 2026-07-23
+### Fixed
+- Fixed argument order in `isDuplicateContact` inside `BatchCreator.jsx` to prevent TypeError crashes when manually staging contacts.
+- Relaxed phone validation checks in `bulkValidation.js` to support arbitrary digit lengths without strict 10-digit requirements.
+
 ## [1.14.0] - 2026-07-23
 ### Added
 - Restructured WhatsApp Business Hub to split functionality across 6 dedicated tabs: Composer, Media Library, Template, Groups, Greetings, and Broadcast.
