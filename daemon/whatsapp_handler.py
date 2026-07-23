@@ -161,9 +161,28 @@ def _execute_whatsapp(device, phone, message, run_cmd, media_filename=None, supa
                 run_cmd(f'adb -s {device} shell "cp /data/local/tmp/aerodial_media/\'\'{media_filename}\'\' {device_path}"', timeout=10)
             # Broadcast so media scanner indexes it
             run_cmd(f'adb -s {device} shell "am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file://{device_path}"', timeout=5)
-            time.sleep(1.0)
+            time.sleep(1.5)
+            
+            # Query content provider to get content:// URI instead of raw file://
+            content_uri = None
+            uri_query_cmd = f'adb -s {device} shell "content query --uri content://media/external/file --projection _id --where \\"_data=\\\'{device_path}\\'\\""'
+            query_res = run_cmd(uri_query_cmd)
+            m_id = re.search(r'_id=(\d+)', query_res)
+            if m_id:
+                content_uri = f"content://media/external/file/{m_id.group(1)}"
+                print(f"[*] Resolved content provider URI: {content_uri}")
+            else:
+                # Fallback to images specific URI
+                uri_query_cmd_img = f'adb -s {device} shell "content query --uri content://media/external/images/media --projection _id --where \\"_data=\\\'{device_path}\\'\\""'
+                query_res_img = run_cmd(uri_query_cmd_img)
+                m_id_img = re.search(r'_id=(\d+)', query_res_img)
+                if m_id_img:
+                    content_uri = f"content://media/external/images/media/{m_id_img.group(1)}"
+                    print(f"[*] Resolved image content provider URI: {content_uri}")
+            
+            stream_uri = content_uri if content_uri else f"file://{device_path}"
             extra_text = f"--es android.intent.extra.TEXT '{message}'" if message else ""
-            cmd = f'adb -s {device} shell "am start -a android.intent.action.SEND -t {mime_type} -e jid {clean_num}@s.whatsapp.net --eu android.intent.extra.STREAM file://{device_path} {extra_text} -p {pkg} --grant-read-uri-permission"'
+            cmd = f'adb -s {device} shell "am start -a android.intent.action.SEND -t {mime_type} -e jid {clean_num}@s.whatsapp.net --eu android.intent.extra.STREAM \\"{stream_uri}\\" {extra_text} -p {pkg} --grant-read-uri-permission"'
             result = run_cmd(cmd)
             print(f"[*] am start (media) result: {result}")
         else:
