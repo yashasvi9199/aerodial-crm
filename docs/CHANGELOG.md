@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.14.0] - 2026-07-23
+### Added
+- Restructured WhatsApp Business Hub to split functionality across 6 dedicated tabs: Composer, Media Library, Template, Groups, Greetings, and Broadcast.
+- Implemented chunked file upload staging in frontend (1MB slices) and assembly in local daemon to support large attachments (e.g. 40MB PDF).
+- Created a separate Media Library tab separating Images and PDF document listings.
+- Enhanced Template Manager to support template editing and instant UI delete refresh.
+- Enforced a 4-batch maximum limit per Group inside GroupManager.
+- Built a Contact Picker Modal popup for staging batch contacts (max 20) with live search and category filters (Justdial Leads vs Cold Calls).
+- Created Broadcast tab with split Date and Time picker inputs.
+- Implemented error pausing inside the Python daemon: dispatches that fail pause the batch immediately and record the error message.
+- Integrated auto-popup error alert modal in general English on the frontend when campaigns are paused, exposing a "Resume Campaign" button to reset targets back to pending.
+
 ## [1.13.0] - 2026-07-23
 ### Added
 - Implemented WhatsApp Bulk Messaging scheduler and manager features.
