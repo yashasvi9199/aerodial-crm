@@ -79,7 +79,7 @@ export default function BatchCreator({ groupId, onBatchCreated, mediaFiles }) {
       return
     }
 
-    if (isDuplicateContact(stagedContacts, normalized)) {
+    if (isDuplicateContact(normalized, stagedContacts)) {
       alert('This phone number is already staged in the list.')
       return
     }
