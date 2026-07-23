@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { Plus, Trash, Users, Upload, UserPlus, Search, Edit2, Check, X, AlertTriangle } from 'lucide-react'
+import { Plus, Trash, Users, Upload, Search, Edit2, Check, X } from 'lucide-react'
 import { validateAndNormalizePhone, isDuplicateContact, parseAndValidateCSV } from './bulkValidation'
 
 export default function GroupManager({ selectedGroupId, onSelectGroup }) {
@@ -61,6 +61,7 @@ export default function GroupManager({ selectedGroupId, onSelectGroup }) {
     }
   }
 
+  /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
   useEffect(() => {
     fetchGroups()
     fetchSavedPool()
@@ -76,6 +77,7 @@ export default function GroupManager({ selectedGroupId, onSelectGroup }) {
     setManualList([])
     setCsvErrors([])
   }, [selectedGroupId])
+  /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 
   const handleCreateGroup = async (e) => {
     e.preventDefault()
