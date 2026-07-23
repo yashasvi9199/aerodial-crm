@@ -88,3 +88,7 @@
 - **Chunked Media Upload Assembly**: Slices files in browser (1MB chunks) and uploads to temporary chunks table, allowing local python daemon to assemble large files (e.g. 40MB PDF) to device cache without Postgrest payload issues.
 - **Campaign Error Pausing**: dispatches that fail automatically pause batch campaigns, log reasons, and show pretty popups in general English to let users resolve issues and resume.
 - **Contacts View Status Synchronization**: Displays a "WA Sent" badge on contact cards within the unified "All Contacts" search directory, linking to batch, group, and dispatch timestamp info.
+- **UI Debug Step Confirmation Dialogs**: Toggleable "UI Debug Mode" checkbox triggers step-by-step confirmation popups in the React frontend, blocking execution until the user manually approves or rejects each automation milestone (Ran Script, Opened WA, Typed Draft, Sent, Verified).
+- **Split Per-Contact Progress Steppers**: Granular progress bars indicating exact execution steps (Start, Open, Draft, Sent, Verified) for each recipient contact inside processing campaigns.
+- **Manual Media Cache Synchronization**: Replaced periodic filesystem ADB file queries in the daemon loop with a manual "Refresh Cache" button on the media tab to sync media directory contents.
+

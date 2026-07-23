@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.15.0] - 2026-07-23
+### Added
+- Integrated UI Debug Mode checkbox parameters inside Composer and Broadcast Scheduler layouts.
+- Built step-by-step confirmation popups in frontend overlays prompting user validation on milestones: Ran Script, Opened WA, Typed Draft, Sent, Verified.
+- Implemented individual contact split step progress indicator displays inside Campaign Logs batch item groups.
+- Replaced daemon automatic background media library query intervals with a manual 'Refresh Cache' button triggering adb media scans.
+
 ## [1.14.1] - 2026-07-23
 ### Fixed
 - Fixed argument order in `isDuplicateContact` inside `BatchCreator.jsx` to prevent TypeError crashes when manually staging contacts.

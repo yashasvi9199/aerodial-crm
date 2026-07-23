@@ -1,5 +1,12 @@
 # Release Notes
 
+## [1.15.0] - 2026-07-23
+### Added
+- Integrated "UI Debug Mode" checkbox parameter across direct composer and campaign scheduler workflows.
+- Implemented a step-by-step confirmation dialogue popup for both direct messages and broadcast campaigns to block execution on steps (Start Script, Open WhatsApp, Typed Draft, Sent, Verified) until manually approved or rejected by the user.
+- Configured individual recipient split progress bars detailing granular dispatch steps for each contact within the campaign logs.
+- Added a manual cache refresh action button in the Media Library tab to trigger background media synchronization on demand, replacing CPU-intensive automatic filesystem query polling.
+
 ## [1.14.0] - 2026-07-23
 ### Added
 - Restructured WhatsApp Business Hub to split functionality across 6 dedicated tabs: Composer, Media Library, Template, Groups, Greetings, and Broadcast.

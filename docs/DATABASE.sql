@@ -378,3 +378,19 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.media_chunks;
 -- Notes: Add whatsapp_progress text column to public.system_state to broadcast status steps.
 
 ALTER TABLE public.system_state ADD COLUMN IF NOT EXISTS whatsapp_progress text;
+
+--------------------------------------------------------------------------------------
+
+-- Date: 2026-07-23 19:40:00
+-- Feature: WhatsApp Dispatcher UI Debug mode & confirmation parameters
+-- Type: FIX
+-- Notes: Add confirmation status fields to system_state. Add ui_debug parameter option to whatsapp_bulk_batches. Add progress column to bulk batch contacts.
+
+ALTER TABLE public.system_state ADD COLUMN IF NOT EXISTS confirm_ran_script text DEFAULT 'idle';
+ALTER TABLE public.system_state ADD COLUMN IF NOT EXISTS confirm_opened_whatsapp text DEFAULT 'idle';
+ALTER TABLE public.system_state ADD COLUMN IF NOT EXISTS confirm_types_draft text DEFAULT 'idle';
+ALTER TABLE public.system_state ADD COLUMN IF NOT EXISTS confirm_sent text DEFAULT 'idle';
+ALTER TABLE public.system_state ADD COLUMN IF NOT EXISTS confirm_verified text DEFAULT 'idle';
+
+ALTER TABLE public.whatsapp_bulk_batches ADD COLUMN IF NOT EXISTS ui_debug boolean DEFAULT false;
+ALTER TABLE public.whatsapp_bulk_batch_contacts ADD COLUMN IF NOT EXISTS whatsapp_progress text;
