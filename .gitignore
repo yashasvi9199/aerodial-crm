@@ -19,7 +19,7 @@ dist-ssr/
 
 # SQLite Temp DB files
 *.db
-daemon/*.db
+daemon/*.db*
 daemon/downloads/
 daemon/device_defaults.json
 daemon/media_cache/
