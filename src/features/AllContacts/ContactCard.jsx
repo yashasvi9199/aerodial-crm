@@ -3,7 +3,7 @@ import { Edit2, Check, X, Phone, User, Briefcase, MapPin, Calendar, Heart, Shiel
 import { supabase } from '../../lib/supabase'
 import TruecallerSection from '../../components/TruecallerSection'
 
-export default function ContactCard({ item, onUpdateSuccess }) {
+export default function ContactCard({ item, onUpdateSuccess, bulkSentHistory = [] }) {
   const isColdCall = item.platform === 'cold_call'
   const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -106,10 +106,20 @@ export default function ContactCard({ item, onUpdateSuccess }) {
         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)'
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontSize: '10.5px', fontWeight: '800', textTransform: 'uppercase', color: themeColor, background: badgeBg, padding: '3px 8px', borderRadius: '12px', letterSpacing: '0.05em' }}>
-          {isColdCall ? 'Cold Calling' : 'Justdial Lead'}
-        </span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '10.5px', fontWeight: '800', textTransform: 'uppercase', color: themeColor, background: badgeBg, padding: '3px 8px', borderRadius: '12px', letterSpacing: '0.05em' }}>
+            {isColdCall ? 'Cold Calling' : 'Justdial Lead'}
+          </span>
+          {bulkSentHistory.length > 0 && (
+            <span 
+              title={`Sent in Batch: ${bulkSentHistory[0].batchName}\nGroup: ${bulkSentHistory[0].groupName}\nDate: ${new Date(bulkSentHistory[0].sentAt).toLocaleString()}`}
+              style={{ fontSize: '10px', fontWeight: '700', color: 'var(--accent)', background: 'var(--bg-input)', border: '1px solid var(--border)', padding: '3px 6px', borderRadius: '12px', cursor: 'help' }}
+            >
+              WA Sent
+            </span>
+          )}
+        </div>
         
         <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
           <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
