@@ -12,18 +12,24 @@ export default function AllContacts() {
   const [sortOrder, setSortOrder] = useState('desc') // 'asc' | 'desc'
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState('All') // 'All' | 'Cold' | 'Justdial'
+  const [bulkHistory, setBulkHistory] = useState([])
 
   const debouncedSearch = useDebounce(search, 250)
 
   const fetchData = async () => {
     try {
-      const [contactsRes, leadsRes] = await Promise.all([
+      const [contactsRes, leadsRes, bulkRes] = await Promise.all([
         supabase.from('contacts').select('*'),
-        supabase.from('justdial_leads').select('*')
+        supabase.from('justdial_leads').select('*'),
+        supabase
+          .from('whatsapp_bulk_batch_contacts')
+          .select('phone_number, sent_at, whatsapp_bulk_batches(name, scheduled_at, whatsapp_bulk_groups(name))')
+          .eq('status', 'sent')
       ])
 
       if (contactsRes.data) setContacts(contactsRes.data)
       if (leadsRes.data) setLeads(leadsRes.data)
+      if (bulkRes.data) setBulkHistory(bulkRes.data)
     } catch (err) {
       console.error('Error fetching search pool:', err)
     } finally {
@@ -245,13 +251,33 @@ export default function AllContacts() {
           gap: '20px', 
           paddingBottom: '20px' 
         }}>
-          {sortedList.map(item => (
-            <ContactCard 
-              key={`${item.platform}-${item.id}`} 
-              item={item} 
-              onUpdateSuccess={fetchData} 
-            />
-          ))}
+          {(() => {
+            const bulkSentMap = {}
+            bulkHistory.forEach(item => {
+              if (item.phone_number) {
+                if (!bulkSentMap[item.phone_number]) {
+                  bulkSentMap[item.phone_number] = []
+                }
+                bulkSentMap[item.phone_number].push({
+                  sentAt: item.sent_at,
+                  batchName: item.whatsapp_bulk_batches?.name,
+                  groupName: item.whatsapp_bulk_batches?.whatsapp_bulk_groups?.name
+                })
+              }
+            })
+
+            return sortedList.map(item => {
+              const itemPhone = item.platform === 'cold_call' ? item.phone_number : item.phone
+              return (
+                <ContactCard 
+                  key={`${item.platform}-${item.id}`} 
+                  item={item} 
+                  onUpdateSuccess={fetchData} 
+                  bulkSentHistory={bulkSentMap[itemPhone] || []}
+                />
+              )
+            })
+          })()}
         </div>
       ) : (
         <div style={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>
