@@ -55,7 +55,6 @@ export default function WhatsAppManager() {
     }
   }
 
-  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     let active = true
     const loadLogs = async () => {
@@ -89,7 +88,6 @@ export default function WhatsAppManager() {
       supabase.removeChannel(stateSub)
     }
   }, [])
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleSelectTemplate = (tpl) => {
     if (!tpl) {
