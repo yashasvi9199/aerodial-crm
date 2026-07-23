@@ -182,7 +182,7 @@ def _execute_whatsapp(device, phone, message, run_cmd, media_filename=None, supa
             
             stream_uri = content_uri if content_uri else f"file://{device_path}"
             extra_text = f"--es android.intent.extra.TEXT '{message}'" if message else ""
-            cmd = f"adb -s {device} shell \"am start -a android.intent.action.SEND -t {mime_type} -e jid {clean_num}@s.whatsapp.net --eu android.intent.extra.STREAM '{stream_uri}' {extra_text} -p {pkg} --grant-read-uri-permission\""
+            cmd = f"adb -s {device} shell am start -a android.intent.action.SEND -t {mime_type} -e jid {clean_num}@s.whatsapp.net --eu android.intent.extra.STREAM {stream_uri} {extra_text} -p {pkg} --grant-read-uri-permission"
             result = run_cmd(cmd)
             print(f"[*] am start (media) result: {result}")
         else:
