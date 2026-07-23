@@ -141,7 +141,7 @@ def send_next_bulk_message(device, batch, run_cmd, supabase):
 
     print(f"[*] Sending bulk message to {phone} (Batch: '{batch['name']}')")
     try:
-      _execute_whatsapp(device, phone, formatted_msg, run_cmd, media_file, supabase)
+        _execute_whatsapp(device, phone, formatted_msg, run_cmd, media_file, supabase)
         
         now = datetime.datetime.now(datetime.timezone.utc).isoformat()
         # Mark contact as sent
