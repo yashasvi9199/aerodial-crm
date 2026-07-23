@@ -25,3 +25,5 @@
 - 2026-07-22 (WhatsApp Manager Attachments): Extended Media Library upload/view/delete UI panel and attachment selection to the main WhatsApp Business Hub page in the sidebar. Bumped version to 1.12.0.
 - 2026-07-22 (JSON Parser Safety): Fixed connection state and package checks in the main WhatsApp Hub to handle JSON format adbStatus payloads. Bumped version to 1.12.1.
 - 2026-07-22 (Media Upload fixes & progress): Restaged upload_media and delete_media to run as connection-independent blocks before is_connected checks to avoid silent discards. Created media_queue Supabase table to stage file base64 data to avoid Supabase Realtime size limit drops. Wrapped paths in double quotes inside daemon shell calls to support spaces in filenames. Added upload progress bar in frontend. Bumped version to 1.12.2.
+- 2026-07-23 (WhatsApp Bulk Messaging Engine): Implemented Groups, Batches, and Greetings managers on UI; added background scheduler in python daemon to process batches with randomized spacing/italics/greetings formatting and gap checks. Bumped version to 1.13.0.
+
