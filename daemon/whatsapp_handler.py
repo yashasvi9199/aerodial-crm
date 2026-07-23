@@ -161,9 +161,9 @@ def _execute_whatsapp(device, phone, message, run_cmd, media_filename=None, supa
                 run_cmd(f'adb -s {device} shell "cp /data/local/tmp/aerodial_media/\'\'{media_filename}\'\' {device_path}"', timeout=10)
             # Broadcast so media scanner indexes it
             run_cmd(f'adb -s {device} shell "am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file://{device_path}"', timeout=5)
-            time.sleep(0.5)
+            time.sleep(1.0)
             extra_text = f"--es android.intent.extra.TEXT '{message}'" if message else ""
-            cmd = f'adb -s {device} shell "am start -a android.intent.action.SEND -t {mime_type} -e jid {clean_num}@s.whatsapp.net --eu android.intent.extra.STREAM file://{device_path} {extra_text} -p {pkg}"'
+            cmd = f'adb -s {device} shell "am start -a android.intent.action.SEND -t {mime_type} -e jid {clean_num}@s.whatsapp.net --eu android.intent.extra.STREAM file://{device_path} {extra_text} -p {pkg} --grant-read-uri-permission"'
             result = run_cmd(cmd)
             print(f"[*] am start (media) result: {result}")
         else:
