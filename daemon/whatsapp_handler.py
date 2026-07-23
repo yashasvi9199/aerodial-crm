@@ -168,8 +168,9 @@ def _execute_whatsapp(device, phone, message, run_cmd, media_filename=None, supa
             print(f"[*] am start (media) result: {result}")
         else:
             print(f"[*] WhatsApp text. Prefilling chat: {clean_num}...")
-            url = f"https://api.whatsapp.com/send?phone={clean_num}&text={urllib.parse.quote(message)}"
-            result = run_cmd(f"adb -s {device} shell \"am start -a android.intent.action.VIEW -d '{url}' {pkg}\"")
+            encoded_msg = urllib.parse.quote(message)
+            url = f"https://wa.me/{clean_num}?text={encoded_msg}"
+            result = run_cmd(f"adb -s {device} shell am start -a android.intent.action.VIEW -d '{url}' -p {pkg}")
             print(f"[*] am start (text) result: {result}")
 
         if result and "Error" in result:
