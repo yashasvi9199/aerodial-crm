@@ -369,3 +369,12 @@ CREATE TABLE IF NOT EXISTS public.media_chunks (
 ALTER TABLE public.media_chunks ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow all for anon chunks" ON public.media_chunks FOR ALL USING (true) WITH CHECK (true);
 ALTER PUBLICATION supabase_realtime ADD TABLE public.media_chunks;
+
+--------------------------------------------------------------------------------------
+
+-- Date: 2026-07-23 11:55:00
+-- Feature: WhatsApp Dispatcher Real-Time Progress Reporting
+-- Type: FIX
+-- Notes: Add whatsapp_progress text column to public.system_state to broadcast status steps.
+
+ALTER TABLE public.system_state ADD COLUMN IF NOT EXISTS whatsapp_progress text;
