@@ -23,6 +23,7 @@ export default function BatchCreator({ groupId, onBatchCreated, mediaFiles }) {
   // Modals / states
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [testingMode, setTestingMode] = useState(false)
 
   const fetchTemplates = async () => {
     try {
@@ -79,7 +80,7 @@ export default function BatchCreator({ groupId, onBatchCreated, mediaFiles }) {
       return
     }
 
-    if (isDuplicateContact(normalized, stagedContacts)) {
+    if (!testingMode && isDuplicateContact(normalized, stagedContacts)) {
       alert('This phone number is already staged in the list.')
       return
     }
@@ -102,7 +103,7 @@ export default function BatchCreator({ groupId, onBatchCreated, mediaFiles }) {
 
       setStagedContacts(prev => {
         const existingPhones = new Set(prev.map(c => c.phone_number))
-        const filteredNew = parsed.filter(c => !existingPhones.has(c.phone_number))
+        const filteredNew = testingMode ? parsed : parsed.filter(c => !existingPhones.has(c.phone_number))
         
         if (prev.length + filteredNew.length > 20) {
           alert('Total batch contacts cannot exceed 20. Staging only the first matching rows.')
@@ -122,7 +123,18 @@ export default function BatchCreator({ groupId, onBatchCreated, mediaFiles }) {
       const found = savedPool.find(c => c.phone === p)
       return { phone_number: p, name: found ? found.name : 'Saved Contact' }
     })
-    setStagedContacts(toAdd)
+    if (testingMode) {
+      setStagedContacts(prev => {
+        const next = [...prev, ...toAdd]
+        if (next.length > 20) {
+          alert('Total batch contacts cannot exceed 20. Staging only the first 20.')
+          return next.slice(0, 20)
+        }
+        return next
+      })
+    } else {
+      setStagedContacts(toAdd)
+    }
   }
 
   const handleRemoveContact = (index) => {
@@ -264,19 +276,34 @@ export default function BatchCreator({ groupId, onBatchCreated, mediaFiles }) {
         </div>
 
         {/* Action Buttons to Add Contacts */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', borderTop: '1px solid var(--border)', paddingTop: '14px' }}>
-          <button
-            type="button"
-            onClick={() => setIsModalOpen(true)}
-            style={{ flex: 1.5, background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '8px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', cursor: 'pointer' }}
-          >
-            <Users size={14} style={{ color: 'var(--accent)' }} /> Saved Contacts
-          </button>
-          
-          <label style={{ flex: 1, background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '8px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', cursor: 'pointer' }}>
-            <Upload size={14} style={{ color: 'var(--accent)' }} /> CSV Import
-            <input type="file" accept=".csv" onChange={handleCSVUpload} style={{ display: 'none' }} />
-          </label>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid var(--border)', paddingTop: '14px' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(true)}
+              style={{ flex: 1.5, background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '8px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', cursor: 'pointer' }}
+            >
+              <Users size={14} style={{ color: 'var(--accent)' }} /> Saved Contacts
+            </button>
+            
+            <label style={{ flex: 1, background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '8px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', cursor: 'pointer' }}>
+              <Upload size={14} style={{ color: 'var(--accent)' }} /> CSV Import
+              <input type="file" accept=".csv" onChange={handleCSVUpload} style={{ display: 'none' }} />
+            </label>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0' }}>
+            <input
+              type="checkbox"
+              id="testingModeCheckbox"
+              checked={testingMode}
+              onChange={(e) => setTestingMode(e.target.checked)}
+              style={{ cursor: 'pointer' }}
+            />
+            <label htmlFor="testingModeCheckbox" style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', cursor: 'pointer' }}>
+              🧪 Testing Mode (Allow duplicate numbers in batch)
+            </label>
+          </div>
         </div>
 
         {/* Add Manual Form block */}
