@@ -64,7 +64,7 @@ export default function CampaignLogs({ campaigns, handleResume, handleCancel }) 
                       <RotateCcw size={12} /> Resume Campaign
                     </button>
                   )}
-                  {(c.status === 'pending' || c.status === 'paused') && handleCancel && (
+                  {(c.status === 'pending' || c.status === 'paused' || c.status === 'processing') && handleCancel && (
                     <button
                       onClick={() => handleCancel(c.id)}
                       style={{ flexGrow: 1, background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#ef4444', cursor: 'pointer', padding: '6px', borderRadius: '6px', fontSize: '11.5px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}

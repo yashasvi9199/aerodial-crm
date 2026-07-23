@@ -64,8 +64,7 @@ def get_image_thumbnail_base64(file_path):
                 img = img.convert("RGB")
             img.save(buffered, format="JPEG", quality=60)
             return "data:image/jpeg;base64," + base64.b64encode(buffered.getvalue()).decode('utf-8')
-    except Exception as e:
-        print(f"⚠️ Thumbnail generation failed for {file_path}: {e}")
+    except Exception:
         return ""
 
 def update_queue_status(qid, status):

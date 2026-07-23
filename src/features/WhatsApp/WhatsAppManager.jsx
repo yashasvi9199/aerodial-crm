@@ -92,6 +92,8 @@ export default function WhatsAppManager() {
             if (p.new.whatsapp_progress === 'verified') {
               setTimeout(() => {
                 setProgressStatus(null)
+                // Clear state table progress to avoid infinite updates or blinking
+                supabase.table('system_state').update({ whatsapp_progress: null }).eq('id', 1).execute()
               }, 4000)
             }
           }
@@ -126,11 +128,16 @@ export default function WhatsAppManager() {
     setProgressStatus('starting')
     setProgressError(null)
 
-    try {
+      // Replace {name} placeholder if present in message
+      let finalMessage = message.trim()
+      if (contactName.trim()) {
+        finalMessage = finalMessage.replace(/{name}/g, contactName.trim())
+      }
+      
       const command = JSON.stringify({ 
         action: 'whatsapp', 
         phone: phone.trim(), 
-        message: message.trim(), 
+        message: finalMessage, 
         media_filename: selectedMedia || undefined
       })
       const { error: cmdError } = await supabase.from('system_state').update({ 
@@ -138,11 +145,11 @@ export default function WhatsAppManager() {
         whatsapp_progress: 'ran_script'
       }).eq('id', 1)
       if (cmdError) throw cmdError
-
+ 
       const { error: logError } = await supabase.from('whatsapp_logs').insert([{ 
         phone_number: phone.trim(), 
         contact_name: contactName.trim() || null, 
-        message_text: message.trim() || null, 
+        message_text: finalMessage || null, 
         file_name: selectedMedia || null 
       }])
       if (logError) throw logError
