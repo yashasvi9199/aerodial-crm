@@ -4,13 +4,18 @@ import re
 import traceback
 from whatsapp_handler import _execute_whatsapp
 
-def format_bulk_message(template, greetings):
+def format_bulk_message(template, greetings, contact_name=""):
     """
-    Format a bulk message by replacing {greetings}, adding random spaces,
+    Format a bulk message by replacing {name}, {greetings}, adding random spaces,
     and italicizing a single character randomly.
     """
-    # 1. Replace {greetings}
+    # 0. Replace {name}
     message = template
+    if "{name}" in message:
+        name_val = contact_name.strip() if contact_name and contact_name.strip() else ""
+        message = message.replace("{name}", name_val)
+
+    # 1. Replace {greetings}
     if "{greetings}" in message:
         greeting = random.choice(greetings) if greetings else "Hello"
         message = message.replace("{greetings}", greeting)
@@ -131,12 +136,12 @@ def send_next_bulk_message(device, batch, run_cmd, supabase):
     phone = contact['phone_number']
     
     # Format the randomized message text
-    formatted_msg = format_bulk_message(batch['message_template'], greetings)
+    formatted_msg = format_bulk_message(batch['message_template'], greetings, contact.get('name', ''))
     media_file = batch.get('media_filename')
 
     print(f"[*] Sending bulk message to {phone} (Batch: '{batch['name']}')")
     try:
-        _execute_whatsapp(device, phone, formatted_msg, run_cmd, media_file)
+      _execute_whatsapp(device, phone, formatted_msg, run_cmd, media_file, supabase)
         
         now = datetime.datetime.now(datetime.timezone.utc).isoformat()
         # Mark contact as sent
