@@ -170,6 +170,31 @@ export default function BroadcastTab() {
     }
   }
 
+  const handleCancelCampaign = async (batchId) => {
+    setLoading(true)
+    try {
+      const { error } = await supabase
+        .from('whatsapp_bulk_batches')
+        .update({
+          scheduled_at: null,
+          next_send_at: null,
+          status: 'pending'
+        })
+        .eq('id', batchId)
+      if (error) throw error
+      alert('Campaign cancelled and reverted to draft batches.')
+      fetchCampaigns()
+      if (selectedGroupId) {
+        fetchBatches(selectedGroupId)
+      }
+    } catch (e) {
+      console.error(e)
+      alert('Failed to cancel campaign: ' + e.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleToggleBatch = (id) => {
     if (selectedBatchIds.includes(id)) {
       setSelectedBatchIds(prev => prev.filter(bId => bId !== id))
@@ -262,7 +287,7 @@ export default function BroadcastTab() {
       </form>
 
       {/* Right Column: Execution Monitoring */}
-      <CampaignLogs campaigns={campaigns} handleResume={handleResume} />
+      <CampaignLogs campaigns={campaigns} handleResume={handleResume} handleCancel={handleCancelCampaign} />
 
       {/* Error Popup Modal */}
       {activeError && (
