@@ -1,11 +1,23 @@
-# AeroDial CRM - Agent Persistence State
+# MEMORY.md
 
 ## Architecture & Session State
-- Model Context: Gemini pair programming.
-- Database: Supabase (REST via PostgREST and WebSockets via Realtime).
-- Frontend: React 19, Vite, Vanilla CSS styling.
-- Daemon: Python 3, ADB bridge, root-level shell access (`su -c`).
-- Airtel SIM calling routing: Rooted Android 16/AOSP voice account selection.
+- **Project Structure**: React (Vite) frontend web application connecting with a Python 3 backend daemon to automate adb tasks on devices.
+- **Model Context**: Gemini pair programming.
+- **Database & Storage**: Supabase (REST via PostgREST and WebSockets via Realtime).
+- **Hosting**: Cloudflare Pages for the frontend; Serverless-ready/local execution for the daemon.
+- **Daemon**: Wireless/wired ADB bridge, root-level shell access (`su -c`) for system integrations.
+- **Airtel SIM Calling Routing**: Rooted Android 16/AOSP voice account selection.
+
+## Short-term Memory
+- Added WhatsApp Media Library panel under the Setup Tab and extended it to the main WhatsApp Hub composer workspace page.
+- Integrated file uploads/deletions directly to and from `/data/local/tmp/aerodial_media/` on the device.
+- Staged file uploads inside a new `media_queue` Supabase table to avoid Supabase Realtime size limit connection drops.
+- Reordered python daemon command matching flow to ensure `upload_media` and `delete_media` run first and do not get silently discarded.
+- Wrapped ADB shell paths in quotes inside the daemon to support files with spaces.
+- Added visual progress bar on the UI to display upload stages.
+- Generated compressed JPEG thumbnails using Pillow for browser media previews.
+- Modified WhatsApp Modal to allow selecting and attaching single PDF or image files to outgoing messages.
+- Verified build and ran lint tests successfully.
 
 ## Technical Debt & Active Backlog
 - Verified all newly created and updated files are strictly under 300 lines limit (split listings into separate subcomponents).
@@ -32,4 +44,3 @@
 - Integrated invisible Truecaller name lookup (copied and queried `tc.db` from phone via rooted ADB) without launching the app, prepending a leading '0' prefix for search queries.
 - Implemented inline-editable Truecaller section in Contacts, Cold Calling, Justdial Leads, and WhatsApp composers, saving edits back to database cache.
 - Fixed WhatsApp Business auto-sending click mechanics by bypassing keyboard dismissal and tapping coordinates exactly once to prevent voice note recording loops.
-
