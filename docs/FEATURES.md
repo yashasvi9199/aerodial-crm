@@ -38,6 +38,7 @@
 - **Debounced Inputs**: Leverages React input debouncing to prevent search lags and heavy database queries.
 - **Card-Based Visual Layout**: Display cards styled dynamically based on origin (Green borders and tags for Cold Calling, Blue borders and tags for Justdial Leads).
 - **Inline Card Editing**: Click the Edit icon on a card to render inputs directly within the card, removing sidebars and popups.
+- **Excel Export**: Export option in the header allows downloading either Cold Calling contacts or Justdial Leads as Excel files containing Name and Number columns.
 
 ## 7. Telemetry & Activity Counters
 - **Call Attempts Tracking & Manual Override**: Automatically increments `call_count` for contacts and leads during active call completions, with support for manual overrides via inline numeric inputs in form panels.
