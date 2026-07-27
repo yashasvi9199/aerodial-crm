@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { Search, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { useDebounce, fuzzyMatch } from '../../lib/utils'
 import ContactCard from './ContactCard'
+import ContactsHeader from './ContactsHeader'
+import { exportContactsToExcel } from './exportUtils'
 
 export default function AllContacts() {
   const [contacts, setContacts] = useState([])
@@ -106,137 +108,28 @@ export default function AllContacts() {
     return sortOrder === 'desc' ? -comparison : comparison
   })
 
+  const handleExport = (type) => {
+    if (type === 'Cold') {
+      exportContactsToExcel('Cold', contacts)
+    } else if (type === 'Justdial') {
+      exportContactsToExcel('Justdial', leads)
+    }
+  }
+
   return (
     <div style={{ padding: '30px', overflowY: 'auto', height: '100%', display: 'flex', flexDirection: 'column', gap: '20px' }}>
       
-      {/* Header & Filter Controls */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
-        <div>
-          <h2 style={{ margin: '0 0 4px 0', color: 'var(--text)', fontWeight: '600' }}>Search Engine</h2>
-          <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '14px' }}>Subsequence fuzzy search over all contacts and Jd leads.</p>
-        </div>
-
-        {/* Platform type selector */}
-        <div style={{ display: 'flex', gap: '4px', background: 'var(--bg-input)', padding: '3px', borderRadius: '8px' }}>
-          {[
-            { label: 'All Contacts', val: 'All' },
-            { label: 'Cold Calling', val: 'Cold' },
-            { label: 'Justdial Leads', val: 'Justdial' }
-          ].map(opt => (
-            <button
-              key={opt.val}
-              onClick={() => setFilterType(opt.val)}
-              style={{
-                border: 'none',
-                background: filterType === opt.val ? 'var(--bg-panel)' : 'transparent',
-                color: filterType === opt.val ? 'var(--accent)' : 'var(--text-muted)',
-                padding: '6px 14px',
-                borderRadius: '6px',
-                fontSize: '12.5px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                transition: 'all 0.15s'
-              }}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Search & Sort Row */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '15px', flexWrap: 'wrap' }}>
-        {/* Search Bar Input */}
-        <div style={{ position: 'relative', flexGrow: 1, maxWidth: '500px' }}>
-          <Search size={18} style={{ position: 'absolute', left: '12px', top: '13px', color: 'var(--text-muted)' }} />
-          <input
-            type="text"
-            placeholder="Search by name, phone, brand, location, profession..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            style={{
-              width: '100%',
-              background: 'var(--bg-panel)',
-              border: '1px solid var(--border)',
-              color: 'var(--text)',
-              padding: '12px 14px 12px 42px',
-              borderRadius: '8px',
-              fontSize: '14px',
-              outline: 'none',
-              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
-            }}
-          />
-        </div>
-
-        {/* Two-part Sort Controls */}
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <div style={{ display: 'flex', background: 'var(--bg-input)', padding: '3px', borderRadius: '8px' }}>
-            <button
-              onClick={() => setSortBy('Time')}
-              style={{
-                border: 'none',
-                background: sortBy === 'Time' ? 'var(--bg-panel)' : 'transparent',
-                color: sortBy === 'Time' ? 'var(--accent)' : 'var(--text-muted)',
-                padding: '6px 12px',
-                borderRadius: '6px',
-                fontSize: '12px',
-                fontWeight: 'bold',
-                cursor: 'pointer'
-              }}
-            >
-              Time
-            </button>
-            <button
-              onClick={() => setSortBy('Name')}
-              style={{
-                border: 'none',
-                background: sortBy === 'Name' ? 'var(--bg-panel)' : 'transparent',
-                color: sortBy === 'Name' ? 'var(--accent)' : 'var(--text-muted)',
-                padding: '6px 12px',
-                borderRadius: '6px',
-                fontSize: '12px',
-                fontWeight: 'bold',
-                cursor: 'pointer'
-              }}
-            >
-              Name
-            </button>
-          </div>
-
-          <div style={{ display: 'flex', background: 'var(--bg-input)', padding: '3px', borderRadius: '8px' }}>
-            <button
-              onClick={() => setSortOrder('asc')}
-              style={{
-                border: 'none',
-                background: sortOrder === 'asc' ? 'var(--bg-panel)' : 'transparent',
-                color: sortOrder === 'asc' ? 'var(--accent)' : 'var(--text-muted)',
-                padding: '6px 12px',
-                borderRadius: '6px',
-                fontSize: '12px',
-                fontWeight: 'bold',
-                cursor: 'pointer'
-              }}
-            >
-              Asc
-            </button>
-            <button
-              onClick={() => setSortOrder('desc')}
-              style={{
-                border: 'none',
-                background: sortOrder === 'desc' ? 'var(--bg-panel)' : 'transparent',
-                color: sortOrder === 'desc' ? 'var(--accent)' : 'var(--text-muted)',
-                padding: '6px 12px',
-                borderRadius: '6px',
-                fontSize: '12px',
-                fontWeight: 'bold',
-                cursor: 'pointer'
-              }}
-            >
-              Desc
-            </button>
-          </div>
-        </div>
-      </div>
+      <ContactsHeader
+        filterType={filterType}
+        setFilterType={setFilterType}
+        search={search}
+        setSearch={setSearch}
+        sortBy={sortBy}
+        setSortBy={setSortBy}
+        sortOrder={sortOrder}
+        setSortOrder={setSortOrder}
+        onExport={handleExport}
+      />
 
       {/* Results grid */}
       {loading ? (
