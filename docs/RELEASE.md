@@ -1,5 +1,9 @@
 # Release Notes
 
+## [1.16.0] - 2026-07-27
+### Added
+- Added Excel export functionality to the search engine (Contacts Tab) using the `xlsx` library, enabling the downloading of Cold Calling contacts and Justdial Leads into sheets with two columns: Name and Number.
+
 ## [1.15.0] - 2026-07-23
 ### Added
 - Integrated "UI Debug Mode" checkbox parameter across direct composer and campaign scheduler workflows.
