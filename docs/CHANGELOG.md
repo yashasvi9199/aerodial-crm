@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.16.0] - 2026-07-27
+### Added
+- Added Excel export feature to the unified Search Engine (Contacts Tab).
+- Allows exporting/downloading either Cold Calling contacts or Justdial Leads into Excel files with designated columns: Name and Number.
+
 ## [1.15.0] - 2026-07-23
 ### Added
 - Integrated UI Debug Mode checkbox parameters inside Composer and Broadcast Scheduler layouts.
