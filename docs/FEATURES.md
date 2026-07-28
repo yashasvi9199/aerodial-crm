@@ -1,5 +1,41 @@
 # AeroDial CRM - System Features
 
+## Root vs. Non-Root Compatibility Matrix
+
+This table summarizes which features are fully functional on non-rooted devices using standard ADB commands versus those that require root shell access (`su -c`).
+
+| Feature Section | Feature Detail / Sub-Feature | Non-Rooted | Rooted | Notes / Requirements |
+| :--- | :--- | :---: | :---: | :--- |
+| **1. Outbound Dialing Engine** | Rooted SIM Routing | ✗ | ✓ | Requires root shell access to modify telecom outgoing phone accounts programmatically. |
+| | SIM Preference Restoration | ✗ | ✓ | Requires root shell access to restore original telephony settings database values. |
+| | Calling Method Customization | ✓ | ✓ | Non-rooted uses ROM-specific intent extra parameters; rooted uses direct service overrides. |
+| | Short-Code Routing | ✓ | ✓ | Uses standard dialing intents. |
+| **2. Local Bridge Daemon** | Real-Time Call Queueing | ✓ | ✓ | Monitors Supabase and triggers dialing actions. |
+| | WhatsApp Media Attachments | ✓ | ✓ | Pushes media files to `/sdcard/Download/` via standard ADB and triggers SEND intents. |
+| | SIM Preference Backup | ✗ | ✓ | Reads device defaults from telecom/settings databases using root shell access. |
+| | ADB Telemetry Logging | ✓ | ✓ | Queries call log content provider; rooted gets extended query access. |
+| | Active Call Controls | ✓ | ✓ | Simulates hang up key events using standard ADB shell commands. |
+| | Connection & Polling | ✓ | ✓ | Port connectivity, prioritizations, and low-latency loop run on the host machine. |
+| **3. High-Fidelity Dashboard** | All Metrics & SVG Charts | ✓ | ✓ | Fully functional via web application dashboard. |
+| **4. Cold Calling Workspace** | Lists, Filters & Excel Import | ✓ | ✓ | Fully functional via web application workspace. |
+| **5. JustDial Leads Management** | Leads Filtering & Direct Dialer | ✓ | ✓ | Fully functional via web application workspace. |
+| **6. Unified Search Engine** | Fuzzy Search & Card Inline Editing | ✓ | ✓ | Fully functional via web application workspace. |
+| **7. Telemetry & Activity Counters** | Call Attempts & History Sync | ✓ | ✓ | General history sync uses content providers; custom backfilling is database-driven. |
+| **8. Database Bulk Updater** | Parallel Batch Queries | ✓ | ✓ | Fully functional via web application workspace. |
+| **9. WhatsApp Business Dispatcher** | Message Composer & ADB Automation | ✓ | ✓ | Text/media dispatching & keyboard dismissal via standard ADB and UIAutomator. |
+| | Rooted ADB Chat History Sync | ✗ | ✓ | Requires root shell access (`su -c`) to copy and decrypt local WhatsApp `msgstore.db`. |
+| | Auto-Send Click Coordinates | ✓ | ✓ | Simulates tap coordinates using standard ADB shell command. |
+| **10. Keep-Alive Scheduler** | Keep-Alive Cron Jobs | ✓ | ✓ | Runs entirely on Cloudflare, GitHub Actions, and Supabase. |
+| **11. Truecaller Name Lookup** | Rooted SQLite DB Queries | ✗ | ✓ | Requires root shell access (`su -c`) to copy and query local Truecaller `tc.db` database. |
+| | Intent Search Fallback | ✓ | ✓ | Opens Truecaller search query screen via standard Android VIEW intents. |
+| | Name Cache & Profile Editing | ✓ | ✓ | Fully functional via web application/Supabase caching. |
+| **12. Setup & Diagnostics Panel** | Brand & OS Detection | ✓ | ✓ | Resolves build parameters via standard `getprop` ADB commands. |
+| | SIM Card Scanner | ✓ | ✓ | Non-rooted uses `dumpsys subscription`; rooted uses content query database fallback. |
+| | Default SIM Selector | ✗ | ✓ | Modifies telecom account database; requires root shell access. |
+| | Failsafe Dialer Fallbacks | ✓ | ✓ | Iterates through intent variations and root direct dialer overrides. |
+| **13. WhatsApp Bulk Engine** | Batch Scheduler & Obfuscator | ✓ | ✓ | Background daemon processing and coordinate tapping do not require root. |
+
+
 ## 1. Outbound Dialing Engine
 - **Rooted SIM Routing**: Programmatically binds outgoing voice calls to Airtel (SIM 2) subscription using root-level Android shell commands (`telecom set-user-selected-outgoing-phone-account`).
 - **SIM Preference Restoration**: Automatically backs up original default SIM configurations (telecom account and settings DB values) on connection, and restores them after call completion or dialing timeouts.
