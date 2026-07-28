@@ -30,5 +30,6 @@
 - 2026-07-23 (UI Debug & Progress Bars): Integrated "UI Debug Mode" checkbox parameter across direct composer and campaign scheduler workflows. Implemented step-by-step confirmation popups in frontend overlays prompting user validation on milestones: Ran Script, Opened WA, Typed Draft, Sent, Verified. Configured individual contact split step progress indicators inside Campaign Logs batch item groups. Replaced daemon periodic filesystem ADB file queries with a manual 'Refresh Cache' button on the media tab. Bumped version to 1.15.0.
 - 2026-07-24: Consolidated scattered agent memory/persistence files (USER.md, SOUL.md, MEMORY.md, .agent-persistence) into a unified `.agent/` folder structure, symlinked `.agents` to `.agent` to preserve customizations discovery, and merged duplicate contents.
 - 2026-07-27: Implemented Excel export feature in Contacts tab to download Cold Calling and Justdial Leads data (Name and Number columns) using the xlsx library. Bounded component sizes to keep AllContacts.jsx under 300 lines by extracting ContactsHeader.jsx. Bumped version to 1.16.0.
+- 2026-07-28: Added device root status compatibility matrix to docs/FEATURES.md documenting features compatible with rooted vs non-rooted devices.
 
 
