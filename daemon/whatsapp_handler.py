@@ -425,7 +425,7 @@ def _execute_whatsapp(device, phone, message, run_cmd, media_filename=None, supa
             if input_coords:
                 print(f"[*] Tapping message input field at {input_coords}...")
                 run_cmd(f"adb -s {device} shell input tap {input_coords[0]} {input_coords[1]}")
-                time.sleep(0.5)
+                time.sleep(1.5)
             else:
                 print("[*] Message input field not found, tapping approximate center-bottom...")
                 size_out2 = run_cmd(f"adb -s {device} shell wm size")
@@ -434,9 +434,11 @@ def _execute_whatsapp(device, phone, message, run_cmd, media_filename=None, supa
                     run_cmd(f"adb -s {device} shell input tap {int(size_m2.group(1)) // 2} {int(size_m2.group(2)) - 120}")
                     time.sleep(0.5)
 
-            # Shell-escape for ADB input text (spaces become %s)
-            safe_input = message.replace('\\', '\\\\').replace('"', '\\"').replace("'", "\\'").replace('\n', ' ').replace('$', '\\$').replace('`', '\\`').replace(' ', '%s')
-            run_cmd(f"adb -s {device} shell input text '{safe_input}'")
+            # Sanitize for ADB input text: replace spaces with %s, strip shell-breaking chars, no quotes
+            safe_input = message.replace('\n', ' ').replace(' ', '%s')
+            safe_input = re.sub(r"['\"`$\\!#&|;()<>{}\[\]]", '', safe_input)
+            print(f"[*] Typing text via ADB input: {safe_input[:80]}...")
+            run_cmd(f"adb -s {device} shell input text {safe_input}")
             time.sleep(1.0)
             # Find and tap the send button for the text message
             text_send_coords = None
