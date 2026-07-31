@@ -289,7 +289,7 @@ def main():
                                     file_base64 = None
                                     if chunks_rows:
                                         print(f"[*] Assembling file from {len(chunks_rows)} chunks...")
-                                        file_base64 = "".join(chunk['data_base64'] for chunk in chunks_rows)
+                                        file_base64 = "".join(chunk['data_base64'].rstrip('=') for chunk in chunks_rows)
                                     else:
                                         # Fallback to media_queue
                                         queue_resp = supabase.table('media_queue').select('id,file_base64').eq('filename', filename).order('created_at', desc=True).limit(1).execute()
