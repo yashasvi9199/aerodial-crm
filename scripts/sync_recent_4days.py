@@ -44,11 +44,31 @@ def main():
     # Initialize Supabase client
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
     
+    # Retrieve target sub_id based on selected default_sim_slot
+    target_sub_id = None
+    try:
+        state_res = supabase.table('system_state').select('default_sim_slot, adb_status').eq('id', 1).execute()
+        if state_res.data:
+            db_state = state_res.data[0]
+            default_sim_slot = db_state.get('default_sim_slot', 0) or 0
+            adb_status_str = db_state.get('adb_status', '')
+            if adb_status_str.startswith('{'):
+                import json
+                status_data = json.loads(adb_status_str)
+                sims = status_data.get('sim_cards', [])
+                for sim in sims:
+                    if sim.get('slot') == default_sim_slot:
+                        target_sub_id = sim.get('sub_id')
+                        print(f"[*] Target SIM slot: {default_sim_slot}, matched subscription_id: {target_sub_id}")
+                        break
+    except Exception as e:
+        print(f"⚠️ Error mapping target SIM slot: {e}")
+
     # 4 days ago timestamp
     four_days_ago_ms = int((time.time() - 4 * 24 * 3600) * 1000)
     print(f"[*] Querying call log database since 4 days ago ({datetime.datetime.fromtimestamp(four_days_ago_ms/1000).strftime('%Y-%m-%d %H:%M:%S')})...")
     
-    projection = "date:duration:number:type"
+    projection = "date:duration:number:type:subscription_id"
     cmd = f"adb -s {device} shell \"su -c 'content query --uri content://call_log/calls --projection {projection} --where \\\"date >= {four_days_ago_ms}\\\" --sort \\\"date DESC\\\"'\""
     out = run_cmd(cmd)
     
@@ -68,8 +88,18 @@ def main():
         dur_match = re.search(r'duration=(\d+)', line)
         num_match = re.search(r'number=([+\d#*]+)', line)
         type_match = re.search(r'type=(\d+)', line)
+        sub_id_match = re.search(r'subscription_id=(\d+)', line)
         
         if date_match and num_match and type_match:
+            # Filter by subscription_id if target_sub_id is mapped
+            if target_sub_id is not None and sub_id_match:
+                try:
+                    sub_id = int(sub_id_match.group(1))
+                    if sub_id != target_sub_id:
+                        continue
+                except ValueError:
+                    pass
+            
             calls.append({
                 'date_ms': int(date_match.group(1)),
                 'duration': int(dur_match.group(1)) if dur_match else 0,
