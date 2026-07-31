@@ -19,6 +19,7 @@ export function useSetup() {
   const [localSimSlot, setLocalSimSlot] = useState(null);
   const [callingMethod, setCallingMethod] = useState(() => localStorage.getItem('aerodial_calling_method') || 'default');
   const [uploadProgress, setUploadProgress] = useState(null);
+  const [isSyncingCallLogs, setIsSyncingCallLogs] = useState(false);
 
   // Keep nowTime updated for heartbeat check
   useEffect(() => {
@@ -37,6 +38,9 @@ export function useSetup() {
           if (typeof data.default_sim_slot === 'number') {
             setLocalSimSlot(data.default_sim_slot);
           }
+          if (data.command === 'idle') {
+            setIsSyncingCallLogs(false);
+          }
         }
       } catch (err) {
         console.error('Error fetching system state:', err);
@@ -50,6 +54,9 @@ export function useSetup() {
         setUpdatedAt(payload.new.updated_at);
         if (typeof payload.new.default_sim_slot === 'number') {
           setLocalSimSlot(payload.new.default_sim_slot);
+        }
+        if (payload.new.command === 'idle') {
+          setIsSyncingCallLogs(false);
         }
       })
       .subscribe();
@@ -206,6 +213,27 @@ export function useSetup() {
     }
   }, []);
 
+  const disconnectWirelessAdb = useCallback(async () => {
+    try {
+      writeLog('INFO', `Initiated wireless ADB disconnect`);
+      const command = JSON.stringify({ action: 'disconnect_wireless_adb' });
+      await supabase.from('system_state').update({ command }).eq('id', 1);
+    } catch (err) {
+      writeLog('ERROR', `Failed to send wireless disconnect command: ${err.message}`);
+    }
+  }, []);
+
+  const triggerSyncCallLogs = useCallback(async () => {
+    try {
+      setIsSyncingCallLogs(true);
+      writeLog('INFO', `Requested sync call logs from device`);
+      await supabase.from('system_state').update({ command: 'sync_call_logs' }).eq('id', 1);
+    } catch (err) {
+      setIsSyncingCallLogs(false);
+      writeLog('ERROR', `Failed to send sync call logs command: ${err.message}`);
+    }
+  }, []);
+
   const uploadMedia = useCallback(async (file) => {
     if (!file) return;
     setUploadProgress({ filename: file.name, percent: 0, status: 'reading' });
@@ -314,6 +342,9 @@ export function useSetup() {
     exportLogs,
     installTruecaller,
     connectWirelessAdb,
+    disconnectWirelessAdb,
+    triggerSyncCallLogs,
+    isSyncingCallLogs,
     callingMethod,
     updateCallingMethod,
     uploadMedia,
