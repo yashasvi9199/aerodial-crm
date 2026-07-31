@@ -403,3 +403,13 @@ ALTER TABLE public.whatsapp_bulk_batch_contacts ADD COLUMN IF NOT EXISTS whatsap
 -- Notes: Add broadcast_test_mode boolean column to public.system_state to enable/disable time validations on broadcasts.
 
 ALTER TABLE public.system_state ADD COLUMN IF NOT EXISTS broadcast_test_mode boolean DEFAULT false;
+
+--------------------------------------------------------------------------------------
+
+-- Date: 2026-07-31 15:20:00
+-- Feature: Broadcast Text-After-Media UI Debug Steps
+-- Type: SCHEMA
+-- Notes: Add confirmation columns for typing_text and sent_text steps used when broadcast sends text message after media.
+
+ALTER TABLE public.system_state ADD COLUMN IF NOT EXISTS confirm_typing_text text DEFAULT 'idle';
+ALTER TABLE public.system_state ADD COLUMN IF NOT EXISTS confirm_sent_text text DEFAULT 'idle';
