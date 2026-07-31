@@ -268,37 +268,18 @@ def _execute_whatsapp(device, phone, message, run_cmd, media_filename=None, supa
             stream_uri = content_uri if content_uri else f"file://{device_path}"
             print(f"[*] Dispatching media stream URI: {stream_uri}")
             
-            # Shell-escape the message to prevent it from breaking am start argument parsing
-            if message:
-                safe_msg = message.replace("\\", "\\\\").replace("'", "\\'").replace('"', '\\"').replace('\n', '\\n').replace('$', '\\$').replace('`', '\\`')
-                extra_text = f"--es android.intent.extra.TEXT '{safe_msg}'"
-            else:
-                extra_text = ""
-            
             # Quote mime_type to prevent shell glob expansion of image/*
             quoted_mime = f"'{mime_type}'"
 
-            # Create a list of intent commands to try to open WhatsApp Business with media
-            # CRITICAL: extra_text MUST be placed at the very END of the command so message
-            # content can never consume subsequent -p/-n flags and corrupt the package target.
+            # Media intents: do NOT include message text here — it breaks am start parsing.
+            # Text will be typed and sent as a second message after the media is dispatched.
             intents_to_try = [
-                # Method 1: Component-targeted SEND intent ExternalShareAlias (Most reliable on latest W4B versions)
-                f"adb -s {device} shell am start -a android.intent.action.SEND -t {quoted_mime} -n {pkg}/com.whatsapp.contact.ui.picker.ExternalShareAlias --eu android.intent.extra.STREAM {stream_uri} -e jid {clean_num}@s.whatsapp.net --grant-read-uri-permission --grant-write-uri-permission {extra_text}",
-
-                # Method 2: Package-targeted SEND intent (standard fallback)
-                f"adb -s {device} shell am start -a android.intent.action.SEND -t {quoted_mime} -p {pkg} --eu android.intent.extra.STREAM {stream_uri} -e jid {clean_num}@s.whatsapp.net --grant-read-uri-permission --grant-write-uri-permission {extra_text}",
-                
-                # Method 3: Component-targeted SEND intent ContactPicker
-                f"adb -s {device} shell am start -a android.intent.action.SEND -t {quoted_mime} -n {pkg}/com.whatsapp.ContactPicker --eu android.intent.extra.STREAM {stream_uri} -e jid {clean_num}@s.whatsapp.net --grant-read-uri-permission --grant-write-uri-permission {extra_text}",
-
-                # Method 4: Component-targeted SEND intent biz.ContactPicker
-                f"adb -s {device} shell am start -a android.intent.action.SEND -t {quoted_mime} -n {pkg}/com.whatsapp.biz.ContactPicker --eu android.intent.extra.STREAM {stream_uri} -e jid {clean_num}@s.whatsapp.net --grant-read-uri-permission --grant-write-uri-permission {extra_text}",
-
-                # Method 5: Component-targeted SEND intent ContactPickerActivity
-                f"adb -s {device} shell am start -a android.intent.action.SEND -t {quoted_mime} -n {pkg}/com.whatsapp.ContactPickerActivity --eu android.intent.extra.STREAM {stream_uri} -e jid {clean_num}@s.whatsapp.net --grant-read-uri-permission --grant-write-uri-permission {extra_text}",
-
-                # Method 6: Implicit SEND intent without package restriction
-                f"adb -s {device} shell am start -a android.intent.action.SEND -t {quoted_mime} --eu android.intent.extra.STREAM {stream_uri} -e jid {clean_num}@s.whatsapp.net --grant-read-uri-permission --grant-write-uri-permission {extra_text}"
+                f"adb -s {device} shell am start -a android.intent.action.SEND -t {quoted_mime} -n {pkg}/com.whatsapp.contact.ui.picker.ExternalShareAlias --eu android.intent.extra.STREAM {stream_uri} -e jid {clean_num}@s.whatsapp.net --grant-read-uri-permission --grant-write-uri-permission",
+                f"adb -s {device} shell am start -a android.intent.action.SEND -t {quoted_mime} -p {pkg} --eu android.intent.extra.STREAM {stream_uri} -e jid {clean_num}@s.whatsapp.net --grant-read-uri-permission --grant-write-uri-permission",
+                f"adb -s {device} shell am start -a android.intent.action.SEND -t {quoted_mime} -n {pkg}/com.whatsapp.ContactPicker --eu android.intent.extra.STREAM {stream_uri} -e jid {clean_num}@s.whatsapp.net --grant-read-uri-permission --grant-write-uri-permission",
+                f"adb -s {device} shell am start -a android.intent.action.SEND -t {quoted_mime} -n {pkg}/com.whatsapp.biz.ContactPicker --eu android.intent.extra.STREAM {stream_uri} -e jid {clean_num}@s.whatsapp.net --grant-read-uri-permission --grant-write-uri-permission",
+                f"adb -s {device} shell am start -a android.intent.action.SEND -t {quoted_mime} -n {pkg}/com.whatsapp.ContactPickerActivity --eu android.intent.extra.STREAM {stream_uri} -e jid {clean_num}@s.whatsapp.net --grant-read-uri-permission --grant-write-uri-permission",
+                f"adb -s {device} shell am start -a android.intent.action.SEND -t {quoted_mime} --eu android.intent.extra.STREAM {stream_uri} -e jid {clean_num}@s.whatsapp.net --grant-read-uri-permission --grant-write-uri-permission"
             ]
             
             is_foreground = False
@@ -400,10 +381,7 @@ def _execute_whatsapp(device, phone, message, run_cmd, media_filename=None, supa
             report("sent")
             run_cmd(f"adb -s {device} shell input tap {cx} {cy}")
             time.sleep(1.5)
-            report("verified")
         else:
-            print(f"⚠️ WhatsApp UI dump did not contain send button. Trying fallback...")
-
             print("⚠️ Send button not detected in UI dump. Attempting fallback tap / keyevent...")
             report("sent")
             size_out = run_cmd(f"adb -s {device} shell wm size")
@@ -418,7 +396,46 @@ def _execute_whatsapp(device, phone, message, run_cmd, media_filename=None, supa
                 time.sleep(0.2)
                 run_cmd(f"adb -s {device} shell input keyevent 66")
             time.sleep(1.5)
-            report("verified")
+
+        # After media is sent, send the text message as a second message in the same chat
+        if media_filename and message:
+            print(f"[*] Media sent. Now typing text message in same chat...")
+            time.sleep(2.0)
+            # Shell-escape for ADB input text (spaces become %s)
+            safe_input = message.replace('\\', '\\\\').replace('"', '\\"').replace("'", "\\'").replace('\n', ' ').replace('$', '\\$').replace('`', '\\`').replace(' ', '%s')
+            run_cmd(f"adb -s {device} shell input text '{safe_input}'")
+            time.sleep(1.0)
+            # Find and tap the send button for the text message
+            text_send_coords = None
+            for t_attempt in range(4):
+                time.sleep(1.0)
+                run_cmd(f"adb -s {device} shell uiautomator dump /sdcard/w_dump.xml", timeout=8)
+                temp_path2 = os.path.join(os.path.dirname(os.path.abspath(__file__)), "w_dump2.xml")
+                run_cmd(f"adb -s {device} pull /sdcard/w_dump.xml {temp_path2}", timeout=8)
+                run_cmd(f"adb -s {device} shell rm /sdcard/w_dump.xml", timeout=4)
+                xml2 = ""
+                if os.path.exists(temp_path2):
+                    try:
+                        with open(temp_path2, "r", encoding="utf-8", errors="ignore") as f2:
+                            xml2 = f2.read()
+                        os.remove(temp_path2)
+                    except Exception:
+                        pass
+                m2 = re.search(r'resource-id="[^"]*id/send"[^>]*bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', xml2)
+                if m2:
+                    x1, y1, x2, y2 = int(m2.group(1)), int(m2.group(2)), int(m2.group(3)), int(m2.group(4))
+                    text_send_coords = ((x1 + x2) // 2, (y1 + y2) // 2)
+                    break
+            if text_send_coords:
+                print(f"[*] Text send button at {text_send_coords}. Tapping...")
+                run_cmd(f"adb -s {device} shell input tap {text_send_coords[0]} {text_send_coords[1]}")
+            else:
+                print("[*] Text send button not found, using Enter keyevent...")
+                run_cmd(f"adb -s {device} shell input keyevent 66")
+            time.sleep(1.5)
+            print("[*] Text message sent as second message.")
+
+        report("verified")
     except Exception as ex:
         print(f"⚠️ WhatsApp error: {ex}")
         report(f"error:{str(ex)}")
