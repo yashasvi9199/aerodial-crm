@@ -22,7 +22,9 @@ export default function WhatsAppManager() {
   const [logs, setLogs] = useState([])
   const [adbStatus, setAdbStatus] = useState('disconnected')
   const [selectedMedia, setSelectedMedia] = useState('')
-  const [subTab, setSubTab] = useState('composer') // 'composer' | 'media' | 'templates' | 'groups' | 'greetings' | 'broadcast'
+  const [subTab, setSubTab] = useState('composer') // 'composer' | 'groups' | 'broadcast' | 'assets'
+  const [assetsSubTab, setAssetsSubTab] = useState('templates') // 'templates' | 'media' | 'greetings'
+  const [editingBatch, setEditingBatch] = useState(null)
   const [selectedGroupId, setSelectedGroupId] = useState('')
   const [progressStatus, setProgressStatus] = useState(null)
   const [progressError, setProgressError] = useState(null)
@@ -187,6 +189,11 @@ export default function WhatsAppManager() {
       alert('Failed to delete log: ' + e.message)
     }
   }
+  const handleEditBatch = (batch) => {
+    setSelectedGroupId(batch.group_id)
+    setEditingBatch(batch)
+    setSubTab('groups')
+  }
   const formattingTools = [
     { type: 'bold', label: 'B', title: 'Bold (*text*)', style: { fontWeight: 'bold' } },
     { type: 'italic', label: 'I', title: 'Italic (_text_)', style: { fontStyle: 'italic' } },
@@ -210,12 +217,10 @@ export default function WhatsAppManager() {
       {/* Sub tabs navigation */}
       <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid var(--border)', paddingBottom: '10px', flexWrap: 'wrap' }}>
         {[
-          { id: 'composer', label: 'Composer' },
-          { id: 'media', label: 'Media Library' },
-          { id: 'templates', label: 'Template' },
+          { id: 'composer', label: 'Direct Chat' },
           { id: 'groups', label: 'Groups' },
-          { id: 'greetings', label: 'Greetings' },
-          { id: 'broadcast', label: 'Broadcast' }
+          { id: 'broadcast', label: 'Broadcast' },
+          { id: 'assets', label: 'Assets & Templates' }
         ].map(tab => (
           <button
             key={tab.id}
@@ -246,7 +251,8 @@ export default function WhatsAppManager() {
 
       {/* Tab Contents */}
       {subTab === 'composer' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', alignItems: 'start' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', alignItems: 'start' }}>
           
           <form onSubmit={handleSend} style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', padding: '20px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <h3 style={{ margin: '0 0 5px 0', fontSize: '15px', fontWeight: '750', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -530,83 +536,113 @@ export default function WhatsAppManager() {
           )}
 
         </div>
-      )}
 
-      {subTab === 'media' && (
-        <MediaLibraryTab
-          mediaFiles={mediaFiles}
-          isConnected={isConnected}
-          uploadMedia={uploadMedia}
-          deleteMedia={deleteMedia}
-          uploadProgress={uploadProgress}
-        />
-      )}
-
-      {subTab === 'templates' && (
-        <TemplateManager />
-      )}
-
-      {subTab === 'groups' && (
-        <GroupManager
-          selectedGroupId={selectedGroupId}
-          onSelectGroup={setSelectedGroupId}
-          mediaFiles={mediaFiles}
-        />
-      )}
-
-      {subTab === 'greetings' && (
-        <GreetingsManager />
-      )}
-
-      {subTab === 'broadcast' && (
-        <BroadcastTab />
-      )}
-
-      {/* Direct Composer history logs */}
-      <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', padding: '20px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '750', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <History size={16} style={{ color: 'var(--accent)' }} /> Sent Messages History Log
-        </h3>
-        
-        {logs.length === 0 ? (
-          <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>No messages sent yet.</div>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
-              <thead>
-                <tr style={{ borderBottom: '2px solid var(--border)', color: 'var(--text-muted)' }}>
-                  <th style={{ padding: '10px 8px' }}>TIMESTAMP</th>
-                  <th style={{ padding: '10px 8px' }}>RECIPIENT PHONE</th>
-                  <th style={{ padding: '10px 8px' }}>RECIPIENT NAME</th>
-                  <th style={{ padding: '10px 8px' }}>MESSAGE CONTENT</th>
-                  <th style={{ padding: '10px 8px', textAlign: 'right' }}>ACTIONS</th>
-                </tr>
-              </thead>
-              <tbody>
-                {logs.map(log => (
-                  <tr key={log.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                    <td style={{ padding: '10px 8px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{new Date(log.sent_at).toLocaleString()}</td>
-                    <td style={{ padding: '10px 8px', fontWeight: '600' }}>{log.phone_number}</td>
-                    <td style={{ padding: '10px 8px', color: log.contact_name ? 'var(--text)' : 'var(--text-muted)' }}>{log.contact_name || '—'}</td>
-                    <td style={{ padding: '10px 8px', maxWidth: '300px' }}>
-                      <div dangerouslySetInnerHTML={{ __html: formatWhatsappText(log.message_text) }} style={{ maxHeight: '60px', overflowY: 'auto', wordBreak: 'break-word' }} />
-                    </td>
-                    <td style={{ padding: '10px 8px', textAlign: 'right' }}>
-                      <button 
-                        onClick={() => handleDeleteLog(log.id)}
-                        style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
-                        title="Delete Log"
-                      >
-                        <Trash2 size={15} />
-                      </button>
-                    </td>
+        {/* Direct Composer history logs */}
+        <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', padding: '20px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '750', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <History size={16} style={{ color: 'var(--accent)' }} /> Sent Messages History Log
+          </h3>
+          
+          {logs.length === 0 ? (
+            <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>No messages sent yet.</div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid var(--border)', color: 'var(--text-muted)' }}>
+                    <th style={{ padding: '10px 8px' }}>TIMESTAMP</th>
+                    <th style={{ padding: '10px 8px' }}>RECIPIENT PHONE</th>
+                    <th style={{ padding: '10px 8px' }}>RECIPIENT NAME</th>
+                    <th style={{ padding: '10px 8px' }}>MESSAGE CONTENT</th>
+                    <th style={{ padding: '10px 8px', textAlign: 'right' }}>ACTIONS</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                </thead>
+                <tbody>
+                  {logs.map(log => (
+                    <tr key={log.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                      <td style={{ padding: '10px 8px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{new Date(log.sent_at).toLocaleString()}</td>
+                      <td style={{ padding: '10px 8px', fontWeight: '600' }}>{log.phone_number}</td>
+                      <td style={{ padding: '10px 8px', color: log.contact_name ? 'var(--text)' : 'var(--text-muted)' }}>{log.contact_name || '—'}</td>
+                      <td style={{ padding: '10px 8px', maxWidth: '300px' }}>
+                        <div dangerouslySetInnerHTML={{ __html: formatWhatsappText(log.message_text) }} style={{ maxHeight: '60px', overflowY: 'auto', wordBreak: 'break-word' }} />
+                      </td>
+                      <td style={{ padding: '10px 8px', textAlign: 'right' }}>
+                        <button 
+                          onClick={() => handleDeleteLog(log.id)}
+                          style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
+                          title="Delete Log"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
+    )}
+
+    {subTab === 'groups' && (
+      <GroupManager
+        selectedGroupId={selectedGroupId}
+        onSelectGroup={setSelectedGroupId}
+        mediaFiles={mediaFiles}
+        editingBatch={editingBatch}
+        setEditingBatch={setEditingBatch}
+      />
+    )}
+
+    {subTab === 'broadcast' && (
+      <BroadcastTab
+        onEditBatch={handleEditBatch}
+      />
+    )}
+
+    {subTab === 'assets' && (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid var(--border)', paddingBottom: '10px', flexWrap: 'wrap' }}>
+          {[
+            { id: 'templates', label: 'Message Templates' },
+            { id: 'media', label: 'Media Library' },
+            { id: 'greetings', label: 'Greetings' }
+          ].map(ast => (
+            <button
+              key={ast.id}
+              type="button"
+              onClick={() => setAssetsSubTab(ast.id)}
+              style={{
+                border: 'none',
+                background: assetsSubTab === ast.id ? 'var(--accent)' : 'var(--bg-input)',
+                color: assetsSubTab === ast.id ? '#000000' : 'var(--text)',
+                padding: '8px 16px',
+                borderRadius: '6px',
+                fontWeight: 'bold',
+                fontSize: '13px',
+                cursor: 'pointer',
+                transition: 'all 0.15s'
+              }}
+            >
+              {ast.label}
+            </button>
+          ))}
+        </div>
+
+        {assetsSubTab === 'templates' && <TemplateManager />}
+        {assetsSubTab === 'media' && (
+          <MediaLibraryTab
+            mediaFiles={mediaFiles}
+            isConnected={isConnected}
+            uploadMedia={uploadMedia}
+            deleteMedia={deleteMedia}
+            uploadProgress={uploadProgress}
+          />
+        )}
+        {assetsSubTab === 'greetings' && <GreetingsManager />}
+      </div>
+    )}
 
     </div>
   )
