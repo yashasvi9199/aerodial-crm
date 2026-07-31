@@ -222,7 +222,7 @@ export function useSetup() {
         const slice = file.slice(start, end);
 
         // Read the slice as DataURL
-        const chunkBase64 = await new Promise((resolve, reject) => {
+        const chunkDataUrl = await new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onloadend = () => {
             if (typeof reader.result === 'string') {
@@ -234,6 +234,8 @@ export function useSetup() {
           reader.onerror = () => reject(reader.error);
           reader.readAsDataURL(slice);
         });
+
+        const chunkBase64 = chunkDataUrl.split(',')[1] || chunkDataUrl;
 
         // Insert slice into media_chunks
         const { error: insertError } = await supabase
