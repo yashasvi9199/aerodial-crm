@@ -134,7 +134,7 @@ def _execute_whatsapp(device, phone, message, run_cmd, media_filename=None, supa
                 print(f"⚠️ Error reporting progress: {e}")
 
         # Wait for user confirmation in database if UI debugging is enabled
-        if ui_debug and status in ('ran_script', 'opened_whatsapp', 'types_draft', 'sent', 'verified'):
+        if ui_debug and status in ('ran_script', 'opened_whatsapp', 'types_draft', 'sent', 'typing_text', 'sent_text', 'verified'):
             confirm_field = f"confirm_{status}"
             print(f"⏰ [UI DEBUG] Step '{status}' completed. Waiting for UI confirmation...")
             
@@ -400,7 +400,40 @@ def _execute_whatsapp(device, phone, message, run_cmd, media_filename=None, supa
         # After media is sent, send the text message as a second message in the same chat
         if media_filename and message:
             print(f"[*] Media sent. Now typing text message in same chat...")
+            report('typing_text')
             time.sleep(2.0)
+
+            # Tap the message input field to ensure it's focused
+            input_coords = None
+            run_cmd(f"adb -s {device} shell uiautomator dump /sdcard/w_dump.xml", timeout=8)
+            temp_path_input = os.path.join(os.path.dirname(os.path.abspath(__file__)), "w_dump_input.xml")
+            run_cmd(f"adb -s {device} pull /sdcard/w_dump.xml {temp_path_input}", timeout=8)
+            run_cmd(f"adb -s {device} shell rm /sdcard/w_dump.xml", timeout=4)
+            if os.path.exists(temp_path_input):
+                try:
+                    with open(temp_path_input, "r", encoding="utf-8", errors="ignore") as fi:
+                        xml_input = fi.read()
+                    os.remove(temp_path_input)
+                    # Look for the message input entry field
+                    m_input = re.search(r'resource-id="[^"]*id/entry"[^>]*bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', xml_input)
+                    if m_input:
+                        ix1, iy1, ix2, iy2 = int(m_input.group(1)), int(m_input.group(2)), int(m_input.group(3)), int(m_input.group(4))
+                        input_coords = ((ix1 + ix2) // 2, (iy1 + iy2) // 2)
+                except Exception as inp_ex:
+                    print(f"⚠️ Error reading input field XML: {inp_ex}")
+
+            if input_coords:
+                print(f"[*] Tapping message input field at {input_coords}...")
+                run_cmd(f"adb -s {device} shell input tap {input_coords[0]} {input_coords[1]}")
+                time.sleep(0.5)
+            else:
+                print("[*] Message input field not found, tapping approximate center-bottom...")
+                size_out2 = run_cmd(f"adb -s {device} shell wm size")
+                size_m2 = re.search(r'(\d+)x(\d+)', size_out2)
+                if size_m2:
+                    run_cmd(f"adb -s {device} shell input tap {int(size_m2.group(1)) // 2} {int(size_m2.group(2)) - 120}")
+                    time.sleep(0.5)
+
             # Shell-escape for ADB input text (spaces become %s)
             safe_input = message.replace('\\', '\\\\').replace('"', '\\"').replace("'", "\\'").replace('\n', ' ').replace('$', '\\$').replace('`', '\\`').replace(' ', '%s')
             run_cmd(f"adb -s {device} shell input text '{safe_input}'")
@@ -433,6 +466,7 @@ def _execute_whatsapp(device, phone, message, run_cmd, media_filename=None, supa
                 print("[*] Text send button not found, using Enter keyevent...")
                 run_cmd(f"adb -s {device} shell input keyevent 66")
             time.sleep(1.5)
+            report('sent_text')
             print("[*] Text message sent as second message.")
 
         report("verified")
