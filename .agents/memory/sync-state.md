@@ -36,4 +36,6 @@
 - 2026-07-31 (WhatsApp Resolver Fix): Fixed WhatsApp media dispatch issue where the Android ResolverActivity dialog would hijack the share intent. Added explicit intent matching for `com.whatsapp.ContactPicker` as the primary component target, with package-only fallback.
 - 2026-07-31 (WhatsApp Tab Consolidation & Timers): Reorganized sub-tabs layout, renaming Composer to "Direct Chat" and combining Template, Media, Greetings into one "Assets & Templates" sub-nav tab. Added system clock and elapsed/countdown/lapse timers to Broadcast dashboard. Enabled staged and scheduled batch editing in groups and campaign logs. Bumped version to 1.17.0.
 - 2026-07-31 (WhatsApp Business Media Dispatch Fix): Targeted explicit `com.whatsapp.contact.ui.picker.ExternalShareAlias` component to bypass Launcher/ResolverActivity blocks. Normalized path prefixes to `/storage/emulated/0/` and fallback-queried by `_display_name` to prevent unique constraints SQL failures. Bumped version to 1.17.1.
+- 2026-07-31 (Call Logs Sync & Device Details): Moved Fetch Call Logs dashboard to SetupTab and removed WhatsApp media library from Setup. Added wireless ADB disconnect capability, prioritised wired ADB device sorting, and dynamically resolved device OS skin and default dialer package/version metadata using getprop and role queries. Bumped version to 1.18.0.
+
 

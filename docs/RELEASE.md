@@ -1,5 +1,12 @@
 # Release Notes
 
+## [1.18.0] - 2026-07-31
+### Added
+- Reorganized Setup Tab: removed WhatsApp media library section and added a dedicated, target SIM-card scoped "Fetch Call Logs" dashboard.
+- Enhanced Wireless ADB Connector Card with a disconnect button and connection-type status indicators.
+- Added dynamic OS name and default dialer package/version metadata query engines inside daemon telemetry.
+- Prioritized wired/physical ADB connections over wireless ones in device discovery sorting.
+
 ## [1.17.1] - 2026-07-31
 ### Fixed
 - Fixed WhatsApp Business media dispatch issue by explicitly targeting the `com.whatsapp.contact.ui.picker.ExternalShareAlias` component.
