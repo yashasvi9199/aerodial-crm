@@ -200,66 +200,151 @@ def _execute_whatsapp(device, phone, message, run_cmd, media_filename=None, supa
             
             # Query content provider to get content:// URI instead of raw file://
             content_uri = None
-            uri_query_cmd = f"adb -s {device} shell \"content query --uri content://media/external/file --projection _id --where \\\"_data='{device_path}'\\\"\""
+            
+            # Normalize path for db query (replace /sdcard/ with /storage/emulated/0/)
+            norm_path = device_path.replace('/sdcard/', '/storage/emulated/0/')
+            
+            # Try 1: Query by normalized path on external file provider
+            uri_query_cmd = f"adb -s {device} shell \"content query --uri content://media/external/file --projection _id --where \\\"_data='{norm_path}'\\\"\""
             query_res = run_cmd(uri_query_cmd)
             m_id = re.search(r'_id=(\d+)', query_res)
             if m_id:
                 content_uri = f"content://media/external/file/{m_id.group(1)}"
-            else:
-                # Fallback to images specific URI
-                uri_query_cmd_img = f"adb -s {device} shell \"content query --uri content://media/external/images/media --projection _id --where \\\"_data='{device_path}'\\\"\""
+            
+            # Try 2: Query by raw path (original fallback) if normalized didn't work
+            if not content_uri:
+                uri_query_cmd = f"adb -s {device} shell \"content query --uri content://media/external/file --projection _id --where \\\"_data='{device_path}'\\\"\""
+                query_res = run_cmd(uri_query_cmd)
+                m_id = re.search(r'_id=(\d+)', query_res)
+                if m_id:
+                    content_uri = f"content://media/external/file/{m_id.group(1)}"
+
+            # Try 3: Query by display_name (very robust on Android 10+!)
+            if not content_uri:
+                uri_query_cmd = f"adb -s {device} shell \"content query --uri content://media/external/file --projection _id --where \\\"_display_name='{safe_name}'\\\"\""
+                query_res = run_cmd(uri_query_cmd)
+                m_id = re.search(r'_id=(\d+)', query_res)
+                if m_id:
+                    content_uri = f"content://media/external/file/{m_id.group(1)}"
+            
+            # Try 4: Query by display_name in specific images URI
+            if not content_uri and ext in (".png", ".jpg", ".jpeg", ".webp"):
+                uri_query_cmd_img = f"adb -s {device} shell \"content query --uri content://media/external/images/media --projection _id --where \\\"_display_name='{safe_name}'\\\"\""
                 query_res_img = run_cmd(uri_query_cmd_img)
                 m_id_img = re.search(r'_id=(\d+)', query_res_img)
                 if m_id_img:
                     content_uri = f"content://media/external/images/media/{m_id_img.group(1)}"
-            
+                    
+            # Try 5: Query by normalized path in images specific table
+            if not content_uri and ext in (".png", ".jpg", ".jpeg", ".webp"):
+                uri_query_cmd_img = f"adb -s {device} shell \"content query --uri content://media/external/images/media --projection _id --where \\\"_data='{norm_path}'\\\"\""
+                query_res_img = run_cmd(uri_query_cmd_img)
+                m_id_img = re.search(r'_id=(\d+)', query_res_img)
+                if m_id_img:
+                    content_uri = f"content://media/external/images/media/{m_id_img.group(1)}"
+
             # If the media database resolver is lagging, force insert it to content provider to get a valid URI
             if not content_uri:
                 mime_insert = "image/png" if ext == ".png" else ("image/jpeg" if ext in (".jpg", ".jpeg") else mime_type)
-                insert_cmd = f"adb -s {device} shell \"content insert --uri content://media/external/file --bind _data:s:{device_path} --bind mime_type:s:{mime_insert}\""
+                insert_cmd = f"adb -s {device} shell \"content insert --uri content://media/external/file --bind _data:s:{norm_path} --bind mime_type:s:{mime_insert}\""
                 insert_res = run_cmd(insert_cmd)
-                m_ins = re.search(r'row\s+(\d+)', insert_res, re.IGNORECASE)
-                if m_ins:
-                    content_uri = f"content://media/external/file/{m_ins.group(1)}"
+                if "UNIQUE constraint failed" in insert_res or "SQLiteConstraintException" in insert_res:
+                    # It exists but wasn't found - try to query again by display name specifically
+                    print("[*] UNIQUE constraint on insert, searching again by display name...")
+                    uri_query_cmd = f"adb -s {device} shell \"content query --uri content://media/external/file --projection _id --where \\\"_display_name='{safe_name}'\\\"\""
+                    query_res = run_cmd(uri_query_cmd)
+                    m_id = re.search(r'_id=(\d+)', query_res)
+                    if m_id:
+                        content_uri = f"content://media/external/file/{m_id.group(1)}"
                 else:
-                    # Parse alternate insert result formats
-                    m_ins_alt = re.search(r'id=(\d+)', insert_res, re.IGNORECASE)
-                    if m_ins_alt:
-                        content_uri = f"content://media/external/file/{m_ins_alt.group(1)}"
+                    m_ins = re.search(r'row\s+(\d+)', insert_res, re.IGNORECASE)
+                    if m_ins:
+                        content_uri = f"content://media/external/file/{m_ins.group(1)}"
+                    else:
+                        m_ins_alt = re.search(r'id=(\d+)', insert_res, re.IGNORECASE)
+                        if m_ins_alt:
+                            content_uri = f"content://media/external/file/{m_ins_alt.group(1)}"
             
             stream_uri = content_uri if content_uri else f"file://{device_path}"
             print(f"[*] Dispatching media stream URI: {stream_uri}")
             
             extra_text = f"--es android.intent.extra.TEXT '{message}'" if message else ""
-            # Run package-targeted command directly to target WhatsApp Business (com.whatsapp.w4b)
-            cmd = f"adb -s {device} shell am start -a android.intent.action.SEND -t {mime_type} -e jid {clean_num}@s.whatsapp.net --eu android.intent.extra.STREAM {stream_uri} {extra_text} -p {pkg} --grant-read-uri-permission --grant-write-uri-permission --receiver-permission android.permission.WRITE_EXTERNAL_STORAGE"
-            result = run_cmd(cmd)
-            print(f"[*] am start package-targeted result: {result}")
+            
+            # Create a list of intent commands to try to open WhatsApp Business with media
+            intents_to_try = [
+                # Method 1: Component-targeted SEND intent com.whatsapp.contact.ui.picker.ExternalShareAlias (Most reliable on latest W4B versions)
+                f"adb -s {device} shell am start -a android.intent.action.SEND -t {mime_type} -e jid {clean_num}@s.whatsapp.net --eu android.intent.extra.STREAM {stream_uri} {extra_text} -n {pkg}/com.whatsapp.contact.ui.picker.ExternalShareAlias --grant-read-uri-permission --grant-write-uri-permission --receiver-permission android.permission.WRITE_EXTERNAL_STORAGE",
+
+                # Method 2: Package-targeted SEND intent (standard fallback)
+                f"adb -s {device} shell am start -a android.intent.action.SEND -t {mime_type} -e jid {clean_num}@s.whatsapp.net --eu android.intent.extra.STREAM {stream_uri} {extra_text} -p {pkg} --grant-read-uri-permission --grant-write-uri-permission --receiver-permission android.permission.WRITE_EXTERNAL_STORAGE",
+                
+                # Method 3: Component-targeted SEND intent com.whatsapp.ContactPicker
+                f"adb -s {device} shell am start -a android.intent.action.SEND -t {mime_type} -e jid {clean_num}@s.whatsapp.net --eu android.intent.extra.STREAM {stream_uri} {extra_text} -n {pkg}/com.whatsapp.ContactPicker --grant-read-uri-permission --grant-write-uri-permission --receiver-permission android.permission.WRITE_EXTERNAL_STORAGE",
+
+                # Method 4: Component-targeted SEND intent com.whatsapp.biz.ContactPicker
+                f"adb -s {device} shell am start -a android.intent.action.SEND -t {mime_type} -e jid {clean_num}@s.whatsapp.net --eu android.intent.extra.STREAM {stream_uri} {extra_text} -n {pkg}/com.whatsapp.biz.ContactPicker --grant-read-uri-permission --grant-write-uri-permission --receiver-permission android.permission.WRITE_EXTERNAL_STORAGE",
+
+                # Method 5: Component-targeted SEND intent com.whatsapp.ContactPickerActivity
+                f"adb -s {device} shell am start -a android.intent.action.SEND -t {mime_type} -e jid {clean_num}@s.whatsapp.net --eu android.intent.extra.STREAM {stream_uri} {extra_text} -n {pkg}/com.whatsapp.ContactPickerActivity --grant-read-uri-permission --grant-write-uri-permission --receiver-permission android.permission.WRITE_EXTERNAL_STORAGE",
+
+                # Method 6: Implicit SEND intent without -p package restriction, relying on ResolverActivity
+                f"adb -s {device} shell am start -a android.intent.action.SEND -t {mime_type} -e jid {clean_num}@s.whatsapp.net --eu android.intent.extra.STREAM {stream_uri} {extra_text} --grant-read-uri-permission --grant-write-uri-permission --receiver-permission android.permission.WRITE_EXTERNAL_STORAGE"
+            ]
+            
+            is_foreground = False
+            foreground_check = ""
+            for idx, cmd in enumerate(intents_to_try):
+                print(f"[*] Trying to open WhatsApp with media (Method {idx+1}/{len(intents_to_try)})...")
+                result = run_cmd(cmd)
+                print(f"[*] am start package-targeted result: {result}")
+                if result and "Error" in result:
+                    continue
+                
+                # Check foreground status for this method
+                for attempt in range(3):
+                    time.sleep(1.0)
+                    foreground_check = run_cmd(f"adb -s {device} shell \"dumpsys window | grep -E 'mCurrentFocus|mFocusedApp'\"")
+                    print(f"[*] Foreground window status (Method {idx+1}, attempt {attempt + 1}/3): {foreground_check}")
+                    if pkg in foreground_check:
+                        is_foreground = True
+                        break
+                    elif "ResolverActivity" in foreground_check:
+                        print("[*] ResolverActivity detected, selecting WhatsApp Business automatically...")
+                        run_cmd(f"adb -s {device} shell input keyevent 23")  # KEYCODE_ENTER
+                        run_cmd(f"adb -s {device} shell input tap 540 1200")
+                        time.sleep(1.0)
+                        foreground_check = run_cmd(f"adb -s {device} shell \"dumpsys window | grep -E 'mCurrentFocus|mFocusedApp'\"")
+                        if pkg in foreground_check:
+                            is_foreground = True
+                            break
+                if is_foreground:
+                    break
         else:
             print(f"[*] WhatsApp text. Prefilling chat: {clean_num}...")
             encoded_msg = urllib.parse.quote(message)
             url = f"https://wa.me/{clean_num}?text={encoded_msg}"
             result = run_cmd(f"adb -s {device} shell am start -a android.intent.action.VIEW -d '{url}' -p {pkg}")
             print(f"[*] am start (text) result: {result}")
-
-        if result and "Error" in result:
-            raise RuntimeError(f"am start failed: {result}")
-
-        # Verify WhatsApp package is active in foreground with retries and ResolverActivity handling
-        is_foreground = False
-        foreground_check = ""
-        for attempt in range(4):
-            time.sleep(1.0)
-            foreground_check = run_cmd(f"adb -s {device} shell \"dumpsys window | grep -E 'mCurrentFocus|mFocusedApp'\"")
-            print(f"[*] Foreground window status (attempt {attempt + 1}/4): {foreground_check}")
-            if pkg in foreground_check:
-                is_foreground = True
-                break
-            elif "ResolverActivity" in foreground_check:
-                print("[*] ResolverActivity detected, selecting WhatsApp Business automatically...")
-                # Select/confirm WhatsApp Business in the chooser dialog
-                run_cmd(f"adb -s {device} shell input keyevent 23")  # KEYCODE_ENTER / DPAD_CENTER
-                run_cmd(f"adb -s {device} shell input tap 540 1200")
+            
+            # Verify text open
+            is_foreground = False
+            foreground_check = ""
+            for attempt in range(4):
+                time.sleep(1.0)
+                foreground_check = run_cmd(f"adb -s {device} shell \"dumpsys window | grep -E 'mCurrentFocus|mFocusedApp'\"")
+                print(f"[*] Foreground window status (text check, attempt {attempt + 1}/4): {foreground_check}")
+                if pkg in foreground_check:
+                    is_foreground = True
+                    break
+                elif "ResolverActivity" in foreground_check:
+                    print("[*] ResolverActivity detected, selecting WhatsApp Business automatically...")
+                    run_cmd(f"adb -s {device} shell input keyevent 23")  # KEYCODE_ENTER
+                    run_cmd(f"adb -s {device} shell input tap 540 1200")
+                    time.sleep(1.0)
+                    foreground_check = run_cmd(f"adb -s {device} shell \"dumpsys window | grep -E 'mCurrentFocus|mFocusedApp'\"")
+                    if pkg in foreground_check:
+                        is_foreground = True
+                        break
 
         if not is_foreground:
             raise RuntimeError(f"WhatsApp did not open on device. Current focus: {foreground_check.strip()}")
