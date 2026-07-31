@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useSetup } from '../hooks/useSetup';
 import TestCallPopup from './TestCallPopup';
-import { Check, X, Shield, Phone, Download, Trash, Mail, Upload, FileText } from 'lucide-react';
+import { Check, X, Shield, Phone, Download, Trash, Mail, Database } from 'lucide-react';
 
 /**
  * JSDoc: Setup tab component.
@@ -23,18 +23,12 @@ export default function SetupTab() {
     handleTestSuccess,
     exportLogs,
     connectWirelessAdb,
+    disconnectWirelessAdb,
+    triggerSyncCallLogs,
+    isSyncingCallLogs,
     callingMethod,
-    updateCallingMethod,
-    uploadMedia,
-    deleteMedia
+    updateCallingMethod
   } = useSetup();
-
-  const handleFileChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      uploadMedia(file);
-    }
-  };
 
   const [ipInput, setIpInput] = useState(() => localStorage.getItem('adb_wireless_ip') || '');
 
@@ -95,12 +89,12 @@ export default function SetupTab() {
             />
           </div>
 
-          <div style={{ display: 'flex', gap: '10px', marginTop: '5px' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '5px' }}>
             <button
               onClick={autofillIp}
               disabled={!parsedStatus.device_ip}
               style={{
-                flexGrow: 1,
+                flex: '1 1 120px',
                 background: parsedStatus.device_ip ? 'var(--bg-input)' : 'rgba(255, 255, 255, 0.03)',
                 color: parsedStatus.device_ip ? 'var(--text)' : 'var(--text-muted)',
                 border: '1px solid var(--border)',
@@ -117,7 +111,7 @@ export default function SetupTab() {
             <button
               onClick={saveAndConnect}
               style={{
-                flexGrow: 1,
+                flex: '1 1 120px',
                 background: 'var(--accent)',
                 color: '#000',
                 border: 'none',
@@ -128,7 +122,25 @@ export default function SetupTab() {
                 fontSize: '12.5px'
               }}
             >
-              Connect Wirelessly
+              Connect
+            </button>
+
+            <button
+              onClick={disconnectWirelessAdb}
+              style={{
+                flex: '1 1 100%',
+                background: 'transparent',
+                color: '#ef4444',
+                border: '1px solid #ef4444',
+                padding: '10px',
+                borderRadius: '6px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                fontSize: '12.5px',
+                marginTop: '5px'
+              }}
+            >
+              Disconnect Wireless ADB
             </button>
           </div>
         </div>
@@ -149,6 +161,23 @@ export default function SetupTab() {
                 {isDeviceConnected ? <Check size={16} /> : <X size={16} />} {isDeviceConnected ? 'Connected' : 'No Device'}
               </span>
             </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Wireless ADB status</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: parsedStatus.wireless_acquired ? '#10b981' : '#f59e0b', fontWeight: 'bold' }}>
+                {parsedStatus.wireless_acquired ? <Check size={16} /> : <X size={16} />} {parsedStatus.wireless_acquired ? 'Acquired' : 'Not Acquired'}
+              </span>
+            </div>
+            {isDeviceConnected && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>Active Connection Mode</span>
+                <span style={{ fontWeight: 'bold', color: 'var(--accent)' }}>
+                  {parsedStatus.connection_type || 'Wired'}
+                  {parsedStatus.connection_type === 'Wired' && parsedStatus.wireless_acquired && (
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginLeft: '6px' }}>(Prioritized)</span>
+                  )}
+                </span>
+              </div>
+            )}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span>Root Privilege status</span>
               <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: parsedStatus.is_root ? '#10b981' : '#f59e0b', fontWeight: 'bold' }}>
@@ -307,130 +336,58 @@ export default function SetupTab() {
         </div>
       </div>
 
-      {/* WhatsApp Media Library Section */}
+      {/* Fetch Call Logs Section */}
       <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px', marginBottom: '25px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-          <div>
-            <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '700', color: 'var(--accent)' }}>WhatsApp Media Library</h3>
-            <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: 'var(--text-muted)' }}>
-              Upload and manage images or PDF attachments to send in WhatsApp messages. Only one file is attached at a time.
-            </p>
+        <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '700', color: 'var(--accent)' }}>Fetch Call Logs</h3>
+        <p style={{ margin: '5px 0 15px 0', fontSize: '13px', color: 'var(--text-muted)' }}>
+          Fetch recent call logs (incoming, outgoing, and missed) from your Android device for the currently selected SIM card slot.
+        </p>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', background: 'var(--bg-dark)', padding: '15px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Active Slot / Sub ID Target</span>
+            <span style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--accent)' }}>
+              SIM Slot {activeSlot + 1} ({sims[activeSlot]?.carrier || 'Unknown Carrier'})
+            </span>
           </div>
-          <div>
-            <label style={{
-              background: isDeviceConnected ? 'var(--accent)' : 'var(--border)',
-              color: '#000000',
-              padding: '8px 14px',
-              borderRadius: '6px',
-              fontWeight: 'bold',
-              fontSize: '12.5px',
-              cursor: isDeviceConnected ? 'pointer' : 'not-allowed',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}>
-              <Upload size={14} /> Upload File
-              <input
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png,.webp,.gif"
-                onChange={handleFileChange}
-                disabled={!isDeviceConnected}
-                style={{ display: 'none' }}
-              />
-            </label>
+          {sims[activeSlot]?.number && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>SIM Card Number</span>
+              <span style={{ fontSize: '14px', fontWeight: '600' }}>{sims[activeSlot].number}</span>
+            </div>
+          )}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Sync Profile Scope</span>
+            <span style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text)' }}>
+              Outbound, Inbound, and Missed (Last 4 Days)
+            </span>
           </div>
         </div>
 
-        {(!parsedStatus.media_files || parsedStatus.media_files.length === 0) ? (
-          <div style={{ padding: '30px 10px', borderRadius: '8px', background: 'var(--bg-dark)', border: '1px dashed var(--border)', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
-            No media files found on the device. Upload a file above.
-          </div>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '15px' }}>
-            {parsedStatus.media_files.map((file, idx) => (
-              <div 
-                key={idx} 
-                style={{
-                  background: 'var(--bg-input)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '8px',
-                  padding: '10px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}
-              >
-                {/* Delete Button */}
-                <button
-                  onClick={() => deleteMedia(file.filename)}
-                  style={{
-                    position: 'absolute',
-                    top: '5px',
-                    right: '5px',
-                    background: 'rgba(239, 68, 68, 0.85)',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '4px',
-                    width: '22px',
-                    height: '22px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    zIndex: 10
-                  }}
-                  title="Remove from device"
-                >
-                  <Trash size={12} />
-                </button>
-
-                {/* Preview Frame */}
-                <div style={{
-                  width: '100%',
-                  height: '80px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: 'var(--bg-dark)',
-                  borderRadius: '6px',
-                  marginBottom: '8px',
-                  overflow: 'hidden'
-                }}>
-                  {file.thumbnail ? (
-                    <img 
-                      src={file.thumbnail} 
-                      alt={file.filename} 
-                      style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
-                    />
-                  ) : (
-                    <FileText size={32} style={{ color: file.mime_type === 'application/pdf' ? '#ef4444' : 'var(--text-muted)' }} />
-                  )}
-                </div>
-
-                {/* Filename */}
-                <div style={{
-                  width: '100%',
-                  fontSize: '11px',
-                  fontWeight: '600',
-                  color: 'var(--text)',
-                  textAlign: 'center',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis'
-                }} title={file.filename}>
-                  {file.filename}
-                </div>
-                
-                {/* MIME Type Label */}
-                <div style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                  {file.mime_type === 'application/pdf' ? 'PDF Document' : 'Image'}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        <button
+          onClick={triggerSyncCallLogs}
+          disabled={!isDeviceConnected || isSyncingCallLogs}
+          style={{
+            marginTop: '15px',
+            width: '100%',
+            background: (isDeviceConnected && !isSyncingCallLogs) ? 'var(--accent)' : 'var(--border)',
+            color: '#000000',
+            border: 'none',
+            padding: '12px',
+            borderRadius: '6px',
+            fontWeight: 'bold',
+            fontSize: '13.5px',
+            cursor: (isDeviceConnected && !isSyncingCallLogs) ? 'pointer' : 'not-allowed',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            transition: 'all 0.15s ease'
+          }}
+        >
+          <Database size={15} className={isSyncingCallLogs ? 'spin' : ''} />
+          {isSyncingCallLogs ? 'Fetching and Syncing Logs...' : 'Fetch & Sync SIM Call Logs'}
+        </button>
       </div>
 
       {/* Diagnostics Logs Section */}
