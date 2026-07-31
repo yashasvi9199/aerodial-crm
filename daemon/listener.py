@@ -213,6 +213,9 @@ def main():
                             if jd_res.data:
                                 incoming_caller_name = jd_res.data[0].get('name') or jd_res.data[0].get('lead_name')
                 
+                has_wireless = any(":" in d for d in devices)
+                connection_type = "Wireless" if (device and ":" in device) else "Wired"
+
                 status_payload = {
                     "status": "connected",
                     "device_ip": get_device_ip(device),
@@ -231,12 +234,17 @@ def main():
                         "number": incoming_number,
                         "name": incoming_caller_name or "Unknown Caller"
                     } if incoming_number else None,
-                    "media_files": media_files
+                    "media_files": media_files,
+                    "wireless_acquired": has_wireless,
+                    "connection_type": connection_type
                 }
                 current_status = json.dumps(status_payload)
             else:
                 saved_devices_in_session.clear()
-                current_status = json.dumps({"status": "disconnected"})
+                current_status = json.dumps({
+                    "status": "disconnected",
+                    "wireless_acquired": any(":" in d for d in get_connected_devices())
+                })
             
             status_changed = (current_status != last_status_sent)
             if status_changed or (now - last_state_check >= 3.0):
@@ -260,7 +268,7 @@ def main():
                         
                         action = cmd_data.get('action')
 
-                        # 1. Connection-independent commands (connect wireless)
+                        # 1. Connection-independent commands (connect / disconnect wireless)
                         if action == 'connect_wireless_adb':
                             ip = cmd_data.get('ip')
                             if ip:
@@ -274,6 +282,15 @@ def main():
                                 
                                 connect_res = run_cmd(f"adb connect {ip}")
                                 print(f"[+] ADB connect output: {connect_res}")
+                            supabase.table('system_state').update({'command': 'idle'}).eq('id', 1).execute()
+                        
+                        elif action == 'disconnect_wireless_adb':
+                            print("[*] Remote Command Received: DISCONNECT WIRELESS ADB...")
+                            devs = get_connected_devices()
+                            for d in devs:
+                                if ":" in d:
+                                    disconnect_res = run_cmd(f"adb disconnect {d}")
+                                    print(f"[+] ADB disconnect {d} output: {disconnect_res}")
                             supabase.table('system_state').update({'command': 'idle'}).eq('id', 1).execute()
                         
                         # 2. Media commands (work with any available device, don't need heartbeat)
