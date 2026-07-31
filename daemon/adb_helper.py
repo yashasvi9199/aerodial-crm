@@ -19,7 +19,7 @@ def get_connected_devices():
     """
     lines = run_cmd("adb devices").splitlines()[1:]
     devices = [l.split()[0] for l in lines if l.strip() and "device" in l and l.split()[1] == "device"]
-    devices.sort(key=lambda d: 0 if ":" in d else 1)
+    devices.sort(key=lambda d: 1 if ":" in d else 0)
     return devices
 
 def check_rooted(device):
