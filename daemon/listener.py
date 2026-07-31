@@ -308,6 +308,9 @@ def main():
                                             file_base64 = file_base64.split(",", 1)[1]
                                         file_base64 = "".join(file_base64.split())
                                         missing_padding = len(file_base64) % 4
+                                        if missing_padding == 1:
+                                            file_base64 = file_base64[:-1]
+                                            missing_padding = 0
                                         if missing_padding:
                                             file_base64 += '=' * (4 - missing_padding)
                                         raw_bytes = b64mod.b64decode(file_base64)
