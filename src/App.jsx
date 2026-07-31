@@ -38,6 +38,7 @@ export default function App() {
   let deviceModel = ''
   let deviceOS = ''
   let incomingCall = null
+  let connectionType = 'Wired'
 
   try {
     if (adbStatus && typeof adbStatus === 'string') {
@@ -51,6 +52,7 @@ export default function App() {
         deviceModel = parsed.model
         deviceOS = parsed.os_name
         incomingCall = parsed.incoming_call
+        connectionType = parsed.connection_type || 'Wired'
       } else {
         isConnected = adbStatus.startsWith('connected') && isHeartbeatValid
         isRooted = adbStatus.includes('root:1')
@@ -246,7 +248,7 @@ export default function App() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={{ color: 'var(--text-muted)' }}>Bridge Connection</span>
               {isConnected 
-                ? <span style={{ color: '#10b981', fontWeight: 'bold' }}>Active</span>
+                ? <span style={{ color: '#10b981', fontWeight: 'bold' }}>Active ({connectionType})</span>
                 : <span style={{ color: '#ef4444', fontWeight: 'bold' }}>Offline</span>
               }
             </div>
@@ -260,17 +262,9 @@ export default function App() {
               </div>
             )}
           </div>
-           <button onClick={triggerUsbSync} disabled={isSyncing} style={{ width: '100%', background: 'var(--accent)', color: 'var(--bg-dark)', border: 'none', padding: '10px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: isSyncing ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+          <button onClick={triggerUsbSync} disabled={isSyncing} style={{ width: '100%', background: 'var(--accent)', color: 'var(--bg-dark)', border: 'none', padding: '10px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: isSyncing ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
             <RefreshCw size={14} className={isSyncing ? 'spin' : ''} />
             {isSyncing ? 'Syncing...' : 'Force Local Sync'}
-          </button>
-          <button onClick={triggerSyncCallLogs} disabled={isSyncingCallLogs} style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: isSyncingCallLogs ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'all 0.15s ease' }}>
-            <Database size={14} className={isSyncingCallLogs ? 'spin' : ''} style={{ color: 'var(--accent)' }} />
-            {isSyncingCallLogs ? 'Fetching Logs...' : 'Fetch Call Logs'}
-          </button>
-          <button onClick={triggerTestCall} style={{ width: '100%', background: 'transparent', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'all 0.15s ease' }}>
-            <Phone size={14} style={{ color: 'var(--accent)' }} />
-            Test Call (197)
           </button>
         </div>
       </aside>
