@@ -3,7 +3,7 @@ import { supabase } from '../../lib/supabase'
 import { Plus, Trash, Users, Loader2 } from 'lucide-react'
 import BatchCreator from './BatchCreator'
 
-export default function GroupManager({ selectedGroupId, onSelectGroup, mediaFiles }) {
+export default function GroupManager({ selectedGroupId, onSelectGroup, mediaFiles, editingBatch, setEditingBatch }) {
   const [groups, setGroups] = useState([])
   const [newGroupName, setNewGroupName] = useState('')
   const [batches, setBatches] = useState([])
@@ -23,8 +23,7 @@ export default function GroupManager({ selectedGroupId, onSelectGroup, mediaFile
     try {
       const { data } = await supabase
         .from('whatsapp_bulk_batches')
-        .select('*, whatsapp_bulk_batch_contacts(phone_number)')
-        .eq('group_id', groupId)
+        .select('*, whatsapp_bulk_batch_contacts(*)').eq('group_id', groupId)
         .order('created_at', { ascending: false })
       setBatches(data || [])
     } catch (e) {
@@ -181,16 +180,21 @@ export default function GroupManager({ selectedGroupId, onSelectGroup, mediaFile
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '24px', alignItems: 'start' }}>
               
               {/* Batches Form block */}
-              {batches.length >= 4 ? (
-                <div style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px dashed #ef4444', padding: '16px', borderRadius: '8px', fontSize: '12.5px', color: 'var(--text)', textAlign: 'center' }}>
-                  Maximum limit of 4 batches reached for this group. Delete an existing batch to create a new one.
-                </div>
-              ) : (
+              {(batches.length < 4 || editingBatch !== null) ? (
                 <BatchCreator
                   groupId={selectedGroupId}
                   mediaFiles={mediaFiles}
-                  onBatchCreated={() => fetchBatches(selectedGroupId)}
+                  onBatchCreated={() => {
+                    fetchBatches(selectedGroupId)
+                    setEditingBatch(null)
+                  }}
+                  editingBatch={editingBatch}
+                  setEditingBatch={setEditingBatch}
                 />
+              ) : (
+                <div style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px dashed #ef4444', padding: '16px', borderRadius: '8px', fontSize: '12.5px', color: 'var(--text)', textAlign: 'center' }}>
+                  Maximum limit of 4 batches reached for this group. Delete an existing batch to create a new one.
+                </div>
               )}
 
               {/* Batches List Column */}
@@ -214,13 +218,21 @@ export default function GroupManager({ selectedGroupId, onSelectGroup, mediaFile
                               {b.scheduled_at ? b.status : 'unscheduled'}
                             </span>
                           </div>
-                          <button
-                            onClick={() => handleDeleteBatch(b.id)}
-                            style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '2px' }}
-                            title="Delete Batch"
-                          >
-                            <Trash size={14} />
-                          </button>
+                          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                            <button
+                              onClick={() => setEditingBatch(b)}
+                              style={{ background: 'transparent', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold', padding: 0 }}
+                            >
+                              Edit/View
+                            </button>
+                            <button
+                              onClick={() => handleDeleteBatch(b.id)}
+                              style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '2px' }}
+                              title="Delete Batch"
+                            >
+                              <Trash size={14} />
+                            </button>
+                          </div>
                         </div>
 
                         <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '2px' }}>
