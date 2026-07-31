@@ -234,9 +234,15 @@ def _execute_whatsapp(device, phone, message, run_cmd, media_filename=None, supa
             print(f"[*] Dispatching media stream URI: {stream_uri}")
             
             extra_text = f"--es android.intent.extra.TEXT '{message}'" if message else ""
-            cmd = f"adb -s {device} shell am start -a android.intent.action.SEND -t {mime_type} -e jid {clean_num}@s.whatsapp.net --eu android.intent.extra.STREAM {stream_uri} {extra_text} -p {pkg} --grant-read-uri-permission --grant-write-uri-permission --receiver-permission android.permission.WRITE_EXTERNAL_STORAGE"
+            # Try starting with explicit ContactPicker component first to bypass ResolverActivity
+            cmd = f"adb -s {device} shell am start -a android.intent.action.SEND -t {mime_type} -e jid {clean_num}@s.whatsapp.net --eu android.intent.extra.STREAM {stream_uri} {extra_text} -n {pkg}/com.whatsapp.ContactPicker --grant-read-uri-permission --grant-write-uri-permission --receiver-permission android.permission.WRITE_EXTERNAL_STORAGE"
             result = run_cmd(cmd)
-            print(f"[*] am start (media) result: {result}")
+            print(f"[*] am start explicit component result: {result}")
+            if "Error" in result or "does not exist" in result:
+                # Fallback to package-only matching if explicit component fails
+                cmd = f"adb -s {device} shell am start -a android.intent.action.SEND -t {mime_type} -e jid {clean_num}@s.whatsapp.net --eu android.intent.extra.STREAM {stream_uri} {extra_text} -p {pkg} --grant-read-uri-permission --grant-write-uri-permission --receiver-permission android.permission.WRITE_EXTERNAL_STORAGE"
+                result = run_cmd(cmd)
+                print(f"[*] am start fallback result: {result}")
         else:
             print(f"[*] WhatsApp text. Prefilling chat: {clean_num}...")
             encoded_msg = urllib.parse.quote(message)
