@@ -300,9 +300,27 @@ def main():
                             target_dev = device if is_connected else (get_connected_devices() or [None])[0]
                             if filename and target_dev:
                                 try:
-                                    # Try fetching chunks first
-                                    chunks_resp = supabase.table('media_chunks').select('data_base64').eq('filename', filename).order('chunk_index', desc=False).execute()
-                                    chunks_rows = chunks_resp.data or []
+                                    # Fetch chunks in paginated batches to avoid statement timeout
+                                    chunks_rows = []
+                                    chunk_offset = 0
+                                    chunk_batch_size = 50
+                                    while True:
+                                        for retry in range(3):
+                                            try:
+                                                batch_resp = supabase.table('media_chunks').select('data_base64').eq('filename', filename).order('chunk_index', desc=False).range(chunk_offset, chunk_offset + chunk_batch_size - 1).execute()
+                                                break
+                                            except Exception as retry_ex:
+                                                print(f"⚠️ Chunk fetch retry {retry+1}/3: {retry_ex}")
+                                                import time as t; t.sleep(2)
+                                                if retry == 2:
+                                                    raise
+                                        batch_data = batch_resp.data or []
+                                        if not batch_data:
+                                            break
+                                        chunks_rows.extend(batch_data)
+                                        if len(batch_data) < chunk_batch_size:
+                                            break
+                                        chunk_offset += chunk_batch_size
                                     file_base64 = None
                                     if chunks_rows:
                                         print(f"[*] Assembling file from {len(chunks_rows)} chunks...")
@@ -426,11 +444,16 @@ def main():
                                     phone_files = [f.strip() for f in files_out.splitlines() if f.strip() and not f.startswith("ls:")]
                                     cache_dir = os.path.join(PROJECT_ROOT, "daemon", "media_cache")
                                     os.makedirs(cache_dir, exist_ok=True)
+                                    _failed_media_syncs = getattr(sync_whatsapp_history, '_failed_media_syncs', set())
                                     for filename in phone_files:
                                         local_path = os.path.join(cache_dir, filename)
-                                        if not os.path.exists(local_path):
+                                        if not os.path.exists(local_path) and filename not in _failed_media_syncs:
                                             print(f"[*] Syncing new media file from phone: {filename}")
-                                            run_cmd(f'adb -s {device} pull /data/local/tmp/aerodial_media/{filename} {local_path}')
+                                            pull_res = run_cmd(f'adb -s {device} pull /data/local/tmp/aerodial_media/{filename} {local_path}')
+                                            if not os.path.exists(local_path):
+                                                print(f"⚠️ Failed to pull {filename}, skipping future retries this session.")
+                                                _failed_media_syncs.add(filename)
+                                    sync_whatsapp_history._failed_media_syncs = _failed_media_syncs
                                     for f in os.listdir(cache_dir):
                                         if f not in phone_files:
                                             try:
