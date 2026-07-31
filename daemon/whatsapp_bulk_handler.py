@@ -33,15 +33,14 @@ def format_bulk_message(template, greetings, contact_name=""):
             spaced_lines.append(line)
     message = '\n'.join(spaced_lines)
 
-    # 3. Randomly change the first character of a word to italic using _ _
-    # Match any word-starting character that follows a space, newline, or is at the beginning of the string.
-    matches = list(re.finditer(r'(?:^|[\s\n])([a-zA-Z])', message))
+    # 3. Randomly change a complete word to italic using _ _
+    matches = list(re.finditer(r'(?:^|[\s\n])([a-zA-Z]+)', message))
     if matches:
         match = random.choice(matches)
-        # The group(1) index is the character itself. Let's find its start position.
-        idx = match.start(1)
-        char = message[idx]
-        message = message[:idx] + "_" + char + "_" + message[idx+1:]
+        start_idx = match.start(1)
+        end_idx = match.end(1)
+        word = message[start_idx:end_idx]
+        message = message[:start_idx] + "_" + word + "_" + message[end_idx:]
  
     return message
 
