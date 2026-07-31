@@ -268,27 +268,37 @@ def _execute_whatsapp(device, phone, message, run_cmd, media_filename=None, supa
             stream_uri = content_uri if content_uri else f"file://{device_path}"
             print(f"[*] Dispatching media stream URI: {stream_uri}")
             
-            extra_text = f"--es android.intent.extra.TEXT '{message}'" if message else ""
+            # Shell-escape the message to prevent it from breaking am start argument parsing
+            if message:
+                safe_msg = message.replace("\\", "\\\\").replace("'", "\\'").replace('"', '\\"').replace('\n', '\\n').replace('$', '\\$').replace('`', '\\`')
+                extra_text = f"--es android.intent.extra.TEXT '{safe_msg}'"
+            else:
+                extra_text = ""
             
+            # Quote mime_type to prevent shell glob expansion of image/*
+            quoted_mime = f"'{mime_type}'"
+
             # Create a list of intent commands to try to open WhatsApp Business with media
+            # CRITICAL: extra_text MUST be placed at the very END of the command so message
+            # content can never consume subsequent -p/-n flags and corrupt the package target.
             intents_to_try = [
-                # Method 1: Component-targeted SEND intent com.whatsapp.contact.ui.picker.ExternalShareAlias (Most reliable on latest W4B versions)
-                f"adb -s {device} shell am start -a android.intent.action.SEND -t {mime_type} -e jid {clean_num}@s.whatsapp.net --eu android.intent.extra.STREAM {stream_uri} {extra_text} -n {pkg}/com.whatsapp.contact.ui.picker.ExternalShareAlias --grant-read-uri-permission --grant-write-uri-permission --receiver-permission android.permission.WRITE_EXTERNAL_STORAGE",
+                # Method 1: Component-targeted SEND intent ExternalShareAlias (Most reliable on latest W4B versions)
+                f"adb -s {device} shell am start -a android.intent.action.SEND -t {quoted_mime} -n {pkg}/com.whatsapp.contact.ui.picker.ExternalShareAlias --eu android.intent.extra.STREAM {stream_uri} -e jid {clean_num}@s.whatsapp.net --grant-read-uri-permission --grant-write-uri-permission {extra_text}",
 
                 # Method 2: Package-targeted SEND intent (standard fallback)
-                f"adb -s {device} shell am start -a android.intent.action.SEND -t {mime_type} -e jid {clean_num}@s.whatsapp.net --eu android.intent.extra.STREAM {stream_uri} {extra_text} -p {pkg} --grant-read-uri-permission --grant-write-uri-permission --receiver-permission android.permission.WRITE_EXTERNAL_STORAGE",
+                f"adb -s {device} shell am start -a android.intent.action.SEND -t {quoted_mime} -p {pkg} --eu android.intent.extra.STREAM {stream_uri} -e jid {clean_num}@s.whatsapp.net --grant-read-uri-permission --grant-write-uri-permission {extra_text}",
                 
-                # Method 3: Component-targeted SEND intent com.whatsapp.ContactPicker
-                f"adb -s {device} shell am start -a android.intent.action.SEND -t {mime_type} -e jid {clean_num}@s.whatsapp.net --eu android.intent.extra.STREAM {stream_uri} {extra_text} -n {pkg}/com.whatsapp.ContactPicker --grant-read-uri-permission --grant-write-uri-permission --receiver-permission android.permission.WRITE_EXTERNAL_STORAGE",
+                # Method 3: Component-targeted SEND intent ContactPicker
+                f"adb -s {device} shell am start -a android.intent.action.SEND -t {quoted_mime} -n {pkg}/com.whatsapp.ContactPicker --eu android.intent.extra.STREAM {stream_uri} -e jid {clean_num}@s.whatsapp.net --grant-read-uri-permission --grant-write-uri-permission {extra_text}",
 
-                # Method 4: Component-targeted SEND intent com.whatsapp.biz.ContactPicker
-                f"adb -s {device} shell am start -a android.intent.action.SEND -t {mime_type} -e jid {clean_num}@s.whatsapp.net --eu android.intent.extra.STREAM {stream_uri} {extra_text} -n {pkg}/com.whatsapp.biz.ContactPicker --grant-read-uri-permission --grant-write-uri-permission --receiver-permission android.permission.WRITE_EXTERNAL_STORAGE",
+                # Method 4: Component-targeted SEND intent biz.ContactPicker
+                f"adb -s {device} shell am start -a android.intent.action.SEND -t {quoted_mime} -n {pkg}/com.whatsapp.biz.ContactPicker --eu android.intent.extra.STREAM {stream_uri} -e jid {clean_num}@s.whatsapp.net --grant-read-uri-permission --grant-write-uri-permission {extra_text}",
 
-                # Method 5: Component-targeted SEND intent com.whatsapp.ContactPickerActivity
-                f"adb -s {device} shell am start -a android.intent.action.SEND -t {mime_type} -e jid {clean_num}@s.whatsapp.net --eu android.intent.extra.STREAM {stream_uri} {extra_text} -n {pkg}/com.whatsapp.ContactPickerActivity --grant-read-uri-permission --grant-write-uri-permission --receiver-permission android.permission.WRITE_EXTERNAL_STORAGE",
+                # Method 5: Component-targeted SEND intent ContactPickerActivity
+                f"adb -s {device} shell am start -a android.intent.action.SEND -t {quoted_mime} -n {pkg}/com.whatsapp.ContactPickerActivity --eu android.intent.extra.STREAM {stream_uri} -e jid {clean_num}@s.whatsapp.net --grant-read-uri-permission --grant-write-uri-permission {extra_text}",
 
-                # Method 6: Implicit SEND intent without -p package restriction, relying on ResolverActivity
-                f"adb -s {device} shell am start -a android.intent.action.SEND -t {mime_type} -e jid {clean_num}@s.whatsapp.net --eu android.intent.extra.STREAM {stream_uri} {extra_text} --grant-read-uri-permission --grant-write-uri-permission --receiver-permission android.permission.WRITE_EXTERNAL_STORAGE"
+                # Method 6: Implicit SEND intent without package restriction
+                f"adb -s {device} shell am start -a android.intent.action.SEND -t {quoted_mime} --eu android.intent.extra.STREAM {stream_uri} -e jid {clean_num}@s.whatsapp.net --grant-read-uri-permission --grant-write-uri-permission {extra_text}"
             ]
             
             is_foreground = False
