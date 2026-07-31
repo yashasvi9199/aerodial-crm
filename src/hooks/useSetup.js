@@ -215,7 +215,7 @@ export function useSetup() {
       // Delete any stale chunks for the same filename first
       await supabase.from('media_chunks').delete().eq('filename', file.name);
 
-      const CHUNK_SIZE = 1000000; // ~1 MB chunks
+      const CHUNK_SIZE = 1000002; // ~1 MB chunks (must be a multiple of 3 to avoid base64 padding issues)
       const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
       setUploadProgress({ filename: file.name, percent: 5, status: 'uploading' });
 
