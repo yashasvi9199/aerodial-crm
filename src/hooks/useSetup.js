@@ -212,6 +212,9 @@ export function useSetup() {
     writeLog('INFO', `Uploading media file to device: ${file.name}`);
 
     try {
+      // Delete any stale chunks for the same filename first
+      await supabase.from('media_chunks').delete().eq('filename', file.name);
+
       const CHUNK_SIZE = 1000000; // ~1 MB chunks
       const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
       setUploadProgress({ filename: file.name, percent: 5, status: 'uploading' });
