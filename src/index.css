@@ -85,3 +85,9 @@ body {
   from { transform: translateY(50px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
+
+.fancy-input-container:focus-within,
+.fancy-input-container:hover {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.15);
+}
