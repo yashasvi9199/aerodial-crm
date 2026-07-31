@@ -4,7 +4,7 @@ import { Plus, Trash, Upload, Users, Paperclip } from 'lucide-react'
 import { validateAndNormalizePhone, isDuplicateContact, parseAndValidateCSV } from './bulkValidation'
 import ContactPickerModal from './ContactPickerModal'
 
-export default function BatchCreator({ groupId, onBatchCreated, mediaFiles }) {
+export default function BatchCreator({ groupId, onBatchCreated, mediaFiles, editingBatch, setEditingBatch }) {
   const [batchName, setBatchName] = useState('')
   const [messageTemplate, setMessageTemplate] = useState('')
   const [selectedMedia, setSelectedMedia] = useState('')
@@ -56,6 +56,22 @@ export default function BatchCreator({ groupId, onBatchCreated, mediaFiles }) {
     fetchSavedPool()
   }, [])
   /* eslint-enable react-hooks/set-state-in-effect */
+
+  useEffect(() => {
+    if (editingBatch) {
+      setBatchName(editingBatch.name || '')
+      setMessageTemplate(editingBatch.message_template || '')
+      setSelectedMedia(editingBatch.media_filename || '')
+      setStagedContacts(editingBatch.whatsapp_bulk_batch_contacts || [])
+      setTestingMode(false)
+    } else {
+      setBatchName('')
+      setMessageTemplate('')
+      setSelectedMedia('')
+      setStagedContacts([])
+      setTestingMode(false)
+    }
+  }, [editingBatch])
 
   const handleTemplateSelect = (e) => {
     const val = e.target.value
@@ -155,56 +171,98 @@ export default function BatchCreator({ groupId, onBatchCreated, mediaFiles }) {
 
     setLoading(true)
     try {
-      // Check 4 batches limit in this group
-      const { count, error: countErr } = await supabase
-        .from('whatsapp_bulk_batches')
-        .select('*', { count: 'exact', head: true })
-        .eq('group_id', groupId)
+      if (editingBatch) {
+        // Update Batch details
+        const { error: batchErr } = await supabase
+          .from('whatsapp_bulk_batches')
+          .update({
+            name: batchName.trim(),
+            message_template: messageTemplate.trim(),
+            media_filename: selectedMedia || null
+          })
+          .eq('id', editingBatch.id)
 
-      if (countErr) throw countErr
-      if (count !== null && count >= 4) {
-        alert('This group has already reached the maximum limit of 4 batches.')
-        setLoading(false)
-        return
+        if (batchErr) throw batchErr
+
+        // Delete existing contacts for this batch
+        const { error: deleteErr } = await supabase
+          .from('whatsapp_bulk_batch_contacts')
+          .delete()
+          .eq('batch_id', editingBatch.id)
+
+        if (deleteErr) throw deleteErr
+
+        // Insert new/edited Batch Contacts
+        const contactsToInsert = stagedContacts.map(c => ({
+          batch_id: editingBatch.id,
+          phone_number: c.phone_number,
+          name: c.name,
+          status: c.status || 'pending',
+          sent_at: c.sent_at || null,
+          error_message: c.error_message || null,
+          whatsapp_progress: c.whatsapp_progress || null
+        }))
+
+        const { error: contactsErr } = await supabase
+          .from('whatsapp_bulk_batch_contacts')
+          .insert(contactsToInsert)
+
+        if (contactsErr) throw contactsErr
+
+        alert('Batch updated successfully!')
+        if (onBatchCreated) onBatchCreated()
+      } else {
+        // Check 4 batches limit in this group
+        const { count, error: countErr } = await supabase
+          .from('whatsapp_bulk_batches')
+          .select('*', { count: 'exact', head: true })
+          .eq('group_id', groupId)
+
+        if (countErr) throw countErr
+        if (count !== null && count >= 4) {
+          alert('This group has already reached the maximum limit of 4 batches.')
+          setLoading(false)
+          return
+        }
+
+        // Create Batch
+        const { data: batchData, error: batchErr } = await supabase
+          .from('whatsapp_bulk_batches')
+          .insert([{
+            group_id: groupId,
+            name: batchName.trim(),
+            message_template: messageTemplate.trim(),
+            media_filename: selectedMedia || null,
+            status: 'pending',
+            scheduled_at: null // unscheduled until Broadcast tab triggers it
+          }])
+          .select()
+
+        if (batchErr) throw batchErr
+        const createdBatch = batchData?.[0]
+        if (!createdBatch) throw new Error('No batch returned.')
+
+        // Insert Batch Contacts
+        const contactsToInsert = stagedContacts.map(c => ({
+          batch_id: createdBatch.id,
+          phone_number: c.phone_number,
+          name: c.name,
+          status: 'pending'
+        }))
+
+        const { error: contactsErr } = await supabase
+          .from('whatsapp_bulk_batch_contacts')
+          .insert(contactsToInsert)
+
+        if (contactsErr) throw contactsErr
+
+        alert('Batch created successfully! Go to the "Broadcast" tab to schedule it.')
+        setBatchName('')
+        setMessageTemplate('')
+        setSelectedMedia('')
+        setStagedContacts([])
+        if (onBatchCreated) onBatchCreated()
       }
-
-      // Create Batch
-      const { data: batchData, error: batchErr } = await supabase
-        .from('whatsapp_bulk_batches')
-        .insert([{
-          group_id: groupId,
-          name: batchName.trim(),
-          message_template: messageTemplate.trim(),
-          media_filename: selectedMedia || null,
-          status: 'pending',
-          scheduled_at: null // unscheduled until Broadcast tab triggers it
-        }])
-        .select()
-
-      if (batchErr) throw batchErr
-      const createdBatch = batchData?.[0]
-      if (!createdBatch) throw new Error('No batch returned.')
-
-      // Insert Batch Contacts
-      const contactsToInsert = stagedContacts.map(c => ({
-        batch_id: createdBatch.id,
-        phone_number: c.phone_number,
-        name: c.name,
-        status: 'pending'
-      }))
-
-      const { error: contactsErr } = await supabase
-        .from('whatsapp_bulk_batch_contacts')
-        .insert(contactsToInsert)
-
-      if (contactsErr) throw contactsErr
-
-      alert('Batch created successfully! Go to the "Broadcast" tab to schedule it.')
-      setBatchName('')
-      setMessageTemplate('')
-      setSelectedMedia('')
-      setStagedContacts([])
-      if (onBatchCreated) onBatchCreated()
     } catch (err) {
       console.error(err)
       alert(`Failed to create batch: ${err.message}`)
@@ -216,7 +274,7 @@ export default function BatchCreator({ groupId, onBatchCreated, mediaFiles }) {
   return (
     <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border)', borderRadius: '10px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
       <h3 style={{ margin: 0, fontSize: '14px', fontWeight: '750', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <Plus size={16} style={{ color: 'var(--accent)' }} /> Create Batch (Max 20 Contacts)
+        <Plus size={16} style={{ color: 'var(--accent)' }} /> {editingBatch ? 'Edit / View Batch' : 'Create Batch'} (Max 20 Contacts)
       </h3>
 
       <form onSubmit={handleCreateBatch} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -358,13 +416,25 @@ export default function BatchCreator({ groupId, onBatchCreated, mediaFiles }) {
           </div>
         )}
 
-        <button
-          type="submit"
-          disabled={loading || !batchName.trim() || !messageTemplate.trim() || stagedContacts.length === 0}
-          style={{ width: '100%', background: 'var(--accent)', color: '#000', border: 'none', padding: '10px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', opacity: (loading || !batchName.trim() || !messageTemplate.trim() || stagedContacts.length === 0) ? 0.6 : 1 }}
-        >
-          {loading ? 'Creating...' : 'Create Batch'}
-        </button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <button
+            type="submit"
+            disabled={loading || !batchName.trim() || !messageTemplate.trim() || stagedContacts.length === 0}
+            style={{ width: '100%', background: 'var(--accent)', color: '#000', border: 'none', padding: '10px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', opacity: (loading || !batchName.trim() || !messageTemplate.trim() || stagedContacts.length === 0) ? 0.6 : 1 }}
+          >
+            {loading ? (editingBatch ? 'Updating...' : 'Creating...') : (editingBatch ? 'Update Batch' : 'Create Batch')}
+          </button>
+
+          {editingBatch && (
+            <button
+              type="button"
+              onClick={() => setEditingBatch(null)}
+              style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}
+            >
+              Cancel Edit
+            </button>
+          )}
+        </div>
       </form>
 
       {/* Selective contacts modal */}
