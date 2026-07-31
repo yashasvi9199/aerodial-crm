@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.16.2] - 2026-07-31
+### Fixed
+- Fixed target component for WhatsApp Business (`com.whatsapp.w4b/com.whatsapp.ContactPicker`).
+- Implemented smart ResolverActivity intercepting: automatically dismisses system-wide chooser popups and falls back to package-restricted sharing intents.
+- Added automatic selection/confirmation (KEYCODE_ENTER and tap fallback) inside WhatsApp-restricted resolvers.
+
 ## [1.16.0] - 2026-07-27
 ### Added
 - Added Excel export feature to the unified Search Engine (Contacts Tab).
