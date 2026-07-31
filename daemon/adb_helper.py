@@ -71,48 +71,85 @@ def get_device_details(device):
     """
     Determines device manufacturer, model, OS skin, dialer details, and support level.
     """
-    brand = run_cmd(f"adb -s {device} shell getprop ro.product.brand").strip()
-    model = run_cmd(f"adb -s {device} shell getprop ro.product.model").strip()
-    android_ver = run_cmd(f"adb -s {device} shell getprop ro.build.version.release").strip()
-    
-    miui_ver = run_cmd(f"adb -s {device} shell getprop ro.miui.ui.version.name").strip()
-    color_ver = run_cmd(f"adb -s {device} shell getprop ro.build.version.opporom").strip()
-    vivo_ver = run_cmd(f"adb -s {device} shell getprop ro.vivo.os.version").strip()
-    huawei_ver = run_cmd(f"adb -s {device} shell getprop ro.build.version.emui").strip()
-    hos_ver = run_cmd(f"adb -s {device} shell getprop hw_sc.build.platform.version").strip()
-    if not hos_ver:
-        hos_ver = run_cmd(f"adb -s {device} shell getprop ro.huawei.build.version.security").strip()
-
-    brand_lower = brand.lower()
-    os_name = "AOSP"
-    dialer_details = "AOSP Dialer"
+    brand = "Unknown"
+    model = "Unknown"
+    android_ver = "Unknown"
+    os_name = "Android"
+    dialer_details = "Default Dialer"
     phone_support = "Fully Supported"
 
-    if miui_ver or "xiaomi" in brand_lower or "redmi" in brand_lower or "poco" in brand_lower:
-        os_name = "MIUI"
-        dialer_details = "MIUI Dialer"
-    elif color_ver or "oppo" in brand_lower or "realme" in brand_lower or "oneplus" in brand_lower:
-        os_name = "ColorOS"
-        dialer_details = "ColorOS Dialer"
-    elif vivo_ver or "vivo" in brand_lower or "iqoo" in brand_lower:
-        os_name = "FuntouchOS"
-        dialer_details = "FuntouchOS Dialer"
-    elif hos_ver or "huawei" in brand_lower or "honor" in brand_lower:
-        if "1." in hos_ver or "10." in huawei_ver:
-            os_name = "HarmonyOS 1"
-        elif "2." in hos_ver or "11." in huawei_ver:
-            os_name = "HarmonyOS 2"
-        elif "3." in hos_ver or "12." in huawei_ver:
-            os_name = "HarmonyOS 3"
+    try:
+        brand = run_cmd(f"adb -s {device} shell getprop ro.product.brand").strip() or "Unknown"
+        model = run_cmd(f"adb -s {device} shell getprop ro.product.model").strip() or "Unknown"
+        android_ver = run_cmd(f"adb -s {device} shell getprop ro.build.version.release").strip() or "Unknown"
+    except Exception as e:
+        print(f"⚠️ Error fetching device basic props: {e}")
+
+    try:
+        # Query custom ROM properties dynamically
+        miui_ver = run_cmd(f"adb -s {device} shell getprop ro.miui.ui.version.name").strip()
+        hyperos_ver = run_cmd(f"adb -s {device} shell getprop ro.hyperos.version").strip()
+        oneui_ver = run_cmd(f"adb -s {device} shell getprop ro.build.version.oneui").strip()
+        color_ver = run_cmd(f"adb -s {device} shell getprop ro.build.version.opporom").strip()
+        vivo_ver = run_cmd(f"adb -s {device} shell getprop ro.vivo.os.version").strip()
+        emui_ver = run_cmd(f"adb -s {device} shell getprop ro.build.version.emui").strip()
+        display_id = run_cmd(f"adb -s {device} shell getprop ro.build.display.id").strip()
+
+        if hyperos_ver:
+            os_name = f"Xiaomi HyperOS {hyperos_ver} (Android {android_ver})"
+        elif miui_ver:
+            os_name = f"Xiaomi MIUI {miui_ver} (Android {android_ver})"
+        elif oneui_ver:
+            os_name = f"Samsung One UI {oneui_ver} (Android {android_ver})"
+        elif color_ver:
+            os_name = f"ColorOS/OxygenOS {color_ver} (Android {android_ver})"
+        elif vivo_ver:
+            os_name = f"FuntouchOS {vivo_ver} (Android {android_ver})"
+        elif emui_ver:
+            os_name = f"Huawei EMUI {emui_ver} (Android {android_ver})"
+        elif display_id:
+            os_name = f"{display_id} (Android {android_ver})"
         else:
-            os_name = "HarmonyOS"
-        dialer_details = "HarmonyOS Dialer"
-    elif "lava" in brand_lower:
-        os_name = "LavaOS"
-        dialer_details = "Lava Dialer"
-    elif "micromax" in brand_lower:
-        os_name = "Micromax"
-        dialer_details = "Micromax Dialer"
+            os_name = f"Android {android_ver}"
+    except Exception as e:
+        print(f"⚠️ Error resolving OS Name: {e}")
+
+    try:
+        # Determine Default Dialer Package dynamically
+        dialer_pkg = run_cmd(f"adb -s {device} shell \"cmd role get-role-holders android.app.role.DIALER\"").strip()
+        if not dialer_pkg:
+            # Fallback resolver query
+            out_dial = run_cmd(f"adb -s {device} shell \"pm resolve-activity -a android.intent.action.DIAL -c android.intent.category.DEFAULT\"")
+            m_pkg = re.search(r'packageName=([a-zA-Z0-9._]+)', out_dial)
+            if m_pkg:
+                dialer_pkg = m_pkg.group(1)
+
+        if dialer_pkg:
+            # Get dialer version name
+            ver_out = run_cmd(f"adb -s {device} shell \"dumpsys package {dialer_pkg} | grep versionName\"").strip()
+            m_ver = re.search(r'versionName=([^\s]+)', ver_out)
+            ver_suffix = f" v{m_ver.group(1)}" if m_ver else ""
+
+            # Map package to human-readable name
+            if dialer_pkg == "com.android.dialer":
+                dialer_details = f"AOSP System Dialer{ver_suffix}"
+            elif dialer_pkg == "com.google.android.dialer":
+                dialer_details = f"Google Phone Dialer{ver_suffix}"
+            elif dialer_pkg == "com.samsung.android.dialer":
+                dialer_details = f"Samsung Dialer{ver_suffix}"
+            elif dialer_pkg == "com.truecaller":
+                dialer_details = f"Truecaller Dialer{ver_suffix}"
+            elif "coloros" in dialer_pkg or "oppo" in dialer_pkg:
+                dialer_details = f"ColorOS Dialer{ver_suffix}"
+            elif "contact" in dialer_pkg or "phone" in dialer_pkg:
+                dialer_details = f"OEM Phone Dialer{ver_suffix} ({dialer_pkg})"
+            else:
+                pkg_label = dialer_pkg.split('.')[-1].capitalize()
+                dialer_details = f"{pkg_label} App{ver_suffix} ({dialer_pkg})"
+        else:
+            dialer_details = "Standard System Dialer"
+    except Exception as e:
+        print(f"⚠️ Error resolving dialer: {e}")
 
     return {
         "brand": brand,
