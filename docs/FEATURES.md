@@ -117,7 +117,8 @@ This table summarizes which features are fully functional on non-rooted devices 
 - **Diagnostics Event & Error Logger**: Intercepts console logging and user actions, writing an audit list to `localStorage` (capped at 500 lines) with features to export as JSON or email developer.
 
 ## 13. WhatsApp Bulk Messaging Engine
-- **Flexible Contact Selection**: Choose from saved CRM contacts, upload CSV contact sheets, or stage typed numbers manually with automated validation and +91 prefixing.
+- **Consolidated Tab Navigation**: Reorganized navigation into four specialized tabs: "Direct Chat" (for quick composition and sent logs), "Groups" (for staging contacts and scheduling), "Broadcast" (for managing scheduled/running campaigns), and "Assets & Templates" (consolidating templates, media, and greetings sub-tabs).
+- **Flexible Contact Selection**: Choose from saved CRM CRM contacts, upload CSV contact sheets, or stage typed numbers manually with automated validation and +91 prefixing.
 - **Background Scheduler (Python Daemon)**: Cron-like message dispatcher running on the local daemon, allowing scheduling and batch execution to continue even if the browser is closed or refreshed.
 - **Obfuscation & Meta Bot Bypass**: Automatically adds random spacing (at message start or newline boundaries) and italicizes a random character using WhatsApp formatting (`_ _`) to prevent spam/ban detection.
 - **Dynamic Greetings Replacement**: Auto-replaces the `{greetings}` tag in message templates with a random choice from a customizable greetings database, cycling through them one-by-one.
@@ -128,4 +129,9 @@ This table summarizes which features are fully functional on non-rooted devices 
 - **UI Debug Step Confirmation Dialogs**: Toggleable "UI Debug Mode" checkbox triggers step-by-step confirmation popups in the React frontend, blocking execution until the user manually approves or rejects each automation milestone (Ran Script, Opened WA, Typed Draft, Sent, Verified).
 - **Split Per-Contact Progress Steppers**: Granular progress bars indicating exact execution steps (Start, Open, Draft, Sent, Verified) for each recipient contact inside processing campaigns.
 - **Manual Media Cache Synchronization**: Replaced periodic filesystem ADB file queries in the daemon loop with a manual "Refresh Cache" button on the media tab to sync media directory contents.
+- **Live System Clock & Pickers**: Rendered system clock with ticking seconds (`hh:mm:ss A`) on the Broadcast view alongside fancy Start Date and Start Time inputs calling native calendar/clock dialogs.
+- **Real-Time Duration & Countdowns**: Show "Starts in: hh:mm:ss" countdown for pending campaigns, "Elapsed: hh:mm:ss" and "Next message in: X seconds" countdowns for active ones, and "Total Duration: hh:mm:ss" upon campaign completion.
+- **Recipient Time-Lapse & Countdown Steps**: Display sent/failed local 12h time markers, green elapsed time lapses between consecutive message deliveries (e.g. `+45s`), and red countdowns on the active queue recipient.
+- **Liveness Batch Editing**: Allow editing/viewing staged and scheduled campaigns directly from batch lists and active campaign logs, switching context to the composer fields for edits and database updates.
+
 
