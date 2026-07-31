@@ -394,3 +394,12 @@ ALTER TABLE public.system_state ADD COLUMN IF NOT EXISTS confirm_verified text D
 
 ALTER TABLE public.whatsapp_bulk_batches ADD COLUMN IF NOT EXISTS ui_debug boolean DEFAULT false;
 ALTER TABLE public.whatsapp_bulk_batch_contacts ADD COLUMN IF NOT EXISTS whatsapp_progress text;
+
+--------------------------------------------------------------------------------------
+
+-- Date: 2026-07-31 12:12:00
+-- Feature: Broadcast Test Mode
+-- Type: FIX
+-- Notes: Add broadcast_test_mode boolean column to public.system_state to enable/disable time validations on broadcasts.
+
+ALTER TABLE public.system_state ADD COLUMN IF NOT EXISTS broadcast_test_mode boolean DEFAULT false;
