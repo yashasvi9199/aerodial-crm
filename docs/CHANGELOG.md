@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.17.0] - 2026-07-31
+### Added
+- Reorganized tab layout: renamed Composer to "Direct Chat" and consolidated Template, Media, Greetings into one tab called "Assets & Templates" with internal sub-tabs.
+- Added live system clock with seconds in the Broadcast scheduler.
+- Integrated dynamic duration and countdown timers for campaigns (pending countdown, elapsed duration, completed total duration).
+- Added step-by-step elapsed time-lapse labels (`+Xs`) between consecutive sent contacts and red countdown timers for the next contact in queue.
+- Implemented staged and scheduled campaign batch edit flows directly from batch lists and active campaign logs.
+
 ## [1.16.2] - 2026-07-31
 ### Fixed
 - Fixed target component for WhatsApp Business (`com.whatsapp.w4b/com.whatsapp.ContactPicker`).
