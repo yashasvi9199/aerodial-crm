@@ -176,11 +176,8 @@ def _execute_whatsapp(device, phone, message, run_cmd, media_filename=None, supa
         if not clean_num.startswith('91') and len(clean_num) == 10:
             clean_num = '91' + clean_num
 
-        # Detect installed WhatsApp package
-        pkg = "com.whatsapp"
-        pkg_check = run_cmd(f"adb -s {device} shell \"pm list packages com.whatsapp.w4b\"")
-        if "com.whatsapp.w4b" in pkg_check:
-            pkg = "com.whatsapp.w4b"
+        # Target WhatsApp Business strictly
+        pkg = "com.whatsapp.w4b"
         
         print(f"[*] Using WhatsApp package: {pkg}")
 
