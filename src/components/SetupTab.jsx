@@ -347,13 +347,13 @@ export default function SetupTab() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Active Slot / Sub ID Target</span>
             <span style={{ fontSize: '14px', fontWeight: 'bold', color: 'var(--accent)' }}>
-              SIM Slot {activeSlot + 1} ({sims[activeSlot]?.carrier || 'Unknown Carrier'})
+              SIM {activeSlot + 1}: {sims.find(s => s.slot === activeSlot)?.carrier || 'Unknown Carrier'}
             </span>
           </div>
-          {sims[activeSlot]?.number && (
+          {sims.find(s => s.slot === activeSlot)?.number && (
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>SIM Card Number</span>
-              <span style={{ fontSize: '14px', fontWeight: '600' }}>{sims[activeSlot].number}</span>
+              <span style={{ fontSize: '14px', fontWeight: '600' }}>{sims.find(s => s.slot === activeSlot).number}</span>
             </div>
           )}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
