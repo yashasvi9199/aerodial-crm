@@ -20,6 +20,7 @@ export default function BroadcastTab() {
   const [activeError, setActiveError] = useState(null)
   const [loading, setLoading] = useState(false)
   const [uiDebug, setUiDebug] = useState(false)
+  const [testMode, setTestMode] = useState(false)
 
   const fetchGroups = async () => {
     try {
@@ -76,10 +77,22 @@ export default function BroadcastTab() {
     }
   }
 
+  const fetchTestMode = async () => {
+    try {
+      const { data } = await supabase.from('system_state').select('broadcast_test_mode').eq('id', 1).single()
+      if (data) {
+        setTestMode(!!data.broadcast_test_mode)
+      }
+    } catch (e) {
+      console.error('Error fetching broadcast_test_mode:', e)
+    }
+  }
+
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     fetchGroups()
     fetchCampaigns()
+    fetchTestMode()
 
     // Realtime sync
     const batchSub = supabase.channel('broadcast_batches_sync')
@@ -100,19 +113,34 @@ export default function BroadcastTab() {
     fetchBatches(selectedGroupId)
     setSelectedBatchIds([])
   }, [selectedGroupId])
-  /* eslint-enable react-hooks/set-state-in-effect */
+
+  const handleToggleTestMode = async (val) => {
+    setTestMode(val)
+    try {
+      await supabase.from('system_state').update({ broadcast_test_mode: val }).eq('id', 1)
+    } catch (e) {
+      console.error('Failed to update broadcast_test_mode:', e)
+    }
+  }
 
   const handleSchedule = async (e) => {
     e.preventDefault()
-    if (!selectedGroupId || selectedBatchIds.length === 0 || !dateVal || !timeVal) {
-      alert('Please fill out all fields.')
-      return
-    }
-
-    const scheduledDate = new Date(`${dateVal}T${timeVal}`)
-    if (isNaN(scheduledDate.getTime())) {
-      alert('Invalid date/time selected.')
-      return
+    
+    let scheduledDate;
+    if (testMode) {
+      const d = dateVal || new Date().toLocaleString('sv-SE').split(' ')[0]
+      const t = timeVal || new Date().toTimeString().split(' ')[0].slice(0, 5)
+      scheduledDate = new Date(`${d}T${t}`)
+    } else {
+      if (!selectedGroupId || selectedBatchIds.length === 0 || !dateVal || !timeVal) {
+        alert('Please fill out all fields.')
+        return
+      }
+      scheduledDate = new Date(`${dateVal}T${timeVal}`)
+      if (isNaN(scheduledDate.getTime())) {
+        alert('Invalid date/time selected.')
+        return
+      }
     }
 
     setLoading(true)
@@ -259,7 +287,6 @@ export default function BroadcastTab() {
           <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '5px', fontWeight: 'bold' }}>START DATE</label>
           <input
             type="date"
-            required
             value={dateVal}
             onChange={(e) => setDateVal(e.target.value)}
             style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px', borderRadius: '6px', fontSize: '13px', outline: 'none' }}
@@ -271,7 +298,6 @@ export default function BroadcastTab() {
           <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '5px', fontWeight: 'bold' }}>START TIME</label>
           <input
             type="time"
-            required
             value={timeVal}
             onChange={(e) => setTimeVal(e.target.value)}
             style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px', borderRadius: '6px', fontSize: '13px', outline: 'none' }}
@@ -292,10 +318,24 @@ export default function BroadcastTab() {
           </label>
         </div>
 
+        {/* Test Mode */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: '6px' }}>
+          <input
+            type="checkbox"
+            id="broadcastTestModeCheckbox"
+            checked={testMode}
+            onChange={(e) => handleToggleTestMode(e.target.checked)}
+            style={{ cursor: 'pointer' }}
+          />
+          <label htmlFor="broadcastTestModeCheckbox" style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text)', cursor: 'pointer' }}>
+            🧪 Enable Test Mode (Bypass Time Validations)
+          </label>
+        </div>
+
         <button
           type="submit"
-          disabled={loading || !selectedGroupId || selectedBatchIds.length === 0 || !dateVal || !timeVal}
-          style={{ background: 'var(--accent)', color: '#000', border: 'none', padding: '10px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', opacity: (loading || !selectedGroupId || selectedBatchIds.length === 0 || !dateVal || !timeVal) ? 0.6 : 1 }}
+          disabled={loading || !selectedGroupId || selectedBatchIds.length === 0 || (!testMode && (!dateVal || !timeVal))}
+          style={{ background: 'var(--accent)', color: '#000', border: 'none', padding: '10px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', opacity: (loading || !selectedGroupId || selectedBatchIds.length === 0 || (!testMode && (!dateVal || !timeVal))) ? 0.6 : 1 }}
         >
           <Calendar size={15} />
           {loading ? 'Scheduling...' : 'Schedule Broadcast'}
