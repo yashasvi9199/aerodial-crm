@@ -512,7 +512,7 @@ function CampaignDebugOverlay({ activeCampaign }) {
 
   if (!systemState) return null
 
-  const steps = ['ran_script', 'opened_whatsapp', 'types_draft', 'sent', 'verified']
+  const steps = ['ran_script', 'opened_whatsapp', 'types_draft', 'sent', 'typing_text', 'sent_text', 'verified']
   const waitingStep = steps.find(s => systemState[`confirm_${s}`] === 'waiting')
   if (!waitingStep) return null
 
@@ -520,7 +520,9 @@ function CampaignDebugOverlay({ activeCampaign }) {
     ran_script: 'Run Script',
     opened_whatsapp: 'Open WhatsApp',
     types_draft: 'Type Draft message',
-    sent: 'Send Message Click',
+    sent: 'Send Media',
+    typing_text: 'Type Text Message',
+    sent_text: 'Send Text Message',
     verified: 'Verification check'
   }
 
