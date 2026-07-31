@@ -235,7 +235,7 @@ def _execute_whatsapp(device, phone, message, run_cmd, media_filename=None, supa
             
             extra_text = f"--es android.intent.extra.TEXT '{message}'" if message else ""
             # Try starting with explicit ContactPicker component first to bypass ResolverActivity
-            component_name = f"{pkg}/com.whatsapp.ContactPicker" if pkg == "com.whatsapp" else f"{pkg}/com.whatsapp.biz.ContactPicker"
+            component_name = f"{pkg}/com.whatsapp.ContactPicker"
             cmd = f"adb -s {device} shell am start -a android.intent.action.SEND -t {mime_type} -e jid {clean_num}@s.whatsapp.net --eu android.intent.extra.STREAM {stream_uri} {extra_text} -n {component_name} --grant-read-uri-permission --grant-write-uri-permission --receiver-permission android.permission.WRITE_EXTERNAL_STORAGE"
             result = run_cmd(cmd)
             print(f"[*] am start explicit component result: {result}")
@@ -256,19 +256,29 @@ def _execute_whatsapp(device, phone, message, run_cmd, media_filename=None, supa
 
         # Verify WhatsApp package is active in foreground with retries and ResolverActivity handling
         is_foreground = False
+        fallback_run = False
         foreground_check = ""
-        for attempt in range(3):
+        for attempt in range(4):
             time.sleep(1.0)
             foreground_check = run_cmd(f"adb -s {device} shell \"dumpsys window | grep -E 'mCurrentFocus|mFocusedApp'\"")
-            print(f"[*] Foreground window status (attempt {attempt + 1}/3): {foreground_check}")
+            print(f"[*] Foreground window status (attempt {attempt + 1}/4): {foreground_check}")
             if pkg in foreground_check:
                 is_foreground = True
                 break
             elif "ResolverActivity" in foreground_check:
-                print("[*] ResolverActivity popup detected, selecting WhatsApp automatically...")
-                # Tap center of screen / select default option on app resolver chooser dialog if present
-                run_cmd(f"adb -s {device} shell input keyevent 23") # KEYCODE_ENTER / DPAD_CENTER
-                run_cmd(f"adb -s {device} shell input tap 540 1200")
+                if not fallback_run:
+                    print("[*] Unrestricted ResolverActivity detected. Dismissing and trying package-restricted fallback...")
+                    run_cmd(f"adb -s {device} shell input keyevent 4")  # Back button to dismiss
+                    time.sleep(0.8)
+                    cmd = f"adb -s {device} shell am start -a android.intent.action.SEND -t {mime_type} -e jid {clean_num}@s.whatsapp.net --eu android.intent.extra.STREAM {stream_uri} {extra_text} -p {pkg} --grant-read-uri-permission --grant-write-uri-permission --receiver-permission android.permission.WRITE_EXTERNAL_STORAGE"
+                    fallback_res = run_cmd(cmd)
+                    print(f"[*] am start package-restricted fallback result: {fallback_res}")
+                    fallback_run = True
+                else:
+                    print("[*] Restricted ResolverActivity detected, selecting WhatsApp automatically...")
+                    # Tap center of screen / select default option on app resolver chooser dialog if present
+                    run_cmd(f"adb -s {device} shell input keyevent 23")  # KEYCODE_ENTER / DPAD_CENTER
+                    run_cmd(f"adb -s {device} shell input tap 540 1200")
 
         if not is_foreground:
             raise RuntimeError(f"WhatsApp did not open on device. Current focus: {foreground_check.strip()}")
