@@ -101,7 +101,7 @@ export default function WhatsAppManager() {
               setTimeout(() => {
                 setProgressStatus(null)
                 // Clear state table progress to avoid infinite updates or blinking
-                supabase.table('system_state').update({ whatsapp_progress: null }).eq('id', 1).execute()
+                supabase.from('system_state').update({ whatsapp_progress: null }).eq('id', 1)
               }, 4000)
             }
           }
