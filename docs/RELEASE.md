@@ -1,5 +1,10 @@
 # Release Notes
 
+## [1.17.1] - 2026-07-31
+### Fixed
+- Fixed WhatsApp Business media dispatch issue by explicitly targeting the `com.whatsapp.contact.ui.picker.ExternalShareAlias` component.
+- Enhanced database media scanner uri queries to normalize `/sdcard/` paths to `/storage/emulated/0/` and fallback to query-by-display-name to avoid UNIQUE constraint SQL insert conflicts.
+
 ## [1.17.0] - 2026-07-31
 ### Added
 - Reorganized tab layout: renamed Composer to "Direct Chat" and consolidated Template, Media, Greetings into one tab called "Assets & Templates" with internal sub-tabs.
