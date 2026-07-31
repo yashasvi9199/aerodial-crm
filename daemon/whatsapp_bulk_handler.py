@@ -75,21 +75,31 @@ def get_active_batch(supabase, now_iso):
     if not res.data:
         return None
 
-    batch = res.data[0]
-    # Check 60-minute gap constraint between batches in the same group
-    one_hour_ago = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=60)).isoformat()
+    # Check if broadcast test mode is enabled
+    is_test_mode = False
     try:
-        recent = supabase.table('whatsapp_bulk_batches').select('id') \
-            .eq('group_id', batch['group_id']) \
-            .in_('status', ['processing', 'completed']) \
-            .gte('scheduled_at', one_hour_ago) \
-            .execute()
-        if recent.data:
-            print(f"[*] Batch '{batch['name']}' skipped: 60-minute group gap constraint in effect.")
-            return None
+        state_res = supabase.table('system_state').select('broadcast_test_mode').eq('id', 1).execute()
+        if state_res.data and state_res.data[0].get('broadcast_test_mode'):
+            is_test_mode = True
     except Exception as e:
-        print(f"⚠️ Error checking batch gap: {e}")
-        return None
+        print(f"⚠️ Error checking system_state test mode: {e}")
+
+    batch = res.data[0]
+    if not is_test_mode:
+        # Check 60-minute gap constraint between batches in the same group
+        one_hour_ago = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=60)).isoformat()
+        try:
+            recent = supabase.table('whatsapp_bulk_batches').select('id') \
+                .eq('group_id', batch['group_id']) \
+                .in_('status', ['processing', 'completed']) \
+                .gte('scheduled_at', one_hour_ago) \
+                .execute()
+            if recent.data:
+                print(f"[*] Batch '{batch['name']}' skipped: 60-minute group gap constraint in effect.")
+                return None
+        except Exception as e:
+            print(f"⚠️ Error checking batch gap: {e}")
+            return None
 
     # Transition pending batch to processing
     try:
