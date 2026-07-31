@@ -1,13 +1,21 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { Calendar, AlertTriangle, RotateCcw } from 'lucide-react'
+import { Calendar, AlertTriangle, RotateCcw, Clock } from 'lucide-react'
 import CampaignLogs from './CampaignLogs'
 
-export default function BroadcastTab() {
+export default function BroadcastTab({ onEditBatch }) {
   const [groups, setGroups] = useState([])
   const [selectedGroupId, setSelectedGroupId] = useState('')
   const [batches, setBatches] = useState([])
   const [selectedBatchIds, setSelectedBatchIds] = useState([])
+  const [systemTime, setSystemTime] = useState(new Date())
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setSystemTime(new Date())
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [])
   
   // Date & Time pickers
   const [dateVal, setDateVal] = useState('')
@@ -236,114 +244,192 @@ export default function BroadcastTab() {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.3fr', gap: '24px', alignItems: 'start' }}>
       
-      {/* Left Column: Scheduler form */}
-      <form onSubmit={handleSchedule} style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', padding: '20px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-        <div>
-          <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '750', color: 'var(--text)' }}>Schedule Broadcast</h3>
-          <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: 'var(--text-muted)' }}>Choose target group and batch slots to schedule execution</p>
-        </div>
-
-        {/* Target Group */}
-        <div>
-          <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '5px', fontWeight: 'bold' }}>TARGET GROUP</label>
-          <select
-            required
-            value={selectedGroupId}
-            onChange={(e) => setSelectedGroupId(e.target.value)}
-            style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px', borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-          >
-            <option value="">-- Select Group --</option>
-            {groups.map(g => (
-              <option key={g.id} value={g.id}>{g.name}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Batches select */}
-        {selectedGroupId && (
+      {/* Left Column: Clock + Scheduler form */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        
+        {/* System Clock Card */}
+        <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', padding: '16px 20px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '5px', fontWeight: 'bold' }}>SELECT BATCHES TO BROADCAST</label>
-            {batches.length === 0 ? (
-              <span style={{ fontSize: '12px', color: '#ef4444' }}>No unscheduled batches available in this group.</span>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '120px', overflowY: 'auto', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: '6px', padding: '10px' }}>
-                {batches.map(b => (
-                  <label key={b.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', cursor: 'pointer', color: 'var(--text)' }}>
-                    <input
-                      type="checkbox"
-                      checked={selectedBatchIds.includes(b.id)}
-                      onChange={() => handleToggleBatch(b.id)}
-                    />
-                    <span>{b.name}</span>
-                  </label>
-                ))}
-              </div>
-            )}
+            <span style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-muted)', display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>SYSTEM CLOCK</span>
+            <span style={{ fontSize: '20px', fontWeight: '850', color: 'var(--accent)', fontFamily: 'monospace' }}>
+              {systemTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
+            </span>
           </div>
-        )}
-
-        {/* Date picker */}
-        <div>
-          <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '5px', fontWeight: 'bold' }}>START DATE</label>
-          <input
-            type="date"
-            value={dateVal}
-            onChange={(e) => setDateVal(e.target.value)}
-            style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px', borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-          />
+          <Clock size={22} style={{ color: 'var(--accent)', opacity: 0.8 }} />
         </div>
 
-        {/* Time picker */}
-        <div>
-          <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '5px', fontWeight: 'bold' }}>START TIME</label>
-          <input
-            type="time"
-            value={timeVal}
-            onChange={(e) => setTimeVal(e.target.value)}
-            style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px', borderRadius: '6px', fontSize: '13px', outline: 'none' }}
-          />
-        </div>
+        <form onSubmit={handleSchedule} style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', padding: '20px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '750', color: 'var(--text)' }}>Schedule Broadcast</h3>
+            <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: 'var(--text-muted)' }}>Choose target group and batch slots to schedule execution</p>
+          </div>
 
-        {/* UI Debug Mode */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: '6px' }}>
-          <input
-            type="checkbox"
-            id="broadcastUiDebugCheckbox"
-            checked={uiDebug}
-            onChange={(e) => setUiDebug(e.target.checked)}
-            style={{ cursor: 'pointer' }}
-          />
-          <label htmlFor="broadcastUiDebugCheckbox" style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text)', cursor: 'pointer' }}>
-            🐛 Enable UI Debug Mode (Step Confirmation)
-          </label>
-        </div>
+          {/* Target Group */}
+          <div>
+            <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '5px', fontWeight: 'bold' }}>TARGET GROUP</label>
+            <select
+              required
+              value={selectedGroupId}
+              onChange={(e) => setSelectedGroupId(e.target.value)}
+              style={{ width: '100%', background: 'var(--bg-input)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px', borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+            >
+              <option value="">-- Select Group --</option>
+              {groups.map(g => (
+                <option key={g.id} value={g.id}>{g.name}</option>
+              ))}
+            </select>
+          </div>
 
-        {/* Test Mode */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: '6px' }}>
-          <input
-            type="checkbox"
-            id="broadcastTestModeCheckbox"
-            checked={testMode}
-            onChange={(e) => handleToggleTestMode(e.target.checked)}
-            style={{ cursor: 'pointer' }}
-          />
-          <label htmlFor="broadcastTestModeCheckbox" style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text)', cursor: 'pointer' }}>
-            🧪 Enable Test Mode (Bypass Time Validations)
-          </label>
-        </div>
+          {/* Batches select */}
+          {selectedGroupId && (
+            <div>
+              <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '5px', fontWeight: 'bold' }}>SELECT BATCHES TO BROADCAST</label>
+              {batches.length === 0 ? (
+                <span style={{ fontSize: '12px', color: '#ef4444' }}>No unscheduled batches available in this group.</span>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '120px', overflowY: 'auto', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: '6px', padding: '10px' }}>
+                  {batches.map(b => (
+                    <label key={b.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', cursor: 'pointer', color: 'var(--text)' }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedBatchIds.includes(b.id)}
+                        onChange={() => handleToggleBatch(b.id)}
+                      />
+                      <span>{b.name}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
-        <button
-          type="submit"
-          disabled={loading || !selectedGroupId || selectedBatchIds.length === 0 || (!testMode && (!dateVal || !timeVal))}
-          style={{ background: 'var(--accent)', color: '#000', border: 'none', padding: '10px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', opacity: (loading || !selectedGroupId || selectedBatchIds.length === 0 || (!testMode && (!dateVal || !timeVal))) ? 0.6 : 1 }}
-        >
-          <Calendar size={15} />
-          {loading ? 'Scheduling...' : 'Schedule Broadcast'}
-        </button>
-      </form>
+          {/* Date picker */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+            <label style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 'bold' }}>START DATE</label>
+            <div 
+              onClick={(e) => {
+                const input = e.currentTarget.querySelector('input');
+                if (input) {
+                  try { input.showPicker(); } catch (err) { console.warn(err); }
+                }
+              }}
+              style={{ 
+                position: 'relative', 
+                display: 'flex', 
+                alignItems: 'center', 
+                background: 'var(--bg-input)', 
+                border: '1px solid var(--border)', 
+                borderRadius: '8px', 
+                padding: '2px 10px',
+                cursor: 'pointer',
+                transition: 'border-color 0.15s, box-shadow 0.15s'
+              }}
+              className="fancy-input-container"
+            >
+              <Calendar size={16} style={{ color: 'var(--accent)', marginRight: '10px' }} />
+              <input
+                type="date"
+                value={dateVal}
+                onChange={(e) => setDateVal(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                style={{ 
+                  flex: 1, 
+                  background: 'transparent', 
+                  border: 'none', 
+                  color: 'var(--text)', 
+                  padding: '8px 0', 
+                  fontSize: '13.5px', 
+                  outline: 'none', 
+                  cursor: 'pointer' 
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Time picker */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+            <label style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 'bold' }}>START TIME</label>
+            <div 
+              onClick={(e) => {
+                const input = e.currentTarget.querySelector('input');
+                if (input) {
+                  try { input.showPicker(); } catch (err) { console.warn(err); }
+                }
+              }}
+              style={{ 
+                position: 'relative', 
+                display: 'flex', 
+                alignItems: 'center', 
+                background: 'var(--bg-input)', 
+                border: '1px solid var(--border)', 
+                borderRadius: '8px', 
+                padding: '2px 10px',
+                cursor: 'pointer',
+                transition: 'border-color 0.15s, box-shadow 0.15s'
+              }}
+              className="fancy-input-container"
+            >
+              <Clock size={16} style={{ color: 'var(--accent)', marginRight: '10px' }} />
+              <input
+                type="time"
+                value={timeVal}
+                onChange={(e) => setTimeVal(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                style={{ 
+                  flex: 1, 
+                  background: 'transparent', 
+                  border: 'none', 
+                  color: 'var(--text)', 
+                  padding: '8px 0', 
+                  fontSize: '13.5px', 
+                  outline: 'none', 
+                  cursor: 'pointer' 
+                }}
+              />
+            </div>
+          </div>
+
+          {/* UI Debug Mode */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: '6px' }}>
+            <input
+              type="checkbox"
+              id="broadcastUiDebugCheckbox"
+              checked={uiDebug}
+              onChange={(e) => setUiDebug(e.target.checked)}
+              style={{ cursor: 'pointer' }}
+            />
+            <label htmlFor="broadcastUiDebugCheckbox" style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text)', cursor: 'pointer' }}>
+              🐛 Enable UI Debug Mode (Step Confirmation)
+            </label>
+          </div>
+
+          {/* Test Mode */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: '6px' }}>
+            <input
+              type="checkbox"
+              id="broadcastTestModeCheckbox"
+              checked={testMode}
+              onChange={(e) => handleToggleTestMode(e.target.checked)}
+              style={{ cursor: 'pointer' }}
+            />
+            <label htmlFor="broadcastTestModeCheckbox" style={{ fontSize: '12px', fontWeight: 'bold', color: 'var(--text)', cursor: 'pointer' }}>
+              🧪 Enable Test Mode (Bypass Time Validations)
+            </label>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading || !selectedGroupId || selectedBatchIds.length === 0 || (!testMode && (!dateVal || !timeVal))}
+            style={{ background: 'var(--accent)', color: '#000', border: 'none', padding: '10px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', opacity: (loading || !selectedGroupId || selectedBatchIds.length === 0 || (!testMode && (!dateVal || !timeVal))) ? 0.6 : 1 }}
+          >
+            <Calendar size={15} />
+            {loading ? 'Scheduling...' : 'Schedule Broadcast'}
+          </button>
+        </form>
+      </div>
 
       {/* Right Column: Execution Monitoring */}
-      <CampaignLogs campaigns={campaigns} handleResume={handleResume} handleCancel={handleCancelCampaign} />
+      <CampaignLogs campaigns={campaigns} handleResume={handleResume} handleCancel={handleCancelCampaign} onEditBatch={onEditBatch} />
 
       {/* Error Popup Modal */}
       {activeError && (
