@@ -31,5 +31,5 @@
 - 2026-07-24: Consolidated scattered agent memory/persistence files (USER.md, SOUL.md, MEMORY.md, .agent-persistence) into a unified `.agent/` folder structure, symlinked `.agents` to `.agent` to preserve customizations discovery, and merged duplicate contents.
 - 2026-07-27: Implemented Excel export feature in Contacts tab to download Cold Calling and Justdial Leads data (Name and Number columns) using the xlsx library. Bounded component sizes to keep AllContacts.jsx under 300 lines by extracting ContactsHeader.jsx. Bumped version to 1.16.0.
 - 2026-07-28: Added device root status compatibility matrix to docs/FEATURES.md documenting features compatible with rooted vs non-rooted devices.
-
+- 2026-07-31: Fixed JS console error by replacing `supabase.table` with `supabase.from` in WhatsAppManager.jsx. Resolved `binascii.Error` during base64 decoding in listener.py by extracting raw base64 data in the frontend (excluding DataURL prefixes), deleting stale chunks before starting new uploads, setting the upload chunk size to a multiple of 3 (1,000,002 bytes) to avoid padding offset misalignment, and trimming intermediate chunk padding on join in python daemon.
 
